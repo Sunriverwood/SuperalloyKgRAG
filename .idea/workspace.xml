@@ -4,26 +4,18 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="1356365c-4e55-45c5-8e65-a4f6e3ed1df4" name="更改" comment="">
-      <change afterPath="$PROJECT_DIR$/.idea/SuperalloyKgRAG.iml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/copilot.data.migration.agent.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/copilot.data.migration.edit.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/inspectionProfiles/profiles_settings.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/modules.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/app/run_indexing.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/config/prompts/pdf_parsing.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/config/settings.yaml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/core/1.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/core/vlm_pdf_parser.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/requirements.txt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/utils/client_factory.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/utils/file_utils.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/utils/logging_config.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/utils/state_manager.py" afterDir="false" />
+    <list default="true" id="1356365c-4e55-45c5-8e65-a4f6e3ed1df4" name="更改" comment="feat: implement PDF processing workflow with batch job management and state persistence">
+      <change afterPath="$PROJECT_DIR$/.idea/copilot.data.migration.ask.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/copilot.data.migration.ask2agent.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/core/pipeline/loader.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/data/raw_pdfs/ASM HandBook Volume 03 - Alloy Phase Diagrams.pdf" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/data/raw_pdfs/ASM手册 20_1.pdf" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/data/raw_pdfs/高温合金中微量元素的作用与控制_46-49.pdf" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/run_indexing.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/run_indexing.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/config/settings.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/config/settings.yaml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/1.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/vlm_pdf_parser.py" beforeDir="false" afterPath="$PROJECT_DIR$/core/vlm_pdf_parser.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -40,9 +32,21 @@
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
-  <component name="ProjectColorInfo"><![CDATA[{
-  "associatedIndex": 2
-}]]></component>
+  <component name="GitHubPullRequestSearchHistory">{
+  &quot;lastFilter&quot;: {
+    &quot;state&quot;: &quot;OPEN&quot;,
+    &quot;assignee&quot;: &quot;Sunriverwood&quot;
+  }
+}</component>
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://github.com/Sunriverwood/SuperalloyKgRAG.git&quot;,
+    &quot;accountId&quot;: &quot;a50e5be3-d31b-458b-bc79-c5f3feed1d3d&quot;
+  }
+}</component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 2
+}</component>
   <component name="ProjectId" id="32s7Z0HUizjOnYAUS2xDpBLPnb1" />
   <component name="ProjectLevelVcsManager">
     <ConfirmationsSetting value="2" id="Add" />
@@ -54,12 +58,22 @@
   <component name="PropertiesComponent"><![CDATA[{
   "keyToString": {
     "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "Python.run_indexing.executor": "Run",
+    "Python.vlm_pdf_parser.executor": "Run",
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.git.unshallow": "true",
+    "SHARE_PROJECT_CONFIGURATION_FILES": "true",
     "git-widget-placeholder": "master",
-    "ignore.virus.scanning.warn.message": "true"
+    "ignore.virus.scanning.warn.message": "true",
+    "last_opened_file_path": "D:/Pycharm/Projects/SuperalloyKgRAG/data/raw_pdfs",
+    "settings.editor.selected.configurable": "com.github.copilot.settings.keymap.KeymapConfigurable"
   }
 }]]></component>
+  <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="D:\Pycharm\Projects\SuperalloyKgRAG\data\raw_pdfs" />
+    </key>
+  </component>
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
@@ -75,6 +89,15 @@
       <option name="presentableId" value="Default" />
       <updated>1758197478087</updated>
     </task>
+    <task id="LOCAL-00001" summary="feat: implement PDF processing workflow with batch job management and state persistence">
+      <option name="closed" value="true" />
+      <created>1758250692853</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1758250692853</updated>
+    </task>
+    <option name="localTasksCounter" value="2" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -87,5 +110,9 @@
         </entry>
       </map>
     </option>
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="feat: implement PDF processing workflow with batch job management and state persistence" />
+    <option name="LAST_COMMIT_MESSAGE" value="feat: implement PDF processing workflow with batch job management and state persistence" />
   </component>
 </project>

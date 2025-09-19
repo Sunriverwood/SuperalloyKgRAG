@@ -5,6 +5,8 @@ proxy: "http://127.0.0.1:7890"
 vlm_parser:
   batch_size: 20
   batch_polling_timeout_seconds: 28800 # 8 hours
+  sleep_interval: 600
+  parsing_prompt_path: "config/prompts/pdf_parsing.md"
   state_file_path: "cache/processing_state.json"
   input_dir: "data/raw_pdfs/"
   output_dir: "data/processed_jsons/"
@@ -12,7 +14,7 @@ vlm_parser:
 llm:
   provider: google
   model: gemini-2.5-pro
-  api_key: "${GEMINI_API_KEY}"
+  api_key: "AIzaSyBkkwGChpkAjz1hviqOekPy7k5dskt99Lo"
   batch_mode: true                 # 是否启用批处理
   temperature: 0.1                 # 控制生成的稳定性
   top_p: 0.9
