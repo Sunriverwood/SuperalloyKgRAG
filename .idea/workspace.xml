@@ -4,18 +4,13 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="1356365c-4e55-45c5-8e65-a4f6e3ed1df4" name="更改" comment="feat: implement PDF processing workflow with batch job management and state persistence">
-      <change afterPath="$PROJECT_DIR$/.idea/copilot.data.migration.ask.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/copilot.data.migration.ask2agent.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/core/pipeline/loader.py" afterDir="false" />
+    <list default="true" id="1356365c-4e55-45c5-8e65-a4f6e3ed1df4" name="更改" comment="implement JSON text extraction and chunking process">
+      <change afterPath="$PROJECT_DIR$/1.py" afterDir="false" />
       <change afterPath="$PROJECT_DIR$/data/raw_pdfs/ASM HandBook Volume 03 - Alloy Phase Diagrams.pdf" afterDir="false" />
       <change afterPath="$PROJECT_DIR$/data/raw_pdfs/ASM手册 20_1.pdf" afterDir="false" />
       <change afterPath="$PROJECT_DIR$/data/raw_pdfs/高温合金中微量元素的作用与控制_46-49.pdf" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/run_indexing.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/run_indexing.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/config/settings.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/config/settings.yaml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/1.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/vlm_pdf_parser.py" beforeDir="false" afterPath="$PROJECT_DIR$/core/vlm_pdf_parser.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/pipeline/loader.py" beforeDir="false" afterPath="$PROJECT_DIR$/core/pipeline/loader.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -26,6 +21,7 @@
     <option name="RECENT_TEMPLATES">
       <list>
         <option value="Python Script" />
+        <option value="Python Unit Test" />
       </list>
     </option>
   </component>
@@ -58,6 +54,7 @@
   <component name="PropertiesComponent"><![CDATA[{
   "keyToString": {
     "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "Python.loader.executor": "Run",
     "Python.run_indexing.executor": "Run",
     "Python.vlm_pdf_parser.executor": "Run",
     "RunOnceActivity.ShowReadmeOnStart": "true",
@@ -97,7 +94,23 @@
       <option name="project" value="LOCAL" />
       <updated>1758250692853</updated>
     </task>
-    <option name="localTasksCounter" value="2" />
+    <task id="LOCAL-00002" summary="feat: add XML configuration for migration states and enhance PDF processing with state management">
+      <option name="closed" value="true" />
+      <created>1758266480963</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1758266480963</updated>
+    </task>
+    <task id="LOCAL-00003" summary="implement JSON text extraction and chunking process">
+      <option name="closed" value="true" />
+      <created>1758291491732</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1758291491732</updated>
+    </task>
+    <option name="localTasksCounter" value="4" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -113,6 +126,10 @@
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="feat: implement PDF processing workflow with batch job management and state persistence" />
-    <option name="LAST_COMMIT_MESSAGE" value="feat: implement PDF processing workflow with batch job management and state persistence" />
+    <MESSAGE value="add XML configuration for migration states and enhance PDF processing with state management" />
+    <MESSAGE value="add XML configuration for migration states and enhance PDF processing with state management" />
+    <MESSAGE value="feat: add XML configuration for migration states and enhance PDF processing with state management" />
+    <MESSAGE value="implement JSON text extraction and chunking process" />
+    <option name="LAST_COMMIT_MESSAGE" value="implement JSON text extraction and chunking process" />
   </component>
 </project>
