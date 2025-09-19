@@ -1,0 +1,39 @@
+# config/settings.yaml
+
+proxy: "http://127.0.0.1:7890"
+
+vlm_parser:
+  batch_size: 20
+  batch_polling_timeout_seconds: 28800 # 8 hours
+  state_file_path: "cache/processing_state.json"
+  input_dir: "data/raw_pdfs/"
+  output_dir: "data/processed_jsons/"
+
+llm:
+  provider: google
+  model: gemini-2.5-pro
+  api_key: "${GEMINI_API_KEY}"
+  batch_mode: true                 # 是否启用批处理
+  temperature: 0.1                 # 控制生成的稳定性
+  top_p: 0.9
+
+  pdf_parser:
+    input_dir: "data/raw_pdfs"
+    output_dir: "data/processed_jsons"
+    schema_path: "config/schemas.py"
+
+database:
+  graphdb:
+    type: neo4j
+    uri: "bolt://localhost:7687"
+    username: "neo4j"
+    password: "123456789"
+
+logging:
+  level: INFO                      # DEBUG / INFO / WARNING / ERROR
+  log_file: "logs/superalloyKgRAG.log"
+
+evaluation:
+  qa_pairs_path: "data/evaluation_sets/qa_pairs.csv"
+  ground_truth_path: "data/evaluation_sets/ground_truth.json"
+  metrics: ["faithfulness", "relevance", "factual_accuracy"]
