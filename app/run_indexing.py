@@ -13,7 +13,9 @@ if __name__ == "__main__":
     # 2. 使用绝对路径加载配置文件
     config_path = os.path.join(PROJECT_ROOT, "config/settings.yaml")
     with open(config_path, "r", encoding="utf-8") as f:
-        config = yaml.safe_load(f)
+        raw_config = f.read()
+        raw_config = raw_config.replace("${GEMINI_API_KEY}", os.environ.get("GEMINI_API_KEY", ""))
+        config = yaml.safe_load(raw_config)
 
     # 3. 将配置文件中所有的相对路径转换为绝对路径
     parser_cfg = config["vlm_parser"]
