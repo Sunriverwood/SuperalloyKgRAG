@@ -14,7 +14,7 @@ vlm_parser:
 llm:
   provider: google
   model: gemini-2.5-pro
-  api_key: "AIzaSyBkkwGChpkAjz1hviqOekPy7k5dskt99Lo"
+  api_key: ${GEMINI_API_KEY}
   batch_mode: true                 # 是否启用批处理
   temperature: 0.1                 # 控制生成的稳定性
   top_p: 0.9
