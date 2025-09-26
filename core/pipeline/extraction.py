@@ -8,13 +8,15 @@ import logging
 from pathlib import Path
 from typing import Dict, Any, List
 
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 # --- 配置日志记录 ---
 def setup_logging(config: Dict[str, Any]):
     """根据配置文件设置日志记录器"""
     log_config = config.get("logging", {})
     level = getattr(logging, log_config.get("level", "INFO").upper(), logging.INFO)
-    log_file = log_config.get("log_file", "logs/extraction.log")
+    relative_log_path = log_config.get("log_file", "logs/extraction.log")
+    log_file = PROJECT_ROOT / relative_log_path
 
     Path(log_file).parent.mkdir(exist_ok=True, parents=True)
 
@@ -34,17 +36,19 @@ def setup_logging(config: Dict[str, Any]):
 
 
 # --- 加载配置和 Prompt ---
-def load_config_and_prompt(settings_path: str = "settings.yaml") -> Dict[str, Any]:
+def load_config_and_prompt(settings_filename: str = "settings.yaml") -> Dict[str, Any]:
     """加载 YAML 配置文件和抽取 Prompt"""
     try:
+        settings_path = PROJECT_ROOT / settings_filename
         with open(settings_path, 'r', encoding='utf-8') as f:
             config = yaml.safe_load(f)
         logging.info("成功加载 settings.yaml 配置文件")
 
-        prompt_path = config.get("extraction", {}).get("prompt_path")
-        if not prompt_path:
+        relative_prompt_path = config.get("extraction", {}).get("prompt_path")
+        if not relative_prompt_path:
             raise ValueError("配置文件中未找到 extraction.prompt_path")
 
+        prompt_path = PROJECT_ROOT / relative_prompt_path
         with open(prompt_path, 'r', encoding='utf-8') as f:
             config["extraction"]["prompt"] = f.read()
         logging.info(f"成功加载 Prompt 文件: {prompt_path}")
@@ -62,8 +66,8 @@ def load_config_and_prompt(settings_path: str = "settings.yaml") -> Dict[str, An
 def prepare_batch_requests(config: Dict[str, Any]) -> Path:
     """从文本块创建批量请求的 JSONL 文件"""
     extraction_config = config["extraction"]
-    input_path = Path(extraction_config["input_dir"]) / extraction_config["input_filename"]
-    requests_dir = Path(extraction_config["requests_dir"])
+    input_path = PROJECT_ROOT / extraction_config["input_dir"] / extraction_config["input_filename"]
+    requests_dir = PROJECT_ROOT / extraction_config["requests_dir"]
     requests_dir.mkdir(exist_ok=True, parents=True)
     batch_request_path = requests_dir / f"batch_requests_{int(time.time())}.jsonl"
 
@@ -86,11 +90,15 @@ def prepare_batch_requests(config: Dict[str, Any]) -> Path:
                 request = {
                     "key": chunk_id,
                     "request": {
+                        "system_instruction": {
+                            "parts": [
+                                {"text": prompt_template}
+                            ]
+                        },
                         "contents": [
                             {
                                 "parts": [
-                                    {"text": prompt_template},
-                                    {"text": "\n\n**Input Text**: " + text_content}
+                                    {"text": text_content}
                                 ]
                             }
                         ],
@@ -116,7 +124,7 @@ def prepare_batch_requests(config: Dict[str, Any]) -> Path:
 # --- 主执行函数 ---
 def run_extraction():
     """执行完整的数据抽取流程"""
-    config = load_config_and_prompt(settings_path='config/settings.yaml')
+    config = load_config_and_prompt(settings_filename='config/settings.yaml')
     setup_logging(config)
 
     # 1. 配置 Gemini 客户端
@@ -198,7 +206,7 @@ def run_extraction():
             file_content = client.files.download(file=result_file_name).decode('utf-8')
 
             extraction_config = config["extraction"]
-            output_path = Path(extraction_config["output_dir"]) / extraction_config["output_filename"]
+            output_path = PROJECT_ROOT / extraction_config["output_dir"] / extraction_config["output_filename"]
             output_path.parent.mkdir(exist_ok=True, parents=True)
 
             processed_count = 0
