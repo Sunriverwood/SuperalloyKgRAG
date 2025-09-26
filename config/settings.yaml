@@ -7,7 +7,7 @@ vlm_parser:
   batch_polling_timeout_seconds: 28800 # 8 hours
   sleep_interval: 600
   parsing_prompt_path: "config/prompts/pdf_parsing.md"
-  state_file_path: "cache/processing_state.json"
+  state_file_path: "data/cache/processing_state.json"
   input_dir: "data/raw_pdfs/"
   output_dir: "data/processed_jsons/"
 
@@ -31,6 +31,12 @@ extraction:
   output_filename: "extracted_graph.jsonl"
   requests_dir: "data/cache" # 临时存放批量请求文件的目录
   prompt_path: "config/prompts/text_to_graph.md"
+
+graph_builder:
+  input_path: "data/graphs/extracted/extracted_graph.jsonl"
+  output_path: "data/graphs/final_graph.json"
+  requests_path: "data/cache/disambiguation_requests.jsonl"
+  sleep_interval: 600
 
 database:
   graphdb:
