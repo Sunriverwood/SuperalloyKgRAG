@@ -8,7 +8,7 @@ from utils.file_utils import load_prompt  # 引入 file_utils
 
 if __name__ == "__main__":
     # 1. 动态计算项目根目录
-    PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))   # 可以使用pathlib.Path替代
 
     # 2. 使用绝对路径加载配置文件
     config_path = os.path.join(PROJECT_ROOT, "config/settings.yaml")

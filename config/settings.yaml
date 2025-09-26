@@ -24,6 +24,14 @@ llm:
     output_dir: "data/processed_jsons"
     schema_path: "config/schemas.py"
 
+extraction:
+  input_dir: "data/chunks"
+  input_filename: "text_units.jsonl"
+  output_dir: "data/graphs/extracted"
+  output_filename: "extracted_graph.jsonl"
+  requests_dir: "data/cache" # 临时存放批量请求文件的目录
+  prompt_path: "config/prompts/text_to_graph.md"
+
 database:
   graphdb:
     type: neo4j
