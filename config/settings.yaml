@@ -42,11 +42,34 @@ graph_builder:
 embedding:
   model: "gemini-embedding-001"
   dimensionality: 768
+  input_text_units_path: "data/chunks/text_units.jsonl"
   input_graph_path: "data/graphs/final_graph.json"
   input_community_report_path: "data/reports/community_summaries.csv"
   output_db_path: "data/embeddings/embeddings.db"
+  output_db_text_path: "data/embeddings/text.db"
+  output_text_table_name: "text"
   requests_path: "data/cache"
   sleep_interval: 600
+
+query:
+  top_k: 5
+  generation_model: "gemini-2.5-pro"
+  temperature: 0.1
+  top_p: 0.9
+
+  text_db_path: "data/embeddings/text.db"
+  text_table_name: "text"
+  output_dir: "data/answers"
+  output_filename: "answers_text.jsonl"
+  requests_path: "data/cache"
+  sleep_interval: 600
+  basic_rag_prompt: "config/prompts/basic_rag.md"
+
+  input_graph_path: "data/graphs/final_graph.json"
+  input_community_report_path: "data/reports/community_summaries.csv"
+  embedding_db_path: "data/embeddings/embeddings.db"
+  retrieval_prompt_path: "config/prompts/retrieval_qa.md"
+  generation_prompt_path: "config/prompts/generation_qa.md"
 
 database:
   graphdb:
