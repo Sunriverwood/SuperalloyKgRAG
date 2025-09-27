@@ -22,7 +22,6 @@ llm:
   pdf_parser:
     input_dir: "data/raw_pdfs"
     output_dir: "data/processed_jsons"
-    schema_path: "config/schemas.py"
 
 extraction:
   input_dir: "data/chunks"
@@ -34,8 +33,19 @@ extraction:
 
 graph_builder:
   input_path: "data/graphs/extracted/extracted_graph.jsonl"
-  output_path: "data/graphs/final_graph.json"
-  requests_path: "data/cache/disambiguation_requests.jsonl"
+  output_graph_path: "data/graphs/final_graph.json"
+  community_reports_path: "data/reports/community_summaries.csv"
+  disambiguation_requests_path: "data/cache/disambiguation_requests.jsonl"
+  community_requests_path: "data/cache/community_detection.jsonl"
+  sleep_interval: 600
+
+embedding:
+  model: "gemini-embedding-001"
+  dimensionality: 768
+  input_graph_path: "data/graphs/final_graph.json"
+  input_community_report_path: "data/reports/community_summaries.csv"
+  output_db_path: "data/embeddings/embeddings.db"
+  requests_path: "data/cache"
   sleep_interval: 600
 
 database:

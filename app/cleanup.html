@@ -1,0 +1,88 @@
+<!doctype html>
+<meta charset="utf-8" />
+<title>Gemini Files Cleanup</title>
+<style>
+  body { font: 14px/1.4 system-ui, sans-serif; max-width: 780px; margin: 2rem auto; }
+  input, button { font: inherit; padding: .5rem .75rem; }
+  #log { white-space: pre-wrap; background: #f6f6f6; padding: 1rem; border-radius: .5rem; }
+</style>
+
+<h2>Gemini Files 清理工具</h2>
+<p>
+  API Key：
+  <input id="key" type="password" placeholder="AIza..." size="50" />
+  <button id="list">仅列出</button>
+  <button id="delete">删除全部</button>
+</p>
+<pre id="log"></pre>
+
+<script>
+const BASE = "https://generativelanguage.googleapis.com/v1beta";
+const log = (...args) => { const el = document.getElementById("log"); el.textContent += args.join(" ") + "\n"; };
+
+async function listAllFiles(apiKey) {
+  const files = [];
+  let pageToken = "";
+  do {
+    const url = new URL(`${BASE}/files`);
+    url.searchParams.set("key", apiKey);
+    url.searchParams.set("pageSize", "100");
+    if (pageToken) url.searchParams.set("pageToken", pageToken);
+
+    const resp = await fetch(url, { method: "GET" });
+    if (!resp.ok) throw new Error("files.list 失败: " + (await resp.text()));
+    const data = await resp.json();
+    (data.files || []).forEach(f => files.push(f));
+    pageToken = data.nextPageToken || "";
+  } while (pageToken);
+  return files;
+}
+
+async function deleteFile(apiKey, name) {
+  const url = new URL(`${BASE}/${encodeURIComponent(name)}`);
+  url.searchParams.set("key", apiKey);
+  const resp = await fetch(url, { method: "DELETE" });
+  if (!resp.ok) throw new Error(`${name} 删除失败: ${await resp.text()}`);
+}
+
+async function runList() {
+  const key = document.getElementById("key").value.trim();
+  if (!key) return alert("请先填写 API Key");
+  log("正在列出文件…");
+  const files = await listAllFiles(key);
+  log(`共 ${files.length} 个文件：`);
+  for (const f of files) {
+    log(`• ${f.name} | ${f.displayName || ""} | ${f.mimeType || ""} | ${f.sizeBytes || ""}`);
+  }
+  if (!files.length) log("当前没有文件。");
+}
+
+async function runDeleteAll() {
+  const key = document.getElementById("key").value.trim();
+  if (!key) return alert("请先填写 API Key");
+  if (!confirm("确定要删除当前项目下的所有文件吗？此操作不可恢复。")) return;
+
+  const files = await listAllFiles(key);
+  log(`准备删除 ${files.length} 个文件…`);
+  if (!files.length) return log("无可删除文件。");
+
+  // 简单并发控制：每批 10 个
+  const BATCH = 10;
+  let ok = 0, fail = 0;
+  for (let i = 0; i < files.length; i += BATCH) {
+    const slice = files.slice(i, i + BATCH);
+    await Promise.all(slice.map(async f => {
+      try {
+        await deleteFile(key, f.name);
+        ok++; log(`✅ 已删：${f.name}`);
+      } catch (e) {
+        fail++; log(`❌ 失败：${f.name}\n   ${e.message}`);
+      }
+    }));
+  }
+  log(`完成：成功 ${ok}，失败 ${fail}`);
+}
+
+document.getElementById("list").onclick = () => runList().catch(e => log(e.message));
+document.getElementById("delete").onclick = () => runDeleteAll().catch(e => log(e.message));
+</script>

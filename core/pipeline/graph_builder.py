@@ -10,6 +10,8 @@ import pandas as pd
 import yaml
 from google import genai
 from google.genai import types
+import leidenalg as la
+import igraph as ig
 
 from utils.client_factory import create_gemini_client
 
@@ -137,99 +139,134 @@ def create_disambiguation_prompt(node_id: str, graph: nx.DiGraph) -> str:
     """
     return prompt.strip()
 
-def create_batch_requests(graph: nx.DiGraph, model_name: str, output_path: Path) -> List[str]:
-    """创建批量请求并写入本地 JSONL 文件。"""
-    logging.info("正在创建批量消歧请求...")
-    requests, node_ids = [], list(graph.nodes())
-    for node_id in node_ids:
-        prompt = create_disambiguation_prompt(node_id, graph)
-        requests.append(
-            {"key": node_id, "request": {"model": f"models/{model_name}", "contents": {"parts": [{"text": prompt}]}}})
+
+def create_batch_requests(graph: nx.DiGraph, model_name: str, output_path: Path, request_type: str) -> int:
+    """创建批量请求并写入本地 JSONL 文件。可用于实体消歧或社区总结。"""
+    logging.info(f"正在为 '{request_type}' 创建批量请求...")
+    requests = []
+    if request_type == "disambiguation":
+        for node_id in graph.nodes():
+            prompt = create_disambiguation_prompt(node_id, graph)
+            requests.append(
+                {"key": node_id,
+                 "request": {"model": f"models/{model_name}", "contents": {"parts": [{"text": prompt}]}}})
+    elif request_type == "community_summary":
+        communities = {}
+        for node, data in graph.nodes(data=True):
+            community_id = data.get("community")
+            if community_id is not None:
+                if community_id not in communities:
+                    communities[community_id] = []
+                communities[community_id].append(data.get('name', node))
+
+        for comm_id, members in communities.items():
+            member_list = ", ".join(f"'{m}'" for m in members[:30])
+            context = f"一个知识图谱社区包含了以下实体：{member_list}..."
+            prompt = f"""
+            请基于以下社区内的实体列表，为该社区生成一个简洁、精准的主题摘要，不超过50个字。
+            摘要应该能概括这个社区的核心内容或主题。
+
+            社区实体列表（部分）:
+            {context}
+            ---
+            社区主题摘要:
+            """
+            requests.append(
+                {"key": comm_id,
+                 "request": {"model": f"models/{model_name}", "contents": {"parts": [{"text": prompt}]}}})
 
     output_path.parent.mkdir(exist_ok=True, parents=True)
     with open(output_path, "w", encoding="utf-8") as f:
         for req in requests:
             f.write(json.dumps(req, ensure_ascii=False) + '\n')
-    logging.info(f"已为 {len(requests)} 个实体生成请求，并写入到 {output_path}")
-    return node_ids
+    logging.info(f"已为 {len(requests)} 个 '{request_type}' 任务生成请求，并写入到 {output_path}")
+    return len(requests)
 
-def submit_and_monitor_job(client: genai.Client, input_file_path: Path, model_name: str, sleep_interval: int) -> Any:
+
+def submit_and_monitor_job(client: genai.Client, input_file_path: Path, model_name: str, sleep_interval: int,
+                           job_type: str) -> Any:
     """上传文件，创建并监控批量作业。"""
-    logging.info(f"📤 正在上传请求文件: {input_file_path.name}...")
+    logging.info(f"📤 [{job_type}] 正在上传请求文件: {input_file_path.name}...")
     try:
         uploaded_file = client.files.upload(
             file=str(input_file_path),
             config={
-                "display_name": f'graph-batch-{input_file_path.stem}',
+                "display_name": f'{job_type}-batch-{input_file_path.stem}',
                 "mime_type": 'application/jsonl'
             }
         )
-        logging.info(f"✅ 文件上传成功: {uploaded_file.name}")
+        logging.info(f"✅ [{job_type}] 文件上传成功: {uploaded_file.name}")
     except Exception as e:
-        logging.error(f"❌ 文件上传失败: {e}")
-        return None, None
+        logging.error(f"❌ [{job_type}] 文件上传失败: {e}")
+        return None
 
-    logging.info(f"🚀 正在使用模型 '{model_name}' 创建批量作业...")
+    logging.info(f"🚀 [{job_type}] 正在使用模型 '{model_name}' 创建批量作业...")
     try:
         batch_job = client.batches.create(
             model=f"models/{model_name}",
             src=uploaded_file.name,
             config={
-                'display_name': f"graph-job-{input_file_path.stem}",
+                'display_name': f"{job_type}-job-{input_file_path.stem}",
             },
         )
-        logging.info(f"✅ 批量作业已创建: {batch_job.name}")
+        logging.info(f"✅ [{job_type}] 批量作业已创建: {batch_job.name}")
     except Exception as e:
-        logging.error(f"❌ 创建批量作业失败: {e}")
-        return None, uploaded_file
+        logging.error(f"❌ [{job_type}] 创建批量作业失败: {e}")
+        client.files.delete(name=uploaded_file.name)  # 清理已上传的文件
+        return None
 
     job_name = batch_job.name
     completed_states = {'JOB_STATE_SUCCEEDED', 'JOB_STATE_FAILED', 'JOB_STATE_CANCELLED', 'JOB_STATE_EXPIRED'}
 
-    logging.info(f"⏳ 开始轮询作业 '{job_name}' 状态，每 {sleep_interval} 秒检查一次...")
+    logging.info(f"⏳ [{job_type}] 开始轮询作业 '{job_name}' 状态，每 {sleep_interval} 秒检查一次...")
     while True:
         try:
             batch_job_status = client.batches.get(name=job_name)
             current_state = batch_job_status.state.name
-            logging.info(f"  - 当前状态: {current_state}")
+            logging.info(f"  - [{job_type}] 当前状态: {current_state}")
             if current_state in completed_states:
                 break
             time.sleep(sleep_interval)
         except Exception as e:
-            logging.error(f"  - 轮询失败: {e}")
-            time.sleep(sleep_interval * 2)  # 发生错误时延长等待时间
+            logging.error(f"  - [{job_type}] 轮询失败: {e}")
+            time.sleep(sleep_interval * 2)
 
-    return batch_job_status, uploaded_file
+    return batch_job_status
+
 
 def process_results(batch_job_status: Any, client: genai.Client) -> Dict[str, str]:
     """下载并处理批量作业的结果。"""
-    if batch_job_status.state.name != 'JOB_STATE_SUCCEEDED':
-        logging.error(f"❌ 作业失败: {batch_job_status.error}")
+    if not batch_job_status or batch_job_status.state.name != 'JOB_STATE_SUCCEEDED':
+        logging.error(f"❌ 作业失败，无法处理结果。")
+        if batch_job_status: logging.error(f"  - 失败原因: {batch_job_status.error}")
         return {}
 
-    new_descriptions = {}
+    results_dict = {}
     result_file_name = batch_job_status.dest.file_name
     logging.info(f"📥 正在下载结果文件: {result_file_name}")
-    file_content = client.files.download(file=result_file_name).decode('utf-8')
-
-    processed_count, error_count = 0, 0
-    for line in file_content.strip().split('\n'):
-        try:
-            result = json.loads(line)
-            node_id = result.get("key")
-            if node_id and result.get("response"):
-                text = result["response"]["candidates"][0]["content"]["parts"][0]["text"]
-                new_descriptions[node_id] = text.strip()
-                processed_count += 1
-            elif result.get("error"):
-                logging.error(f"  - ❌ 处理 ID '{node_id}' 时发生错误: {result['error']['message']}")
+    try:
+        file_content = client.files.download(file=result_file_name).decode('utf-8')
+        processed_count, error_count = 0, 0
+        for line in file_content.strip().split('\n'):
+            try:
+                result = json.loads(line)
+                key = result.get("key")
+                if key and result.get("response"):
+                    text = result["response"]["candidates"][0]["content"]["parts"][0]["text"]
+                    results_dict[key] = text.strip()
+                    processed_count += 1
+                elif result.get("error"):
+                    logging.error(f"  - ❌ 处理 ID '{key}' 时发生错误: {result['error']['message']}")
+                    error_count += 1
+            except (json.JSONDecodeError, KeyError, IndexError) as e:
+                logging.warning(f"  - ⚠️ 解析结果行失败: '{line}', 错误: {e}")
                 error_count += 1
-        except (json.JSONDecodeError, KeyError, IndexError) as e:
-            logging.warning(f"  - ⚠️ 解析结果行失败: '{line}', 错误: {e}")
-            error_count += 1
+        logging.info(f"🎉 结果处理完成！成功获取 {processed_count} 条记录，失败 {error_count} 条。")
+    except Exception as e:
+        logging.error(f"❌ 下载或处理结果文件失败: {e}")
+        return {}
 
-    logging.info(f"🎉 结果处理完成！成功获取 {processed_count} 条描述，失败 {error_count} 条。")
-    return new_descriptions
+    return results_dict
 
 
 def update_graph_with_new_descriptions(graph: nx.DiGraph, new_descriptions: Dict[str, str]):
@@ -244,6 +281,37 @@ def update_graph_with_new_descriptions(graph: nx.DiGraph, new_descriptions: Dict
     logging.info(f"成功更新了 {updated_count} 个节点的描述。")
 
 
+# --- 社区发现与总结 ---
+def detect_communities(graph: nx.DiGraph) -> nx.DiGraph:
+    """使用Leiden算法进行社区发现并标注图谱"""
+    logging.info("开始执行社区发现 (Leiden 算法)...")
+    if not graph.edges:
+        logging.warning("图中没有边，无法进行社区发现。")
+        return graph
+
+    undirected_graph = graph.to_undirected()
+    igraph_graph = ig.Graph.from_networkx(undirected_graph)
+    partition = la.find_partition(igraph_graph, la.ModularityVertexPartition)
+    logging.info(f"社区发现完成！共发现 {len(partition)} 个社区。")
+
+    node_mapping = {i: name for i, name in enumerate(igraph_graph.vs["_nx_name"])}
+    community_map = {node_mapping[node_index]: str(community_id) for community_id, community in enumerate(partition) for
+                     node_index in community}
+
+    nx.set_node_attributes(graph, community_map, "community")
+    logging.info("已将社区ID标注到图谱节点。")
+    return graph
+
+
+def save_community_reports(reports: Dict[str, str], output_path: Path):
+    """将社区报告保存为CSV文件"""
+    output_path.parent.mkdir(exist_ok=True, parents=True)
+    df = pd.DataFrame(list(reports.items()), columns=['community_id', 'summary'])
+    df.to_csv(output_path, index=False, encoding='utf-8')
+    logging.info(f"💾 社区报告已保存至: {output_path}")
+
+
+# --- 保存最终结果 ---
 def save_final_graph(graph: nx.DiGraph, output_path: Path):
     """将最终的图谱保存到文件。"""
     output_path.parent.mkdir(exist_ok=True, parents=True)
@@ -262,38 +330,59 @@ def main():
 
     # --- 1. 初始化客户端 ---
     api_key = os.getenv("GEMINI_API_KEY") or config["llm"]["api_key"]
-    proxy = config["proxy"]
+    proxy = config.get("proxy")
     client = create_gemini_client(api_key, proxy)
     sleep_interval = config["graph_builder"]["sleep_interval"]
+    model_name = config["llm"]["model"]
     logging.info("Gemini 客户端初始化完成。")
 
     # --- 2. 加载和构建初始图 ---
     input_path = PROJECT_ROOT / config["graph_builder"]["input_path"]
     graph = load_and_build_initial_graph(input_path)
     if not graph.nodes:
-        logging.error("图为空，无法继续。请检查输入文件。")
+        logging.error("图为空，流程终止。请检查输入文件。")
         return
 
-    # --- 3. 创建批量请求 ---
-    model_name = config["llm"]["model"]
-    requests_path = PROJECT_ROOT / config["graph_builder"]["requests_path"]
-    create_batch_requests(graph, model_name, requests_path)
+    # --- 3. 实体消歧 ---
+    logging.info("--- 开始执行阶段1: 实体消歧 ---")
+    disambiguation_requests_path = PROJECT_ROOT / config["graph_builder"]["disambiguation_requests_path"]
+    create_batch_requests(graph, model_name, disambiguation_requests_path, "disambiguation")
 
-    # --- 4. 提交并监控作业 ---
-    batch_job, input_file = submit_and_monitor_job(client, requests_path, model_name, sleep_interval)
+    disambiguation_job = submit_and_monitor_job(client, disambiguation_requests_path, model_name, sleep_interval,
+                                                "Disambiguation")
+    new_descriptions = process_results(disambiguation_job, client)
 
-    # --- 5. 处理结果 ---
-    new_descriptions = process_results(batch_job, client)
-
-    # --- 6. 更新并保存最终图谱 ---
     if new_descriptions:
         update_graph_with_new_descriptions(graph, new_descriptions)
-        output_path = PROJECT_ROOT / config["graph_builder"]["output_path"]
-        save_final_graph(graph, output_path)
     else:
         logging.warning("未能获取任何新的实体描述，图谱未更新。")
+    logging.info("--- 实体消歧阶段完成 ---")
 
-    logging.info("图构建与实体消歧流程全部完成！")
+    # --- 4. 社区发现与总结 ---
+    logging.info("--- 开始执行阶段2: 社区发现与总结 ---")
+    graph_with_communities = detect_communities(graph)
+
+    community_requests_path = PROJECT_ROOT / config["graph_builder"]["community_requests_path"]
+    num_communities = create_batch_requests(graph_with_communities, model_name, community_requests_path,
+                                            "community_summary")
+
+    if num_communities > 0:
+        community_job = submit_and_monitor_job(client, community_requests_path, model_name, sleep_interval,
+                                               "CommunitySummary")
+        community_summaries = process_results(community_job, client)
+
+        if community_summaries:
+            reports_path = PROJECT_ROOT / config["graph_builder"]["community_reports_path"]
+            save_community_reports(community_summaries, reports_path)
+    else:
+        logging.warning("图中未发现社区，跳过摘要生成步骤。")
+    logging.info("--- 社区发现与总结阶段完成 ---")
+
+    # --- 5. 保存最终图谱 ---
+    final_graph_path = PROJECT_ROOT / config["graph_builder"]["output_graph_path"]
+    save_final_graph(graph_with_communities, final_graph_path)
+
+    logging.info("🎉🎉🎉 图谱构建与增强流程全部完成！ 🎉🎉🎉")
 
 
 if __name__ == "__main__":
