@@ -140,7 +140,7 @@ def create_disambiguation_prompt(node_id: str, graph: nx.DiGraph) -> str:
     return prompt.strip()
 
 
-def create_batch_requests(graph: nx.DiGraph, model_name: str, output_path: Path, request_type: str) -> int:
+def create_batch_requests(graph: nx.DiGraph, model_name: str, output_path: Path, request_type: str, entities_num: int = None) -> int:
     """创建批量请求并写入本地 JSONL 文件。可用于实体消歧或社区总结。"""
     logging.info(f"正在为 '{request_type}' 创建批量请求...")
     requests = []
@@ -160,7 +160,9 @@ def create_batch_requests(graph: nx.DiGraph, model_name: str, output_path: Path,
                 communities[community_id].append(data.get('name', node))
 
         for comm_id, members in communities.items():
-            member_list = ", ".join(f"'{m}'" for m in members[:30])
+            if entities_num is None or entities_num <= 0:
+                entities_num = 50
+            member_list = ", ".join(f"'{m}'" for m in members[:entities_num])
             context = f"一个知识图谱社区包含了以下实体：{member_list}..."
             prompt = f"""
             请基于以下社区内的实体列表，为该社区生成一个简洁、精准的主题摘要，不超过50个字。
@@ -364,7 +366,7 @@ def main():
 
     community_requests_path = PROJECT_ROOT / config["graph_builder"]["community_requests_path"]
     num_communities = create_batch_requests(graph_with_communities, model_name, community_requests_path,
-                                            "community_summary")
+                                            "community_summary", config["graph_builder"]["community_summary_used_entities_num"])
 
     if num_communities > 0:
         community_job = submit_and_monitor_job(client, community_requests_path, model_name, sleep_interval,

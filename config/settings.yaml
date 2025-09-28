@@ -38,6 +38,7 @@ graph_builder:
   disambiguation_requests_path: "data/cache/disambiguation_requests.jsonl"
   community_requests_path: "data/cache/community_detection.jsonl"
   sleep_interval: 600
+  community_summary_used_entities_num: 50
 
 embedding:
   model: "gemini-embedding-001"
@@ -56,6 +57,7 @@ query:
   generation_model: "gemini-2.5-pro"
   temperature: 0.1
   top_p: 0.9
+  search_config: "False" # allow_general_knowledge or not
 
   text_db_path: "data/embeddings/text.db"
   text_table_name: "text"
@@ -69,8 +71,6 @@ query:
   global_table_name: "communities"
   local_table_name: "entities"
   prompt_dir: "config/prompts"
-  global_retrieval_path: "config/prompts/global_retrieval.md"
-  global_generation_path: "config/prompts/global_generation.md"
 
   input_graph_path: "data/graphs/final_graph.json"
   input_community_report_path: "data/reports/community_summaries.csv"
