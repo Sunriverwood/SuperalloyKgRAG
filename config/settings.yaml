@@ -65,11 +65,15 @@ query:
   sleep_interval: 600
   basic_rag_prompt: "config/prompts/basic_rag.md"
 
+  embedding_db_path: "data/embeddings/embeddings.db"
+  global_table_name: "communities"
+  local_table_name: "entities"
+  prompt_dir: "config/prompts"
+  global_retrieval_path: "config/prompts/global_retrieval.md"
+  global_generation_path: "config/prompts/global_generation.md"
+
   input_graph_path: "data/graphs/final_graph.json"
   input_community_report_path: "data/reports/community_summaries.csv"
-  embedding_db_path: "data/embeddings/embeddings.db"
-  retrieval_prompt_path: "config/prompts/retrieval_qa.md"
-  generation_prompt_path: "config/prompts/generation_qa.md"
 
 database:
   graphdb:
