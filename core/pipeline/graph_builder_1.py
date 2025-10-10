@@ -172,11 +172,12 @@ def build_community_context(
     candidate_edges = []
     for u, v, edata in graph.edges(data=True):
         if u in member_set and v in member_set:
-            rel = edata.get("relation") or edata.get("rel_type") or "related_to"
+            rel = edata.get("relationship") or edata.get("relation") or edata.get("rel_type") or "related_to"
             imp = edata.get("composite_importance")
             # 为了排序和去重的稳定性，规范端点顺序
             a, b = (u, v) if str(u) <= str(v) else (v, u)
-            candidate_edges.append((a, b, rel, imp))
+            rel_id = edata.get("id")
+            candidate_edges.append((a, b, rel, imp, rel_id))
 
     if not candidate_edges:
         # 没有社区内边，则仅输出实体列表（按度数粗排）
@@ -202,7 +203,7 @@ def build_community_context(
     # 3) 基于“已选关系”确定节点优先级
     #    频次（在 top_edges 中的出现次数）为主；社区内度数为辅
     freq = Counter()
-    for a, b, _, _ in top_edges:
+    for a, b, _, _, _ in top_edges:
         freq[a] += 1
         freq[b] += 1
 
@@ -216,7 +217,7 @@ def build_community_context(
 
     # 参与了已选关系的节点集合
     involved_nodes = set()
-    for a, b, _, _ in top_edges:
+    for a, b, _, _, _ in top_edges:
         involved_nodes.add(a)
         involved_nodes.add(b)
 
@@ -230,27 +231,28 @@ def build_community_context(
     selected_nodes_set = set(selected_nodes)
 
     # 4) 过滤关系：仅保留端点都落在“最终实体集合”内的 top_edges
-    filtered_edges = [(a, b, rel, imp) for (a, b, rel, imp) in top_edges
+    filtered_edges = [(a, b, rel, imp, rel_id) for (a, b, rel, imp, rel_id) in top_edges
                       if a in selected_nodes_set and b in selected_nodes_set]
 
     # 如果由于实体截断导致一个关系都不剩，可以放宽到“至少一端在实体内”，再取前N，尽量不空
     if not filtered_edges:
-        relaxed_edges = [(a, b, rel, imp) for (a, b, rel, imp) in top_edges
+        relaxed_edges = [(a, b, rel, imp, rel_id) for (a, b, rel, imp, rel_id) in top_edges
                          if (a in selected_nodes_set or b in selected_nodes_set)]
         filtered_edges = relaxed_edges[:max_relationships]
 
     # 5) 渲染文本
     def label(nid: Any) -> str:
-        return graph.nodes[nid].get("name") or str(nid)
+        nm = graph.nodes[nid].get("name")
+        return f"{nm} ({nid})" if nm else str(nid)
 
     entity_lines = [f"- {label(n)}" for n in selected_nodes]
 
     rel_lines = []
-    for a, b, rel, imp in filtered_edges:
+    for a, b, rel, imp, rel_id in filtered_edges:
         if include_importance and isinstance(imp, (int, float)):
-            rel_lines.append(f"- {label(a)} -[{rel} | score={imp}]-> {label(b)}")
+            rel_lines.append(f"- {label(a)} -[{rel} | score={imp} | id={rel_id}]-> {label(b)}")
         else:
-            rel_lines.append(f"- {label(a)} -[{rel}]-> {label(b)}")
+            rel_lines.append(f"- {label(a)} -[{rel} | id={rel_id}]-> {label(b)}")
 
     # 6) 输出
     parts = ["Entities:", "\n".join(entity_lines) if entity_lines else "",
@@ -264,10 +266,10 @@ def create_batch_requests(
         model_name: str,
         output_path: Path,
         request_type: str,
-        prompt_dir: str,
-        max_report_words: str,
-        max_relationships: int = None,
-        max_entities: int = None) -> int:
+        prompt_dir: str | None = None,
+        max_report_words: str | None = None,
+        max_relationships: int | None = None,
+        max_entities: int | None = None) -> int:
     """创建批量请求并写入本地 JSONL 文件。可用于实体消歧或社区总结。"""
     logging.info(f"正在为 '{request_type}' 创建批量请求...")
     requests = []
@@ -284,16 +286,14 @@ def create_batch_requests(
             if community_id is not None:
                 if community_id not in communities:
                     communities[community_id] = []
-                communities[community_id].append(data.get('name', node))
+                communities[community_id].append(node)
 
         for comm_id, members in communities.items():
-            if max_entities is None or max_entities <= 0:
-                max_entities = 25
-            if max_relationships is None or max_relationships <= 0:
-                max_relationships = 50
+            _max_entities = 25 if (max_entities is None or max_entities <= 0) else max_entities
+            _max_relationships = 50 if (max_relationships is None or max_relationships <= 0) else max_relationships
 
             community_prompt = Template(load_prompt(prompt_dir, "community_summary.md"))
-            context= build_community_context(graph, members, max_entities, max_relationships)
+            context = build_community_context(graph, members, _max_entities, _max_relationships)
             prompt = community_prompt.substitute(max_report_len=max_report_words, context=context)
 
             requests.append(
@@ -470,8 +470,11 @@ def main():
     client = create_gemini_client(api_key, proxy)
     sleep_interval = config["graph_builder"]["sleep_interval"]
     model_name = config["llm"]["model"]
-    prompt_dir= config["graph_builder"]["prompt_dir"]
-    weight_alpha= config["graph_builder"]["community_importance_weight_alpha"]
+    prompt_dir = config["graph_builder"]["prompt_dir"]
+    weight_alpha = config["graph_builder"]["community_importance_weight_alpha"]
+    max_report_words = str(config["graph_builder"].get("community_summary_max_report_words", 800))
+    max_entities = int(config["graph_builder"].get("community_summary_used_entities_num", 25))
+    max_relationships = int(config["graph_builder"].get("community_summary_used_relationships_num", 50))
     logging.info("Gemini 客户端初始化完成。")
 
     # --- 2. 加载和构建初始图 ---
@@ -484,7 +487,7 @@ def main():
     # --- 3. 实体消歧 ---
     logging.info("--- 开始执行阶段1: 实体消歧 ---")
     disambiguation_requests_path = PROJECT_ROOT / config["graph_builder"]["disambiguation_requests_path"]
-    create_batch_requests(graph, model_name, disambiguation_requests_path, "disambiguation")
+    create_batch_requests(graph=graph, model_name=model_name, output_path=disambiguation_requests_path, request_type="disambiguation")
 
     disambiguation_job = submit_and_monitor_job(client, disambiguation_requests_path, model_name, sleep_interval,
                                                 "Disambiguation")
@@ -501,8 +504,16 @@ def main():
     graph_with_communities = detect_communities(graph,weight_alpha)
 
     community_requests_path = PROJECT_ROOT / config["graph_builder"]["community_requests_path"]
-    num_communities = create_batch_requests(graph_with_communities, model_name, community_requests_path,
-                                            "community_summary", config["graph_builder"]["community_summary_used_entities_num"])
+    num_communities = create_batch_requests(
+        graph=graph_with_communities,
+        model_name=model_name,
+        output_path=community_requests_path,
+        request_type="community_summary",
+        prompt_dir=prompt_dir,
+        max_report_words=max_report_words,
+        max_relationships=max_relationships,
+        max_entities=max_entities,
+    )
 
     if num_communities > 0:
         community_job = submit_and_monitor_job(client, community_requests_path, model_name, sleep_interval,
