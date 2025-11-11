@@ -225,6 +225,61 @@ def manage_batch_jobs(client):
 
 
 # ================================
+# 4. 查看最近批处理作业详情
+# ================================
+def list_recent_batch_jobs(client):
+    """
+    列出最近的批处理作业，包括内联作业和基于文件的作业详情。
+    """
+    print("\n" + "=" * 50)
+    print("📋 最近批处理作业列表")
+    print("=" * 50)
+    print("🔍 正在获取最近 10 个批处理作业...\n")
+
+    try:
+        batches = client.batches.list(config={'page_size': 10})
+
+        job_count = 0
+        for b in batches.page:
+            job_count += 1
+            print(f"作业名称: {b.name}")
+            print(f"  - 显示名称: {b.display_name}")
+            print(f"  - 状态: {b.state.name}")
+            print(f"  - 创建时间: {b.create_time.strftime('%Y-%m-%d %H:%M:%S')}")
+
+            # 检查是否为内联作业（无目标文件）
+            if b.dest is not None:
+                if not b.dest.file_name:
+                    full_job = client.batches.get(name=b.name)
+                    if full_job.inlined_responses:
+                        print(f"  - 类型: 内联作业 ({len(full_job.inlined_responses)} 个响应)")
+                else:
+                    print(f"  - 类型: 基于文件 (输出: {b.dest.file_name})")
+
+            print("-" * 20)
+
+        if job_count == 0:
+            print("✅ 未找到任何批处理作业。")
+        else:
+            print(f"\n✅ 共显示 {job_count} 个批处理作业。")
+
+    except Exception as e:
+        print(f"🔥 获取批处理作业列表时发生错误: {e}")
+
+# ================================
+# 5.删除指定批处理作业
+# ================================
+
+def cancel_batch_job(client):
+    job_to_cancel_name = input("请输入要取消的批处理作业名称（如 batches/your-job-name-here）: ").strip()
+    try:
+        print(f"正在尝试取消作业: {job_to_cancel_name}")
+        client.batches.cancel(name=job_to_cancel_name)
+        print("作业取消请求已发送。")
+    except Exception as e:
+        print(f"取消作业时出错: {e}")
+
+# ================================
 # 主程序入口
 # ================================
 def main():
@@ -247,8 +302,10 @@ def main():
         print("1. 管理已上传的文件 (不含作业结果)")
         print("2. 管理作业结果文件 (列出和批量删除)")
         print("3. 管理批处理作业 (查找并终止超时作业)")
-        print("4. 退出")
-        choice = input("请输入您的选择 (1, 2, 3, 或 4): ")
+        print("4. 查看最近批处理作业详情")
+        print("5. 取消指定批处理作业")
+        print("6. 退出")
+        choice = input("请输入您的选择 (1, 2, 3, 4, 5, 或 6): ")
 
         if choice == '1':
             manage_uploaded_files(client)
@@ -257,10 +314,14 @@ def main():
         elif choice == '3':
             manage_batch_jobs(client)
         elif choice == '4':
+            list_recent_batch_jobs(client)
+        elif choice == '5':
+            cancel_batch_job(client)
+        elif choice == '6':
             print("👋 再见！")
             break
         else:
-            print("❌ 无效选择，请输入 1, 2, 3, 或 4。")
+            print("❌ 无效选择，请输入 1, 2, 3, 4, 5 或 6。")
 
 
 if __name__ == "__main__":
