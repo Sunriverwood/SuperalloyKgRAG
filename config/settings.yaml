@@ -33,12 +33,24 @@ extraction:
 
 graph_builder:
   input_path: "data/graphs/extracted/extracted_graph.jsonl"
+  disambiguation_graph_path: "data/graphs/disambiguation_graph.json"
+  merge_graph_path: "data/graphs/merged_graph.json"
   output_graph_path: "data/graphs/final_graph.json"
-  community_reports_path: "data/reports/community_summaries.csv"
+  community_reports_path: "data/reports/community_summaries.jsonl"
   disambiguation_requests_path: "data/cache/disambiguation_requests.jsonl"
+  embedding_requests_path: "data/cache/entities_embedding_requests.jsonl"
+  merge_requests_path: "data/cache/entities_merge_requests.jsonl"
   community_requests_path: "data/cache/community_detection.jsonl"
+  prompt_dir: "config/prompts"
+
   sleep_interval: 600
-  community_summary_used_entities_num: 50
+  community_summary_max_report_words: 1000
+  community_summary_used_entities_num: 25
+  community_summary_used_relationships_num: 50
+  community_importance_weight_alpha: 0.6 # 重要性权重的alpha值
+  enable_entity_merge: True
+  entity_merge_topk: 10
+  entity_merge_min_sim: 0.82
 
 embedding:
   model: "gemini-embedding-001"
