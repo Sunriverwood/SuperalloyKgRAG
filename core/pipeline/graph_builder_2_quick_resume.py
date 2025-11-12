@@ -21,7 +21,7 @@ import sys
 from pathlib import Path
 
 # 添加项目根目录到路径
-PROJECT_ROOT = Path(__file__).resolve().parents[3]
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(PROJECT_ROOT))
 
 import json
@@ -38,10 +38,12 @@ from utils.client_factory import create_gemini_client
 DISAMBIGUATION_JOB_ID = "batches/lvrc1rylh8kv0ugjvh9zfods3fh6djk6yi63"  # 已知的消歧作业ID
 EMBEDDING_JOB_ID = "batches/vzi891d2d5qoese284prt86d5wye2vz0vens"  # 实际的嵌入作业ID
 ENTITY_MERGE_JOB_ID = "batches/ee8eeksp53mo4aucnk2kkvzkt6ph9pe5825i"  # 实体合并作业ID
+COMMUNITY_DISCOVERY_JOB_ID = "batches/yk8lodp5t1z14r5ez3dqzvdbthgkiqjf05jf"  # 社区发现作业ID
 
 # 如果你不知道某个作业ID，设置为 None，脚本会尝试查找或执行该步骤
 # EMBEDDING_JOB_ID = None
 # ENTITY_MERGE_JOB_ID = None
+# COMMUNITY_DISCOVERY_JOB_ID = None
 # ==================================================
 
 def setup_logging():
@@ -273,13 +275,41 @@ def main():
         logging.warning("⚠️  向量数据不足，跳过实体合并")
 
     # 社区发现
-    logging.info("\n步骤6: 执行社区发现...")
+    logging.info("\n步骤6: 执行/恢复社区发现...")
+
+    # 先执行社区检测（Leiden算法）- 这是必需的，为图节点添加community属性
+    logging.info("执行社区检测（Leiden算法）...")
     graph = detect_communities(graph, weight_alpha)
 
-    # 社区摘要
-    logging.info("\n步骤7: 生成社区摘要...")
-    summaries = run_community_summaries(client, graph, model_name, prompt_dir,
-                                       config, sleep_interval, community_requests_path)
+    # 社区摘要 - 尝试从云端恢复已完成的作业
+    logging.info("\n步骤7: 执行/恢复社区摘要生成...")
+    summaries = None
+
+    if COMMUNITY_DISCOVERY_JOB_ID and COMMUNITY_DISCOVERY_JOB_ID != "None":
+        logging.info(f"从作业 {COMMUNITY_DISCOVERY_JOB_ID} 恢复社区摘要结果...")
+        try:
+            community_job = client.batches.get(name=COMMUNITY_DISCOVERY_JOB_ID)
+            logging.info(f"作业状态: {community_job.state.name}")
+
+            if community_job.state.name == 'JOB_STATE_SUCCEEDED':
+                logging.info("✅ 作业已完成，正在下载社区摘要结果...")
+                summaries = process_results(community_job, client)
+
+                if summaries:
+                    logging.info(f"✅ 成功恢复 {len(summaries)} 个社区摘要")
+                else:
+                    logging.warning("⚠️  未获取到社区摘要结果")
+            else:
+                logging.warning(f"⚠️  作业状态不是成功: {community_job.state.name}")
+        except Exception as e:
+            logging.error(f"❌ 从云端恢复社区摘要失败: {e}")
+            logging.info("将尝试重新生成社区摘要...")
+
+    # 如果没有从云端恢复成功，则执行新的摘要生成流程
+    if not summaries:
+        logging.info("执行新的社区摘要生成流程...")
+        summaries = run_community_summaries(client, graph, model_name, prompt_dir,
+                                           config, sleep_interval, community_requests_path)
 
     # 保存结果
     logging.info("\n步骤8: 保存最终结果...")
