@@ -7,8 +7,6 @@ from datetime import datetime, timedelta
 from google.genai import types
 from google.api_core import exceptions  # 引入特定的异常类型
 
-from utils.state_manager import load_state, save_state
-from utils.file_utils import list_pdfs, save_json, load_prompt
 from utils.client_factory import create_gemini_client
 
 
@@ -40,14 +38,26 @@ class VLMPdfParser:
         self.state = initial_state
         self.instructions = instructions
 
+    def list_pdfs(self, pdf_folder: str):
+        return {f for f in os.listdir(pdf_folder) if f.lower().endswith(".pdf")}
+
+    def save_json(self, data: dict, path: str):
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+
+    def save_state(self, state: dict, state_file: str):
+        os.makedirs(os.path.dirname(state_file), exist_ok=True)
+        with open(state_file, 'w', encoding='utf-8') as f:
+            json.dump(state, f, indent=2, ensure_ascii=False)
+
     # -------- 文件上传 --------
     def upload_files(self):
         self.logger.info("[阶段1] 文件发现与上传...")
-        current_pdfs = list_pdfs(self.pdf_folder)
+        current_pdfs = self.list_pdfs(self.pdf_folder)
         for pdf_file in current_pdfs:
             if pdf_file not in self.state:
                 self.state[pdf_file] = {"status": "pending_upload"}
-        save_state(self.state, self.state_file)
+        self.save_state(self.state, self.state_file)
 
         for pdf_file, data in self.state.items():
             if data["status"] == "pending_upload":
@@ -64,7 +74,7 @@ class VLMPdfParser:
                     self.state[pdf_file].update({"status": "failed_upload", "error": str(e)})
                     self.logger.error(f"上传失败 {pdf_file}: {e}")
                 finally:
-                    save_state(self.state, self.state_file)
+                    self.save_state(self.state, self.state_file)
 
     # -------- 批处理作业 --------
     def create_batch_jobs(self):
@@ -116,7 +126,7 @@ class VLMPdfParser:
                     self.state[pdf].update({"status": "failed_job_creation", "error": str(e)})
                 self.logger.error(f"❌ 批处理作业创建失败 {job_name}: {e}")
             finally:
-                save_state(self.state, self.state_file)
+                self.save_state(self.state, self.state_file)
                 if os.path.exists(tmp_file):
                     os.remove(tmp_file)
 
@@ -178,7 +188,7 @@ class VLMPdfParser:
 
             if finished_jobs:
                 active_jobs -= finished_jobs
-                save_state(self.state, self.state_file)
+                self.save_state(self.state, self.state_file)
 
             if active_jobs:
                 self.logger.info(f"仍有 {len(active_jobs)} 个作业在运行中，将在 {sleep_interval // 60}分钟后再次检查...")
@@ -213,7 +223,7 @@ class VLMPdfParser:
                         text = result["response"]["candidates"][0]["content"]["parts"][0]["text"]
                         cleaned = text.strip().replace("```json", "").replace("```", "").strip()
                         data = json.loads(cleaned)
-                        save_json(data, output_file)
+                        self.save_json(data, output_file)
                         self.state[key].update({"status": "completed", "output_path": output_file})
                         self.logger.info(f"    - ✅ 成功: '{key}' 的结果已保存到 {output_file}")
                     except (KeyError, IndexError, json.JSONDecodeError) as e:
