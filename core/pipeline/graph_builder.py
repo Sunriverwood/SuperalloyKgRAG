@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import re
 import time
 from pathlib import Path
 from typing import Dict, Any, List, Tuple
@@ -67,6 +68,48 @@ def load_prompt(prompt_dir: str, filename: str) -> str:
     if not p.exists():
         raise FileNotFoundError(f"Prompt文件未找到: {p}")
     return p.read_text(encoding='utf-8')
+
+# =========================
+# ID规范化工具
+# =========================
+
+def normalize_entity_id(entity_id: str) -> str:
+    """
+    规范化实体ID，将下划线统一转换为连字符。
+    用于处理历史遗留数据（使用_）和新数据（使用-）的兼容性问题。
+
+    例如：chunk-71d90a3f3b4c2a7f57191246fa17a016_e-1 -> chunk-71d90a3f3b4c2a7f57191246fa17a016-e-1
+    """
+    if not entity_id:
+        return entity_id
+    return str(entity_id).replace('_', '-')
+
+def try_find_node_with_normalization(G: nx.DiGraph, entity_id: str) -> str | None:
+    """
+    尝试在图中查找节点，支持ID规范化。
+    首先尝试原始ID，如果找不到则尝试规范化后的ID。
+
+    返回：图中实际存在的节点ID，如果都不存在则返回None
+    """
+    if G.has_node(entity_id):
+        return entity_id
+
+    # 尝试规范化后的ID
+    normalized_id = normalize_entity_id(entity_id)
+    if normalized_id != entity_id and G.has_node(normalized_id):
+        return normalized_id
+
+    # 反向尝试：如果输入是规范化的，尝试带下划线的版本
+    if '-e-' in entity_id:
+        # 尝试将最后一个 -e- 替换为 _e-
+        parts = entity_id.rsplit('-e-', 1)
+        if len(parts) == 2:
+            reverse_id = f"{parts[0]}_e-{parts[1]}"
+            if G.has_node(reverse_id):
+                return reverse_id
+
+    return None
+
 
 # =========================
 # 阶段0：加载与初始图构建
@@ -191,13 +234,22 @@ def create_batch_requests(
         _max_entities = 25 if not max_entities or max_entities <= 0 else max_entities
         _max_relationships = 50 if not max_relationships or max_relationships <= 0 else max_relationships
 
+        # 保存所有社区的ID映射
+        all_id_maps: Dict[str, Dict[str, str]] = {}
+
         for comm_id, members in communities.items():
-            context = build_community_context(graph, members, _max_entities, _max_relationships)
+            context, id_map = build_community_context(graph, members, _max_entities, _max_relationships)
             prompt = community_prompt.substitute(max_report_len=max_report_words or "1000", context=context)
             requests.append({"key": comm_id, "request": {"model": f"models/{model_name}", "contents": {"parts": [{"text": prompt}]}}})
+            all_id_maps[comm_id] = id_map
+
+        # 将ID映射保存到与请求文件同目录的JSON文件
+        id_map_path = output_path.parent / f"{output_path.stem}_id_maps.json"
+        with open(id_map_path, 'w', encoding='utf-8') as f:
+            json.dump(all_id_maps, f, ensure_ascii=False, indent=2)
+        logging.info(f"社区ID映射已保存至: {id_map_path}")
 
     elif request_type == "entity_merge":
-        # 该分支仅由 create_entity_merge_requests 使用
         raise RuntimeError("请使用 create_entity_merge_requests 生成实体合并仲裁请求。")
 
     else:
@@ -469,16 +521,50 @@ def _safe_json_loads(text: str) -> Dict[str, Any] | None:
     try:
         return json.loads(text)
     except Exception:
-        # 有些模型可能会输出 Markdown 代码块，尝试剥皮
-        if "```" in text:
-            inner = text.split("```", 2)
-            if len(inner) >= 2:
-                for chunk in inner:
-                    try:
-                        return json.loads(chunk)
-                    except Exception:
-                        continue
-        return None
+        pass
+
+    if "```" in text:
+        # 提取代码块内容
+        # 匹配 ```json ... ``` 或 ``` ... ```
+        patterns = [
+            r'```json\s*\n(.*?)\n```',  # ```json ... ```
+            r'```\s*\n(.*?)\n```',      # ``` ... ```
+            r'```json\s*(.*?)```',      # ```json...``` (无换行)
+            r'```(.*?)```'              # ```...``` (无换行)
+        ]
+
+        for pattern in patterns:
+            matches = re.findall(pattern, text, re.DOTALL)
+            for match in matches:
+                try:
+                    content = match.strip()
+                    if content:
+                        return json.loads(content)
+                except Exception:
+                    continue
+
+        # 如果上面的正则都失败了，尝试简单分割
+        parts = text.split("```")
+        for i, chunk in enumerate(parts):
+            # 跳过空块和可能的语言标识符（如 "json"）
+            chunk = chunk.strip()
+            if not chunk or chunk.lower() in ['json', 'JSON']:
+                continue
+            try:
+                return json.loads(chunk)
+            except Exception:
+                continue
+
+    # 最后尝试查找文本中的JSON对象
+    try:
+        # 尝试找到 { ... } 形式的JSON
+        json_match = re.search(r'\{.*}', text, re.DOTALL)
+        if json_match:
+            return json.loads(json_match.group())
+    except Exception:
+        pass
+
+    return None
 
 
 def parse_entity_merge_results(raw_texts: Dict[str, str]) -> List[LLMResolutionGroup]:
@@ -486,7 +572,7 @@ def parse_entity_merge_results(raw_texts: Dict[str, str]) -> List[LLMResolutionG
     for key, text in raw_texts.items():
         obj = _safe_json_loads(text)
         if not obj or "groups" not in obj:
-            logging.warning(f"LLM 返回非期望JSON，key={key}，已跳过。片段: {text[:80]}...")
+            logging.warning(f"LLM 返回非期望JSON，key={key}，已跳过。片段: {text[:800]}...")
             continue
         for g in obj.get("groups", []):
             try:
@@ -502,7 +588,7 @@ def parse_entity_merge_results(raw_texts: Dict[str, str]) -> List[LLMResolutionG
 # --- D) 应用合并到图 ---
 
 
-def _choose_representative(G: nx.DiGraph, group: LLMResolutionGroup) -> str:
+def _choose_representative(G: nx.DiGraph, group: LLMResolutionGroup) -> str | None:
     """从成员中选择一个作为 canonical_id：
     - 若存在 name 等于 canonical_name（忽略大小写）的节点，优先选它；
     - 否则选度数最高者（信息更丰富）；
@@ -510,16 +596,29 @@ def _choose_representative(G: nx.DiGraph, group: LLMResolutionGroup) -> str:
     """
     lc = group.canonical_name.lower()
     candidate = None
+
+    # 过滤出存在于图中的member_ids，支持ID规范化（兼容_和-）
+    valid_member_ids = []
     for eid in group.member_ids:
+        actual_id = try_find_node_with_normalization(G, eid)
+        if actual_id:
+            valid_member_ids.append(actual_id)
+
+    if not valid_member_ids:
+        logging.warning(f"⚠️ 分组 '{group.canonical_name}' 的所有成员ID都不存在于图中: {group.member_ids}")
+        return None
+
+    # 首选：名称匹配
+    for eid in valid_member_ids:
         if (G.nodes[eid].get('name') or '').lower() == lc:
             return eid
     # 次选：度数
     best = (-1, None)
-    for eid in group.member_ids:
+    for eid in valid_member_ids:
         deg = G.degree(eid)
         if deg > best[0]:
             best = (deg, eid)
-    candidate = best[1] or group.member_ids[0]
+    candidate = best[1] or valid_member_ids[0]
     return candidate
 
 
@@ -530,11 +629,40 @@ def build_merge_map(G: nx.DiGraph, groups: List[LLMResolutionGroup]) -> Tuple[Di
     """
     alias2canon: Dict[str, str] = {}
     canon_name: Dict[str, str] = {}
+    skipped_groups = 0
+
     for g in groups:
-        cid = _choose_representative(G, g)
-        canon_name[cid] = g.canonical_name
-        for mid in g.member_ids:
-            alias2canon[mid] = cid
+        try:
+            cid = _choose_representative(G, g)
+            if cid is None:
+                logging.warning(f"⚠️ 无法为分组 '{g.canonical_name}' 选择代表节点，跳过此分组")
+                skipped_groups += 1
+                continue
+
+            # 只为存在于图中的成员ID建立映射，支持ID规范化
+            valid_members = []
+            for mid in g.member_ids:
+                actual_id = try_find_node_with_normalization(G, mid)
+                if actual_id:
+                    valid_members.append(actual_id)
+
+            if not valid_members:
+                logging.warning(f"⚠️ 分组 '{g.canonical_name}' 没有有效的成员节点，跳过")
+                skipped_groups += 1
+                continue
+
+            canon_name[cid] = g.canonical_name
+            for mid in valid_members:
+                alias2canon[mid] = cid
+
+        except Exception as e:
+            logging.error(f"❌ 处理分组 '{g.canonical_name}' 时出错: {e}")
+            skipped_groups += 1
+            continue
+
+    if skipped_groups > 0:
+        logging.warning(f"⚠️ 共跳过 {skipped_groups} 个无效分组")
+
     return alias2canon, canon_name
 
 
@@ -667,10 +795,15 @@ def build_community_context(
     max_entities: int = 25,
     max_relationships: int = 50,
     include_importance: bool = True,
-) -> str:
+) -> Tuple[str, Dict[str, str]]:
     member_set = {n for n in member_ids if n in graph.nodes}
     if not member_set:
-        return "Entities:\n\nRelationships:\n"
+        return "Entities:\n\nRelationships:\n", {}
+
+    # 创建本地ID映射 (全局ID -> 本地ID)
+    local_id_map: Dict[str, str] = {}
+    entity_counter = 1
+    relation_counter = 1
 
     candidate_edges = []
     for u, v, ed in graph.edges(data=True):
@@ -688,8 +821,15 @@ def build_community_context(
             degrees.append((n, deg))
         degrees.sort(key=lambda x: x[1], reverse=True)
         selected_nodes = [n for n, _ in degrees[:max_entities]]
-        entity_lines = [f"- {graph.nodes[n].get('name') or str(n)}" for n in selected_nodes]
-        return "Entities:\n" + "\n".join(entity_lines) + "\n\nRelationships:\n"
+
+        # 为选中的节点分配本地ID
+        for node_id in selected_nodes:
+            if node_id not in local_id_map:
+                local_id_map[node_id] = f"E{entity_counter}"
+                entity_counter += 1
+
+        entity_lines = [f"- {graph.nodes[n].get('name') or str(n)} ({local_id_map[n]})" for n in selected_nodes]
+        return "Entities:\n" + "\n".join(entity_lines) + "\n\nRelationships:\n", local_id_map
 
     def edge_sort_key(item):
         a, b, rel, imp, _ = item
@@ -725,20 +865,37 @@ def build_community_context(
         relaxed = [(a, b, rel, imp, rid) for (a, b, rel, imp, rid) in top_edges if (a in S or b in S)]
         filtered = relaxed[:max_relationships]
 
+    # 为选中的节点和关系分配本地ID
+    for node_id in selected_nodes:
+        if node_id not in local_id_map:
+            local_id_map[node_id] = f"E{entity_counter}"
+            entity_counter += 1
+
+    for a, b, rel, imp, rid in filtered:
+        if rid and rid not in local_id_map:
+            local_id_map[rid] = f"R{relation_counter}"
+            relation_counter += 1
+
     def label(nid: Any) -> str:
         nm = graph.nodes[nid].get("name")
-        return f"{nm} ({nid})" if nm else str(nid)
+        local_id = local_id_map.get(nid, nid)
+        return f"{nm} ({local_id})" if nm else str(local_id)
 
     entity_lines = [f"- {label(n)}" for n in selected_nodes]
     rel_lines = []
     for a, b, rel, imp, rid in filtered:
+        local_rid = local_id_map.get(rid, rid) if rid else "?"
         if include_importance and isinstance(imp, (int, float)):
-            rel_lines.append(f"- {label(a)} -[{rel} | score={imp} | id={rid}]-> {label(b)}")
+            rel_lines.append(f"- {label(a)} -[{rel} | score={imp} | id={local_rid}]-> {label(b)}")
         else:
-            rel_lines.append(f"- {label(a)} -[{rel} | id={rid}]-> {label(b)}")
+            rel_lines.append(f"- {label(a)} -[{rel} | id={local_rid}]-> {label(b)}")
 
     parts = ["Entities:", "\n".join(entity_lines) if entity_lines else "", "\nRelationships:", "\n".join(rel_lines) if rel_lines else ""]
-    return "\n".join(parts)
+
+    # 反转ID映射: 本地ID -> 全局ID
+    reverse_id_map = {v: k for k, v in local_id_map.items()}
+
+    return "\n".join(parts), reverse_id_map
 
 
 def detect_communities(graph: nx.DiGraph, weight_alpha: float) -> nx.DiGraph:
@@ -768,20 +925,39 @@ def detect_communities(graph: nx.DiGraph, weight_alpha: float) -> nx.DiGraph:
     return graph
 
 
-def save_community_reports(reports: Dict[str, str], output_path: Path):
+def save_community_reports(reports: Dict[str, str], output_path: Path, id_map_path: Path = None):
     """将社区报告保存为 JSONL，每行一个社区对象。
     - 若返回文本不是合法 JSON，则以 `report_raw` 字段原样存储。
+    - 如果提供了 id_map_path，会添加 local_id_map 字段。
     """
     output_path.parent.mkdir(exist_ok=True, parents=True)
+
+    # 加载ID映射（如果提供）
+    id_maps: Dict[str, Dict[str, str]] = {}
+    if id_map_path and id_map_path.exists():
+        try:
+            with open(id_map_path, 'r', encoding='utf-8') as f:
+                id_maps = json.load(f)
+            logging.info(f"已加载 {len(id_maps)} 个社区的ID映射")
+        except Exception as e:
+            logging.warning(f"加载ID映射失败: {e}")
+
     with open(output_path, 'w', encoding='utf-8') as f:
         for cid, text in reports.items():
             obj = _safe_json_loads(text) if isinstance(text, str) else None
             record = {"community_id": str(cid)}
+
             if obj is None:
                 record["report_raw"] = text
             else:
                 record["report"] = obj
-            f.write(json.dumps(record, ensure_ascii=False) + " ")
+
+            # 添加local_id_map（如果有）
+            if str(cid) in id_maps:
+                record["local_id_map"] = id_maps[str(cid)]
+
+            f.write(json.dumps(record, ensure_ascii=False) + "\n")
+
     logging.info(f"💾 社区报告(JSONL)已保存至: {output_path}")
 
 
@@ -803,11 +979,17 @@ def run_disambiguation_stage(client: genai.Client, graph: nx.DiGraph, model_name
     job = submit_and_monitor_job(client, disamb_requests_path, model_name, sleep_interval, "Disambiguation")
     results = process_results(job, client)
     if results:
+        matched = 0
         for nid, desc in results.items():
-            if graph.has_node(nid):
-                graph.nodes[nid]['description'] = desc
-                graph.nodes[nid]['is_disambiguated'] = True
-        logging.info(f"已更新 {len(results)} 个节点的消歧描述。")
+            # 支持ID规范化：尝试查找节点
+            actual_id = try_find_node_with_normalization(graph, nid)
+            if actual_id:
+                graph.nodes[actual_id]['description'] = desc
+                graph.nodes[actual_id]['is_disambiguated'] = True
+                matched += 1
+            else:
+                logging.warning(f"⚠️ 消歧结果中的节点ID '{nid}' 在图中不存在")
+        logging.info(f"已更新 {matched}/{len(results)} 个节点的消歧描述。")
         if save_path is not None:
             save_graph(graph, save_path)
             logging.info(f"消歧后图已保存到: {save_path}")
@@ -938,9 +1120,13 @@ def main():
 
     reports_path = PROJECT_ROOT / config["graph_builder"]["community_reports_path"]
     final_graph_path = PROJECT_ROOT / config["graph_builder"]["output_graph_path"]
+    community_requests_path = PROJECT_ROOT / config["graph_builder"]["community_requests_path"]
+
+    # 构建ID映射文件路径
+    id_map_path = community_requests_path.parent / f"{community_requests_path.stem}_id_maps.json"
 
     if summaries:
-        save_community_reports(summaries, reports_path)
+        save_community_reports(summaries, reports_path, id_map_path)
     save_graph(graph, final_graph_path)
 
     logging.info("🎉🎉🎉 全流程完成：消歧 → 实体合并 → 社区发现/摘要 → 保存 🎉🎉🎉")
