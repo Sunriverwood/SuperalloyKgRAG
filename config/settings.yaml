@@ -57,7 +57,7 @@ embedding:
   dimensionality: 768
   input_text_units_path: "data/chunks/text_units.jsonl"
   input_graph_path: "data/graphs/final_graph.json"
-  input_community_report_path: "data/reports/community_summaries.csv"
+  input_community_report_path: "data/reports/community_summaries.jsonl"
   output_db_path: "data/embeddings/embeddings.db"
   output_db_text_path: "data/embeddings/text.db"
   output_text_table_name: "text"
@@ -85,7 +85,7 @@ query:
   prompt_dir: "config/prompts"
 
   input_graph_path: "data/graphs/final_graph.json"
-  input_community_report_path: "data/reports/community_summaries.csv"
+  input_community_report_path: "data/reports/community_summaries.jsonl"
 
 database:
   graphdb:

@@ -55,7 +55,7 @@ def load_config(settings_filename: str = "settings.yaml") -> Dict[str, Any]:
 
 
 # --- 数据加载与准备 ---
-def load_graph_data(graph_path: Path, community_report_path: Path) -> (nx.DiGraph, pd.DataFrame):
+def load_graph_data(graph_path: Path, community_report_path: Path) -> tuple[nx.DiGraph, pd.DataFrame]:
     """加载最终图谱和社区报告"""
     logging.info(f"正在从 {graph_path} 加载图谱...")
     with open(graph_path, 'r', encoding='utf-8') as f:
@@ -63,7 +63,46 @@ def load_graph_data(graph_path: Path, community_report_path: Path) -> (nx.DiGrap
     graph = nx.node_link_graph(graph_data)
 
     logging.info(f"正在从 {community_report_path} 加载社区报告...")
-    community_reports_df = pd.read_csv(community_report_path)
+    # 支持 CSV 与 JSONL 两种格式
+    if community_report_path.suffix.lower() == ".csv":
+        community_reports_df = pd.read_csv(community_report_path)
+    else:
+        # 期望 JSONL 行格式：{"community_id": "...", "report": {"summary": "..."}, "local_id_map": {...}}
+        records = []
+        with open(community_report_path, 'r', encoding='utf-8') as rf:
+            for line_no, line in enumerate(rf, start=1):
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    obj = json.loads(line)
+                    cid = obj.get("community_id")
+                    # 抽取嵌套的 summary
+                    rep = obj.get("report") or {}
+                    summary = None
+                    if isinstance(rep, dict):
+                        summary = rep.get("summary")
+                    # 若不存在嵌套，兼容平铺的 "summary"
+                    if summary is None:
+                        summary = obj.get("summary")
+
+                    local_id_map = obj.get("local_id_map", {})
+
+                    if cid is None or summary is None:
+                        logging.debug(f"跳过第 {line_no} 行：缺少 community_id 或 summary")
+                        continue
+
+                    records.append({
+                        "community_id": str(cid),
+                        "summary": summary,
+                        "local_id_map": json.dumps(local_id_map, ensure_ascii=False),  # 序列化为JSON字符串
+                        "title": rep.get("title", ""),
+                        "rating": rep.get("rating", 0.0),
+                        "findings": json.dumps(rep.get("findings", []), ensure_ascii=False)
+                    })
+                except json.JSONDecodeError as e:
+                    logging.warning(f"解析 JSONL 第 {line_no} 行失败: {e}")
+        community_reports_df = pd.DataFrame(records)
 
     logging.info("图谱和社区报告加载成功。")
     return graph, community_reports_df
@@ -74,9 +113,19 @@ def prepare_embedding_data(graph: nx.DiGraph, reports_df: pd.DataFrame) -> Dict[
     logging.info("正在准备三个层级的嵌入数据...")
 
     # 1. 社区数据
-    communities_to_embed = [{"id": str(row["community_id"]), "text": row["summary"]} for _, row in
-                            reports_df.iterrows()]
-    logging.info(f"  - 准备了 {len(communities_to_embed)} 个社区待嵌入。")
+    communities_to_embed = []
+    for _, row in reports_df.iterrows():
+        comm_data = {
+            "id": str(row["community_id"]),
+            "text": row["summary"],  # 用于embedding的文本
+            "community_id": str(row["community_id"]),
+            "local_id_map": row.get("local_id_map", "{}"),  # JSON字符串
+            "title": row.get("title", ""),
+            "rating": float(row.get("rating", 0.0)),
+            "findings": row.get("findings", "[]")  # JSON字符串
+        }
+        communities_to_embed.append(comm_data)
+    logging.info(f"  - 准备了 {len(communities_to_embed)} 个社区待嵌入（含溯源信息）。")
 
     # 2. 实体数据
     entities_to_embed = [{"id": str(node_id), "text": data.get("description", ""), **data} for node_id, data in
@@ -101,7 +150,7 @@ def create_embedding_requests(documents: List[Dict], model_name: str, output_pat
     """为批量嵌入创建请求并写入本地 JSONL 文件。"""
     logging.info(f"正在为 {len(documents)} 个文档创建批量嵌入请求...")
     output_path.parent.mkdir(exist_ok=True, parents=True)
-    with open(output_path, "w", encoding="utf-8") as f:
+    with open(output_path, "w", encoding='utf-8') as f:
         for doc in documents:
             request_body = {
                 "content": {"parts": [{"text": doc["text"]}]},
