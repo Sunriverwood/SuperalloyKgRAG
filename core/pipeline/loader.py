@@ -27,6 +27,16 @@ CHUNK_OVERLAP = 100  # 相邻文本块之间的重叠大小 (字符数)
 # =================================================================
 # 1. 引入结构化数据模型 (参考 GraphRAG 的 data_model)
 # =================================================================
+class TextSegment(BaseModel):
+    """
+    代表一个带有位置信息的文本片段（来自特定的page和block）。
+    """
+    text: str = Field(description="文本片段的内容。")
+    page_number: Any = Field(description="文本片段所在的页码。")
+    block_id: Any = Field(description="文本片段所在的block ID。")
+    start_pos: int = Field(description="在完整文档文本中的起始位置。")
+    end_pos: int = Field(description="在完整文档文本中的结束位置。")
+
 class Document(BaseModel):
     """
     代表一个完整的、从源文件加载的文档。
@@ -34,6 +44,7 @@ class Document(BaseModel):
     id: str = Field(description="文档的唯一ID，通常是源文件名的哈希值。")
     text: str = Field(description="从文档中提取的全部纯文本内容。")
     metadata: Dict[str, Any] = Field(default_factory=dict, description="文档的元数据，如源文件名、页码等。")
+    text_segments: List[TextSegment] = Field(default_factory=list, description="文档中的文本片段及其位置信息。")
 
 class TextUnit(BaseModel):
     """
@@ -113,6 +124,8 @@ class DocumentLoader:
         从多个JSON页面中提取文本，并创建一个Document实例。
         """
         full_text_blocks = []
+        text_segments = []
+        current_position = 0
 
         # 如果输入是字典，转换为列表进行处理
         if isinstance(data, dict):
@@ -126,10 +139,26 @@ class DocumentLoader:
                 if block.get("type") == "text_block":
                     text_content = block.get("content", "").strip()
                     if text_content:
+                        block_id = block.get('block_id', 'N/A')
                         # 添加源信息，但作为文本的一部分，以便LLM理解上下文
                         # metadata可以存储更结构化的信息
-                        source_prefix = f"[Source: Page {page_number}, Block: {block.get('block_id', 'N/A')}]"
-                        full_text_blocks.append(f"{source_prefix}\n{text_content}")
+                        source_prefix = f"[Source: Page {page_number}, Block: {block_id}]"
+                        full_block_text = f"{source_prefix}\n{text_content}"
+                        full_text_blocks.append(full_block_text)
+
+                        # 记录文本段的位置信息
+                        segment_start = current_position
+                        segment_end = current_position + len(full_block_text)
+                        text_segments.append(TextSegment(
+                            text=full_block_text,
+                            page_number=page_number,
+                            block_id=block_id,
+                            start_pos=segment_start,
+                            end_pos=segment_end
+                        ))
+
+                        # 更新位置（加上分隔符的长度）
+                        current_position = segment_end + 2  # "\n\n" 的长度
 
         full_text = "\n\n".join(full_text_blocks)
 
@@ -139,7 +168,8 @@ class DocumentLoader:
         return Document(
             id=f"doc-{doc_id}",
             text=full_text,
-            metadata={"source_filename": source_filename}
+            metadata={"source_filename": source_filename},
+            text_segments=text_segments
         )
 
     def _chunk_all_documents(self, documents: List[Document]) -> List[TextUnit]:
@@ -148,36 +178,69 @@ class DocumentLoader:
         """
         all_text_units = []
         for doc in documents:
-            chunks = self._chunk_text(doc.text)
-            for i, chunk_text in enumerate(chunks):
+            chunks_with_metadata = self._chunk_text(doc.text, doc.text_segments)
+            for i, (chunk_text, chunk_meta) in enumerate(chunks_with_metadata):
                 chunk_id_hash = hashlib.md5(f"{doc.id}-{i}-{chunk_text}".encode('utf-8')).hexdigest()
+
+                # 合并元数据
+                metadata = {
+                    "chunk_index": i,
+                    "source_filename": doc.metadata["source_filename"],
+                    "pages": chunk_meta["pages"],
+                    "blocks": chunk_meta["blocks"]
+                }
+
                 text_unit = TextUnit(
                     id=f"chunk-{chunk_id_hash}",
                     document_id=doc.id,
                     text=chunk_text,
-                    metadata={"chunk_index": i, "source_filename": doc.metadata["source_filename"]}
+                    metadata=metadata
                 )
                 all_text_units.append(text_unit)
         return all_text_units
 
-    def _chunk_text(self, text: str) -> List[str]:
+    def _chunk_text(self, text: str, text_segments: List[TextSegment]) -> List[tuple]:
         """
-        将单篇长文本按固定大小和重叠进行分块。
+        将单篇长文本按固定大小和重叠进行分块，并返回每个chunk及其元数据。
+        返回: List[Tuple[str, Dict]] - 每个元素包含(chunk_text, chunk_metadata)
         """
         if not text:
             return []
 
-        chunks = []
+        chunks_with_metadata = []
         start_index = 0
+
         while start_index < len(text):
             end_index = start_index + self.chunk_size
-            chunks.append(text[start_index:end_index])
+            chunk_text = text[start_index:end_index]
+
+            # 确定这个chunk跨越了哪些页面和block
+            pages = set()
+            blocks = set()
+
+            for segment in text_segments:
+                # 检查chunk是否与这个segment有重叠
+                # chunk范围: [start_index, end_index)
+                # segment范围: [segment.start_pos, segment.end_pos)
+                if not (end_index <= segment.start_pos or start_index >= segment.end_pos):
+                    # 有重叠
+                    pages.add(segment.page_number)
+                    blocks.add(segment.block_id)
+
+            # 转换为排序后的列表，便于查看
+            chunk_metadata = {
+                "pages": sorted(list(pages), key=lambda x: (isinstance(x, str), x)),
+                "blocks": sorted(list(blocks), key=lambda x: (isinstance(x, str), x))
+            }
+
+            chunks_with_metadata.append((chunk_text, chunk_metadata))
+
             # 如果是最后一块，则停止
             if end_index >= len(text):
                 break
             start_index += self.chunk_size - self.chunk_overlap
 
-        return chunks
+        return chunks_with_metadata
 
     def _save_text_units(self, text_units: List[TextUnit], format: str) -> str:
         """
