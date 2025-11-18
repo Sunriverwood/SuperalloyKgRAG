@@ -4,12 +4,14 @@ import json
 import logging
 import os
 import re
+import textwrap
 from pathlib import Path
 from string import Template
 import functools
 import numpy as np
 import lancedb
 import yaml
+from google import genai
 from google.genai import types
 from typing import Dict, Any, List, Coroutine
 from concurrent.futures import Executor
@@ -150,7 +152,6 @@ class GlobalQueryHandler:
     def _build_context_chunks(self, query_vector: List[float]) -> list[dict] | list[Any]:
         """
         步骤1: 上下文构建。检索相关社区摘要作为独立的文本块。
-        同时获取 payload_report_json 和 payload_map_json。
         """
         logging.info(f"上下文构建：正在搜索 Top {self.top_k} 相关社区...")
         try:
@@ -160,54 +161,6 @@ class GlobalQueryHandler:
         except Exception as e:
             logging.error(f"❌ 在LanceDB中搜索社区失败: {e}", exc_info=True)
             return []
-
-    def _convert_local_ids_to_chunk_ids(self, report: Dict[str, Any], id_map: Dict[str, str]) -> Dict[str, Any]:
-        """
-        将 report 中的局部 ID (E1, E2, R1, R2 等) 转换为实际的 chunk ID。
-
-        Args:
-            report: 包含局部 ID 的社区报告
-            id_map: 局部 ID 到 chunk ID 的映射关系
-
-        Returns:
-            转换后的报告，其中所有局部 ID 都替换为对应的 chunk ID
-        """
-
-        def replace_ids_in_text(text: str) -> str:
-            """在文本中替换所有的局部 ID 引用"""
-            if not isinstance(text, str):
-                return text
-
-            # 匹配 [Data: Entities (E1, E2, ...); Relationships (R1, R2, ...)] 格式
-            def replace_in_brackets(match):
-                content = match.group(1)
-                # 替换所有 E 和 R 开头的 ID
-                for local_id, chunk_id in id_map.items():
-                    content = re.sub(r'\b' + re.escape(local_id) + r'\b', chunk_id, content)
-                return f"[Data: {content}]"
-
-            # 替换 Data 引用中的 ID
-            text = re.sub(r'\[Data: ([^]]+)]', replace_in_brackets, text)
-
-            return text
-
-        # 深拷贝报告以避免修改原始数据
-        converted_report = json.loads(json.dumps(report))
-
-        # 转换 findings 中的所有文本
-        if "findings" in converted_report and isinstance(converted_report["findings"], list):
-            for finding in converted_report["findings"]:
-                if isinstance(finding, dict):
-                    if "summary" in finding:
-                        finding["summary"] = replace_ids_in_text(finding["summary"])
-                    if "explanation" in finding:
-                        finding["explanation"] = replace_ids_in_text(finding["explanation"])
-
-        # 转换 summary
-        if "summary" in converted_report:
-            converted_report["summary"] = replace_ids_in_text(converted_report["summary"])
-
-        return converted_report
 
     async def generate_async_wrapper(self, prompt: str, executor: Executor | None = None):
         """
@@ -226,34 +179,8 @@ class GlobalQueryHandler:
     async def _map_single_chunk(self, query: str, context_chunk: dict) -> List[Dict[str, Any]]:
         """
         Map阶段的单个任务：从一个上下文块中提取关键点和评分。
-        使用 payload_report_json 和 payload_map_json 来重构带有真实 chunk ID 的文本。
         """
-        try:
-            # 提取 payload 数据
-            payload_report_json = context_chunk.get("payload_report_json", "{}")
-            payload_map_json = context_chunk.get("payload_map_json", "{}")
-
-            # 解析 JSON
-            report = json.loads(payload_report_json) if isinstance(payload_report_json, str) else payload_report_json
-            id_map = json.loads(payload_map_json) if isinstance(payload_map_json, str) else payload_map_json
-
-            # 转换局部 ID 为 chunk ID
-            converted_report = self._convert_local_ids_to_chunk_ids(report, id_map)
-
-            # 构建用于 LLM 的上下文，使用转换后的报告
-            context_data = {
-                "community_id": context_chunk.get("id", "unknown"),
-                "report": converted_report
-            }
-
-            context_str = json.dumps(context_data, ensure_ascii=False, indent=2)
-
-            logging.debug(f"Map阶段：处理社区 {context_data['community_id']}, 已将局部ID转换为chunk ID")
-
-        except (json.JSONDecodeError, KeyError) as e:
-            logging.warning(f"解析 payload 数据失败: {e}，使用原始数据")
-            # 如果解析失败，使用原始数据
-            context_str = json.dumps(context_chunk, ensure_ascii=False, indent=2)
+        context_str = json.dumps(context_chunk, ensure_ascii=False, indent=2)
 
         template_prompt= Template(self.map_prompt_template)
         prompt = template_prompt.substitute(query=query, context_data=context_str)
