@@ -133,6 +133,22 @@ def load_and_build_initial_graph(jsonl_path: Path) -> nx.DiGraph:
 
             id_map: Dict[str, str] = {}
             g = data.get("graph", {})
+
+            # 处理 graph 可能是列表的情况（LLM有时返回列表而非字典）
+            if isinstance(g, list):
+                logging.warning(f"chunk {chunk_id}: graph 是列表而非字典，尝试转换")
+                # 如果是列表，尝试找到包含 entities 和 relationships 的元素
+                if g and isinstance(g[0], dict):
+                    g = g[0]  # 取第一个元素
+                else:
+                    logging.warning(f"chunk {chunk_id}: 无法从列表中提取有效的图数据，跳过")
+                    continue
+
+            # 确保 g 是字典
+            if not isinstance(g, dict):
+                logging.warning(f"chunk {chunk_id}: graph 既非字典也非列表，类型为 {type(g)}，跳过")
+                continue
+
             for ent in g.get("entities", []):
                 local_id = ent.get('id')
                 if local_id is None:

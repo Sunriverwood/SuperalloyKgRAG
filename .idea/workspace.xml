@@ -4,8 +4,11 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="1356365c-4e55-45c5-8e65-a4f6e3ed1df4" name="更改" comment="feat: reconstructed vlm_pdf_parser">
-      <change beforePath="$PROJECT_DIR$/config/settings.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/config/settings.yaml" afterDir="false" />
+    <list default="true" id="1356365c-4e55-45c5-8e65-a4f6e3ed1df4" name="更改" comment="feat: update prompt structures for improved clarity and consistency in knowledge extraction tasks">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/pipeline/graph_builder.py" beforeDir="false" afterPath="$PROJECT_DIR$/core/pipeline/graph_builder.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/chunks/text_units.jsonl" beforeDir="false" afterPath="$PROJECT_DIR$/data/chunks/text_units.jsonl" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/graphs/final_graph.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/graphs/final_graph.json" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -116,38 +119,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1758197478087</updated>
-    </task>
-    <task id="LOCAL-00010" summary="feat: add cloud manager and graph builder modules for file and batch job management">
-      <option name="closed" value="true" />
-      <created>1758900013797</created>
-      <option name="number" value="00010" />
-      <option name="presentableId" value="LOCAL-00010" />
-      <option name="project" value="LOCAL" />
-      <updated>1758900013797</updated>
-    </task>
-    <task id="LOCAL-00011" summary="feat: add cloud manager and graph builder modules for file and batch job management">
-      <option name="closed" value="true" />
-      <created>1758900064196</created>
-      <option name="number" value="00011" />
-      <option name="presentableId" value="LOCAL-00011" />
-      <option name="project" value="LOCAL" />
-      <updated>1758900064196</updated>
-    </task>
-    <task id="LOCAL-00012" summary="feat: add cloud manager and graph builder modules for file and batch job management">
-      <option name="closed" value="true" />
-      <created>1758934971039</created>
-      <option name="number" value="00012" />
-      <option name="presentableId" value="LOCAL-00012" />
-      <option name="project" value="LOCAL" />
-      <updated>1758934971039</updated>
-    </task>
-    <task id="LOCAL-00013" summary="feat: add cleanup tool and enhance graph processing with community detection and summaries">
-      <option name="closed" value="true" />
-      <created>1758972453454</created>
-      <option name="number" value="00013" />
-      <option name="presentableId" value="LOCAL-00013" />
-      <option name="project" value="LOCAL" />
-      <updated>1758972453454</updated>
     </task>
     <task id="LOCAL-00014" summary="feat: implement embedding workflow with data loading, processing, and storage in LanceDB">
       <option name="closed" value="true" />
@@ -509,7 +480,39 @@
       <option name="project" value="LOCAL" />
       <updated>1763548923824</updated>
     </task>
-    <option name="localTasksCounter" value="59" />
+    <task id="LOCAL-00059" summary="feat: implement end-to-end indexing pipeline from PDF to knowledge graph vector storage">
+      <option name="closed" value="true" />
+      <created>1763558219104</created>
+      <option name="number" value="00059" />
+      <option name="presentableId" value="LOCAL-00059" />
+      <option name="project" value="LOCAL" />
+      <updated>1763558219104</updated>
+    </task>
+    <task id="LOCAL-00060" summary="feat: implement end-to-end indexing pipeline from PDF to knowledge graph vector storage">
+      <option name="closed" value="true" />
+      <created>1763558700669</created>
+      <option name="number" value="00060" />
+      <option name="presentableId" value="LOCAL-00060" />
+      <option name="project" value="LOCAL" />
+      <updated>1763558700669</updated>
+    </task>
+    <task id="LOCAL-00061" summary="feat: implement end-to-end indexing pipeline from PDF to knowledge graph vector storage">
+      <option name="closed" value="true" />
+      <created>1763560461415</created>
+      <option name="number" value="00061" />
+      <option name="presentableId" value="LOCAL-00061" />
+      <option name="project" value="LOCAL" />
+      <updated>1763560461415</updated>
+    </task>
+    <task id="LOCAL-00062" summary="feat: update prompt structures for improved clarity and consistency in knowledge extraction tasks">
+      <option name="closed" value="true" />
+      <created>1763562323017</created>
+      <option name="number" value="00062" />
+      <option name="presentableId" value="LOCAL-00062" />
+      <option name="project" value="LOCAL" />
+      <updated>1763562323017</updated>
+    </task>
+    <option name="localTasksCounter" value="63" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -539,8 +542,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="feat: add cleanup tool and enhance graph processing with community detection and summaries" />
-    <MESSAGE value="feat: implement embedding workflow with data loading, processing, and storage in LanceDB" />
     <MESSAGE value="feat: add prompt template loading for RAG query handling and update configuration" />
     <MESSAGE value="feat: add RAG query handler and embedding workflow with logging and configuration management" />
     <MESSAGE value="feat: implement global query handler with logging and configuration management" />
@@ -564,7 +565,9 @@
     <MESSAGE value="feat: refactor run_indexing.py to simplify execution and enhance compatibility with VLMPdfParser" />
     <MESSAGE value="feat: reconstructed vlm_pdf_parser" />
     <MESSAGE value="feat: reconstructed vlm_pdf_parser" />
-    <option name="LAST_COMMIT_MESSAGE" value="feat: reconstructed vlm_pdf_parser" />
+    <MESSAGE value="feat: implement end-to-end indexing pipeline from PDF to knowledge graph vector storage" />
+    <MESSAGE value="feat: update prompt structures for improved clarity and consistency in knowledge extraction tasks" />
+    <option name="LAST_COMMIT_MESSAGE" value="feat: update prompt structures for improved clarity and consistency in knowledge extraction tasks" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
