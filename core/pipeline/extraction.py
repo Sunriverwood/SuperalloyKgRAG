@@ -69,7 +69,7 @@ def prepare_batch_requests(config: Dict[str, Any]) -> Path:
     input_path = PROJECT_ROOT / extraction_config["input_dir"] / extraction_config["input_filename"]
     requests_dir = PROJECT_ROOT / extraction_config["requests_dir"]
     requests_dir.mkdir(exist_ok=True, parents=True)
-    batch_request_path = requests_dir / f"extraction_requests_{int(time.time())}.jsonl"
+    batch_request_path = requests_dir / "extraction_requests.jsonl"
 
     prompt_template = extraction_config["prompt"]
 

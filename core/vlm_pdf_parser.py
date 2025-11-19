@@ -77,7 +77,8 @@ class VLMPdfParser:
         self.pdf_folder = PROJECT_ROOT / parser_cfg["input_dir"]
         self.output_folder = PROJECT_ROOT / parser_cfg["output_dir"]
         self.state_file = PROJECT_ROOT / parser_cfg["state_file_path"]
-        self.prompt_path = PROJECT_ROOT / "config/prompts/pdf_parsing.md"
+        self.prompt_path = PROJECT_ROOT / parser_cfg.get("parsing_prompt_path")
+        self.requests_path = PROJECT_ROOT / parser_cfg.get("requests_path")
 
         # 批处理配置
         self.batch_size = parser_cfg["batch_size"]
@@ -214,37 +215,53 @@ class VLMPdfParser:
             self.logger.info("无待处理文件，无需创建新作业。")
             return
 
+        # 确保 cache 目录存在
+        requests_dir = self.requests_path.parent
+        requests_dir.mkdir(exist_ok=True, parents=True)
+
         chunks = [requests[i:i + self.batch_size] for i in range(0, len(requests), self.batch_size)]
         files_chunks = [files_for_jobs[i:i + self.batch_size] for i in range(0, len(files_for_jobs), self.batch_size)]
 
         for i, (chunk, files_in_chunk) in enumerate(zip(chunks, files_chunks)):
             job_name = f"KG-Batch-{datetime.now().strftime('%Y%m%d-%H%M%S')}-{i + 1}"
-            tmp_file = f"temp_batch_requests_{i}.jsonl"
-            try:
-                with open(tmp_file, "w", encoding="utf-8") as f:
-                    for req in chunk:
-                        f.write(json.dumps(req) + "\n")
 
+            # # 为每个批次创建唯一的请求文件（使用时间戳）
+            # timestamp = int(time.time())
+            # batch_request_file = requests_dir / f"vlm_batch_requests_{timestamp}_{i}.jsonl"
+            batch_request_file = self.requests_path
+
+            try:
+                # 写入批量请求文件
+                with open(batch_request_file, "w", encoding="utf-8") as f:
+                    for req in chunk:
+                        f.write(json.dumps(req, ensure_ascii=False) + "\n")
+
+                self.logger.info(f"  - 批量请求文件已保存: {batch_request_file}")
+
+                # 上传批量请求文件
                 batch_input = self.client.files.upload(
-                    file=tmp_file,
-                    config=types.UploadFileConfig(display_name=job_name, mime_type="jsonl")
+                    file=str(batch_request_file),
+                    config=types.UploadFileConfig(display_name=job_name, mime_type="application/jsonl")
                 )
+
+                # 创建批处理作业
                 job = self.client.batches.create(
                     model=self.model_name,
                     src=batch_input.name,
                     config={"display_name": job_name}
                 )
                 self.logger.info(f"✅ 作业创建成功: {job.name}")
+
+                # 更新状态
                 for pdf in files_in_chunk:
                     self.state[pdf].update({"status": "processing", "batch_job_name": job.name})
+
             except Exception as e:
                 for pdf in files_in_chunk:
                     self.state[pdf].update({"status": "failed_job_creation", "error": str(e)})
                 self.logger.error(f"❌ 批处理作业创建失败 {job_name}: {e}")
             finally:
                 self.save_state(self.state)
-                if os.path.exists(tmp_file):
-                    os.remove(tmp_file)
 
     # -------- 作业监控 --------
     def monitor_jobs(self):
