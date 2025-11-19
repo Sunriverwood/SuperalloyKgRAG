@@ -84,6 +84,8 @@ query:
   local_top_k: 10
   max_local_context_tokens: 12000
   k_hop: 1  # K-hop邻域扩展深度 (1或2)
+  drift_k_followups: 2  # 当启用drift时，允许的后续问题数量
+  drift_max_steps: 2 # 当启用drift时，最大漂移步数
 
   text_db_path: "data/embeddings/text.db"
   text_table_name: "text"
