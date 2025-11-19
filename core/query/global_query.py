@@ -58,6 +58,15 @@ def load_config(settings_filename: str = "settings.yaml") -> Dict[str, Any]:
 def try_parse_json_object(text: str) -> Dict | None:
     """尝试解析一个可能是JSON对象的字符串，处理常见错误"""
     text = text.strip()
+    # 移除可能的三重引号包裹
+    if text.startswith("'''") and text.endswith("'''"):
+        text = text[3:-3].strip()
+    elif text.startswith('"""') and text.endswith('"""'):
+        text = text[3:-3].strip()
+    elif text.startswith("```json") and text.endswith("```"):
+        text = text[7:-3].strip()
+    elif text.startswith("```") and text.endswith("```"):
+        text = text[3:-3].strip()
     # 查找第一个 '{' 和最后一个 '}'
     start = text.find('{')
     end = text.rfind('}')
@@ -116,12 +125,169 @@ class GlobalQueryHandler:
         self.map_prompt_template = self._load_prompt("global_map.md")
         self.reduce_prompt_template = self._load_prompt("global_reduce.md")
 
+        # 加载 chunk ID 到源信息的映射
+        self.chunk_id_map = self._load_chunk_id_map()
+
     def _load_prompt(self, filename: str) -> str:
         prompt_path = PROJECT_ROOT / self.prompt_dir/ filename
         if not prompt_path.exists():
             raise FileNotFoundError(f"Prompt文件未找到: {prompt_path}")
         with open(prompt_path, 'r', encoding='utf-8') as f:
             return f.read()
+
+    def _load_chunk_id_map(self) -> Dict[str, Dict[str, Any]]:
+        """
+        加载 text_units.jsonl 文件，构建 chunk ID 到源信息的映射。
+        返回格式: {chunk_id: {"source_filename": str, "pages": list, "blocks": list}}
+        """
+        text_units_path = PROJECT_ROOT / self.config["embedding"]["input_text_units_path"]
+        chunk_map = {}
+
+        try:
+            logging.info(f"正在加载文本单元映射: {text_units_path}")
+            with open(text_units_path, 'r', encoding='utf-8') as f:
+                for line in f:
+                    if line.strip():
+                        unit = json.loads(line)
+                        chunk_id = unit.get("id")
+                        metadata = unit.get("metadata", {})
+
+                        if chunk_id:
+                            chunk_map[chunk_id] = {
+                                "source_filename": metadata.get("source_filename", "unknown"),
+                                "pages": metadata.get("pages", []),
+                                "blocks": metadata.get("blocks", [])
+                            }
+
+            logging.info(f"✅ 成功加载 {len(chunk_map)} 个文本单元的映射关系")
+            return chunk_map
+
+        except FileNotFoundError:
+            logging.warning(f"⚠️ 未找到文本单元文件: {text_units_path}，将无法解析chunk ID引用")
+            return {}
+        except Exception as e:
+            logging.error(f"❌ 加载文本单元映射时出错: {e}", exc_info=True)
+            return {}
+
+    def _resolve_chunk_citations(self, text: str) -> str:
+        """
+        将文本中的 chunk ID 引用转换为来源信息。
+        支持以下格式：
+        1. [Data: Entities (chunk-xxx, chunk-yyy)] → [来源: 文件名, Page 1-3; Block page_1_block_1~page_1_block_3]
+        2. [cite: chunk-xxx, chunk-yyy] → 同样转换为 [来源: ...]
+        并移除正文中出现的局部 ID 标记，例如：（E1）、(E2)、（R3）等。
+
+        支持来源合并：同一句中同一文件的多个chunk会合并页码范围和区块范围。
+        """
+        def extract_base_chunk_id(full_id: str) -> str:
+            """提取基础的 chunk ID，去除 -e-X 或 -r-X 等后缀"""
+            match = re.match(r'(chunk-[a-f0-9]+)', full_id)
+            if match:
+                return match.group(1)
+            return full_id
+
+        def merge_pages(pages: List[int]) -> str:
+            """合并页码为范围（相邻）或列表（不相邻）"""
+            if not pages:
+                return "Page unknown"
+            pages = sorted(set(pages))
+            if len(pages) == 1:
+                return f"Page {pages[0]}"
+            is_consecutive = all(pages[i+1] - pages[i] == 1 for i in range(len(pages)-1))
+            if is_consecutive:
+                return f"Page {pages[0]}-{pages[-1]}"
+            else:
+                return f"Pages {', '.join(map(str, pages))}"
+
+        def merge_blocks(blocks: List[str]) -> str:
+            """合并区块为范围（相邻）或列表（不相邻）"""
+            if not blocks:
+                return "Block unknown"
+            seen = set()
+            unique_blocks = []
+            for b in blocks:
+                if b not in seen:
+                    seen.add(b)
+                    unique_blocks.append(b)
+            if len(unique_blocks) == 1:
+                return f"Block {unique_blocks[0]}"
+            try:
+                block_nums = []
+                prefix = None
+                for b in unique_blocks:
+                    match = re.match(r'(page_\d+_block_)(\d+)', b)
+                    if match:
+                        if prefix is None:
+                            prefix = match.group(1)
+                        if match.group(1) == prefix:
+                            block_nums.append(int(match.group(2)))
+                        else:
+                            block_nums = []
+                            break
+                if block_nums and len(block_nums) == len(unique_blocks):
+                    is_consecutive = all(block_nums[i+1] - block_nums[i] == 1 for i in range(len(block_nums)-1))
+                    if is_consecutive:
+                        return f"Block {unique_blocks[0]}~{unique_blocks[-1]}"
+            except Exception:
+                pass
+            if len(unique_blocks) <= 3:
+                return f"Blocks {', '.join(unique_blocks)}"
+            else:
+                return f"Blocks {unique_blocks[0]}~{unique_blocks[-1]}"
+
+        def build_source_string(chunk_ids_raw: List[str]) -> str:
+            """根据一组 chunk IDs 构建来源字符串 (English style without brackets)"""
+            sources_by_file: Dict[str, Dict[str, List]] = {}
+            for chunk_id_raw in chunk_ids_raw:
+                chunk_id = extract_base_chunk_id(chunk_id_raw)
+                if chunk_id in self.chunk_id_map:
+                    source_info = self.chunk_id_map[chunk_id]
+                    filename = source_info.get("source_filename", "unknown").replace('.json', '')
+                    pages = source_info.get("pages", [])
+                    blocks = source_info.get("blocks", [])
+                    if filename not in sources_by_file:
+                        sources_by_file[filename] = {"pages": [], "blocks": []}
+                    sources_by_file[filename]["pages"].extend(pages)
+                    sources_by_file[filename]["blocks"].extend(blocks)
+                else:
+                    logging.warning(f"⚠️ 未找到 chunk ID 的映射: {chunk_id} (原始ID: {chunk_id_raw})")
+                    if "unknown" not in sources_by_file:
+                        sources_by_file["unknown"] = {"pages": [], "blocks": []}
+            if not sources_by_file:
+                return "[source: unknown]"
+            source_parts = []
+            for filename, info in sources_by_file.items():
+                if filename == "unknown":
+                    continue
+                page_str = merge_pages(info["pages"])
+                block_str = merge_blocks(info["blocks"])
+                source_parts.append(f"{filename} {page_str} {block_str}")
+            if len(source_parts) == 0:
+                return "[source: unknown]"
+            if len(source_parts) == 1:
+                return f"[source: {source_parts[0]}]"
+            return f"[source: {'; '.join(source_parts)}]"
+
+        def replace_data_citation(match):
+            # prefix = match.group(1).strip()
+            chunk_ids_raw = match.group(2)
+            ids_raw = [cid.strip() for cid in chunk_ids_raw.split(',') if cid.strip()]
+            return build_source_string(ids_raw)
+
+        def replace_cite(match):
+            chunk_ids_raw = match.group(1)
+            ids_raw = [cid.strip() for cid in chunk_ids_raw.split(',') if cid.strip()]
+            return build_source_string(ids_raw)
+
+        # 1. 处理 [Data: Entities (...)] / [Data: Relationships (...)] 等格式
+        text = re.sub(r'\[Data:\s*([^(]+)\(([^)]+)\)]', replace_data_citation, text)
+        # 2. 处理 [cite: chunk-xxx, chunk-yyy] 格式
+        text = re.sub(r'\[cite:\s*([^]]+)]', replace_cite, text)
+        # 3. 去除正文中的局部 ID 标记，例如 （E1）、(E2)、（R3） 等
+        text = re.sub(r'[（(][ER]\d+[）)]', '', text)
+        # 4. 去除可能产生的多余双空格
+        text = re.sub(r'\s{2,}', ' ', text)
+        return text
 
     def _embed_query(self, query: str) -> List[float]:
         logging.info(f"正在为查询进行向量化: '{query[:50]}...'")
@@ -248,7 +414,7 @@ class GlobalQueryHandler:
 
             context_str = json.dumps(context_data, ensure_ascii=False, indent=2)
 
-            logging.debug(f"Map阶段：处理社区 {context_data['community_id']}, 已将局部ID转换为chunk ID")
+            logging.info(f"Map阶段：处理社区 {context_data['community_id']}, 已将局部ID转换为chunk ID")
 
         except (json.JSONDecodeError, KeyError) as e:
             logging.warning(f"解析 payload 数据失败: {e}，使用原始数据")
@@ -288,8 +454,9 @@ class GlobalQueryHandler:
             if not self.search_config:
                 logging.warning("过滤后没有高质量的关键点，且不允许通用知识，返回无数据答案。")
                 return "I am sorry but I am unable to answer your question based on the provided context."
-            logging.info("无高质量关键点，但允许通用知识，将尝试直接回答。")
-            report_data = "没有从知识库中找到直接相关的信息。"
+            else:
+                logging.info("无高质量关键点，但允许通用知识，将尝试直接回答。")
+                report_data = "没有从知识库中找到直接相关的信息。"
         else:
             # 按得分降序排序
             high_quality_points.sort(key=lambda x: x.get("score", 0), reverse=True)
@@ -314,14 +481,16 @@ class GlobalQueryHandler:
             logging.info("Reduce阶段：调用分析师LLM生成最终答案...")
             response = await self.generate_async_wrapper(prompt=final_prompt)
 
-            return response.text
+            # 将 chunk ID 引用转换为可读的源信息
+            resolved_answer = self._resolve_chunk_citations(response.text)
+            return resolved_answer
         except Exception as e:
             logging.error(f"❌ Reduce阶段调用LLM失败: {e}", exc_info=True)
             return "抱歉，在综合信息生成最终答案时发生错误。"
 
     async def answer_query(self, query: str) -> str:
         """
-        执行完整的、符合GraphRAG旗舰实现的全局搜索流程。
+        执行完整的全局搜索流程。
         """
         try:
             # 1. 向量化查询
@@ -351,7 +520,7 @@ class GlobalQueryHandler:
 
 async def main():
     """主执行函数，用于命令行交互"""
-    parser = argparse.ArgumentParser(description="使用GraphRAG旗舰级全局搜索(Map-Reduce)回答问题。")
+    parser = argparse.ArgumentParser(description="使用全局搜索(Map-Reduce)回答问题。")
     parser.add_argument("query", type=str, nargs='?', default="", help="您要提出的问题。")
     args = parser.parse_args()
 
