@@ -4,13 +4,11 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="1356365c-4e55-45c5-8e65-a4f6e3ed1df4" name="更改" comment="implement JSON text extraction and chunking process">
-      <change afterPath="$PROJECT_DIR$/1.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/data/raw_pdfs/ASM HandBook Volume 03 - Alloy Phase Diagrams.pdf" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/data/raw_pdfs/ASM手册 20_1.pdf" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/data/raw_pdfs/高温合金中微量元素的作用与控制_46-49.pdf" afterDir="false" />
+    <list default="true" id="1356365c-4e55-45c5-8e65-a4f6e3ed1df4" name="更改" comment="feat: reconstructed vlm_pdf_parser">
+      <change afterPath="$PROJECT_DIR$/.idea/copilotDiffState.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/docs/RUN_INDEXING_GUIDE.md" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/pipeline/loader.py" beforeDir="false" afterPath="$PROJECT_DIR$/core/pipeline/loader.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/run_indexing.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/run_indexing.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -20,8 +18,8 @@
   <component name="FileTemplateManagerImpl">
     <option name="RECENT_TEMPLATES">
       <list>
-        <option value="Python Script" />
         <option value="Python Unit Test" />
+        <option value="Python Script" />
       </list>
     </option>
   </component>
@@ -40,6 +38,9 @@
     &quot;accountId&quot;: &quot;a50e5be3-d31b-458b-bc79-c5f3feed1d3d&quot;
   }
 }</component>
+  <component name="ProblemsViewState">
+    <option name="selectedTabId" value="CurrentFile" />
+  </component>
   <component name="ProjectColorInfo">{
   &quot;associatedIndex&quot;: 2
 }</component>
@@ -51,30 +52,63 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "ModuleVcsDetector.initialDetectionPerformed": "true",
-    "Python.loader.executor": "Run",
-    "Python.run_indexing.executor": "Run",
-    "Python.vlm_pdf_parser.executor": "Run",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.git.unshallow": "true",
-    "SHARE_PROJECT_CONFIGURATION_FILES": "true",
-    "git-widget-placeholder": "master",
-    "ignore.virus.scanning.warn.message": "true",
-    "last_opened_file_path": "D:/Pycharm/Projects/SuperalloyKgRAG/data/raw_pdfs",
-    "settings.editor.selected.configurable": "com.github.copilot.settings.keymap.KeymapConfigurable"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;Python.1.executor&quot;: &quot;Run&quot;,
+    &quot;Python.API_test.executor&quot;: &quot;Run&quot;,
+    &quot;Python.basic_rag.executor&quot;: &quot;Run&quot;,
+    &quot;Python.clean_embedding_text.executor&quot;: &quot;Run&quot;,
+    &quot;Python.cloud_manager.executor&quot;: &quot;Run&quot;,
+    &quot;Python.embedding.executor&quot;: &quot;Run&quot;,
+    &quot;Python.embedding_basic.executor&quot;: &quot;Run&quot;,
+    &quot;Python.extraction.executor&quot;: &quot;Debug&quot;,
+    &quot;Python.global_query.executor&quot;: &quot;Run&quot;,
+    &quot;Python.graph_builder.executor&quot;: &quot;Run&quot;,
+    &quot;Python.graph_builder_1.executor&quot;: &quot;Run&quot;,
+    &quot;Python.graph_builder_2.executor&quot;: &quot;Run&quot;,
+    &quot;Python.graph_builder_2_quick_resume.executor&quot;: &quot;Run&quot;,
+    &quot;Python.graph_builder_2_resume.executor&quot;: &quot;Run&quot;,
+    &quot;Python.list_all_jobs.executor&quot;: &quot;Run&quot;,
+    &quot;Python.loader.executor&quot;: &quot;Run&quot;,
+    &quot;Python.local_query.executor&quot;: &quot;Run&quot;,
+    &quot;Python.router.executor&quot;: &quot;Run&quot;,
+    &quot;Python.run_indexing.executor&quot;: &quot;Run&quot;,
+    &quot;Python.test_citation_format.executor&quot;: &quot;Run&quot;,
+    &quot;Python.test_json_parsing.executor&quot;: &quot;Run&quot;,
+    &quot;Python.test_no_local_id.executor&quot;: &quot;Run&quot;,
+    &quot;Python.vlm_pdf_parser.executor&quot;: &quot;Run&quot;,
+    &quot;Python.样品分布热力图.executor&quot;: &quot;Run&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
+    &quot;datagrid.heatmap.switchedByDefault&quot;: &quot;false&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;master&quot;,
+    &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;D:/Pycharm/Projects/SuperalloyKgRAG/data/graphs/graph_history_versions&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;reference.settings.ide.settings.web.browsers&quot;
   }
-}]]></component>
+}</component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
+      <recent name="D:\Pycharm\Projects\SuperalloyKgRAG\data\graphs\graph_history_versions" />
+      <recent name="D:\Pycharm\Projects\SuperalloyKgRAG\app" />
+      <recent name="D:\Pycharm\Projects\SuperalloyKgRAG\utils" />
       <recent name="D:\Pycharm\Projects\SuperalloyKgRAG\data\raw_pdfs" />
+    </key>
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="D:\Pycharm\Projects\SuperalloyKgRAG\data\graphs\graph_history_versions" />
+      <recent name="D:\Pycharm\Projects\SuperalloyKgRAG\data\graphs\stable_version" />
+      <recent name="D:\Pycharm\Projects\SuperalloyKgRAG\core\pipeline\graph_builder_history_versions" />
+      <recent name="D:\Pycharm\Projects\SuperalloyKgRAG\core\pipeline" />
+      <recent name="D:\Pycharm\Projects\SuperalloyKgRAG\app" />
     </key>
   </component>
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
-        <option value="bundled-python-sdk-8753aad8314d-d902c0275401-com.jetbrains.pycharm.community.sharedIndexes.bundled-PC-252.25557.178" />
+        <option value="bundled-python-sdk-f69e5c277ee4-cbfc7b97e6b2-com.jetbrains.pycharm.community.sharedIndexes.bundled-PC-252.27397.106" />
       </set>
     </attachedChunks>
   </component>
@@ -86,31 +120,399 @@
       <option name="presentableId" value="Default" />
       <updated>1758197478087</updated>
     </task>
-    <task id="LOCAL-00001" summary="feat: implement PDF processing workflow with batch job management and state persistence">
+    <task id="LOCAL-00010" summary="feat: add cloud manager and graph builder modules for file and batch job management">
       <option name="closed" value="true" />
-      <created>1758250692853</created>
-      <option name="number" value="00001" />
-      <option name="presentableId" value="LOCAL-00001" />
+      <created>1758900013797</created>
+      <option name="number" value="00010" />
+      <option name="presentableId" value="LOCAL-00010" />
       <option name="project" value="LOCAL" />
-      <updated>1758250692853</updated>
+      <updated>1758900013797</updated>
     </task>
-    <task id="LOCAL-00002" summary="feat: add XML configuration for migration states and enhance PDF processing with state management">
+    <task id="LOCAL-00011" summary="feat: add cloud manager and graph builder modules for file and batch job management">
       <option name="closed" value="true" />
-      <created>1758266480963</created>
-      <option name="number" value="00002" />
-      <option name="presentableId" value="LOCAL-00002" />
+      <created>1758900064196</created>
+      <option name="number" value="00011" />
+      <option name="presentableId" value="LOCAL-00011" />
       <option name="project" value="LOCAL" />
-      <updated>1758266480963</updated>
+      <updated>1758900064196</updated>
     </task>
-    <task id="LOCAL-00003" summary="implement JSON text extraction and chunking process">
+    <task id="LOCAL-00012" summary="feat: add cloud manager and graph builder modules for file and batch job management">
       <option name="closed" value="true" />
-      <created>1758291491732</created>
-      <option name="number" value="00003" />
-      <option name="presentableId" value="LOCAL-00003" />
+      <created>1758934971039</created>
+      <option name="number" value="00012" />
+      <option name="presentableId" value="LOCAL-00012" />
       <option name="project" value="LOCAL" />
-      <updated>1758291491732</updated>
+      <updated>1758934971039</updated>
     </task>
-    <option name="localTasksCounter" value="4" />
+    <task id="LOCAL-00013" summary="feat: add cleanup tool and enhance graph processing with community detection and summaries">
+      <option name="closed" value="true" />
+      <created>1758972453454</created>
+      <option name="number" value="00013" />
+      <option name="presentableId" value="LOCAL-00013" />
+      <option name="project" value="LOCAL" />
+      <updated>1758972453454</updated>
+    </task>
+    <task id="LOCAL-00014" summary="feat: implement embedding workflow with data loading, processing, and storage in LanceDB">
+      <option name="closed" value="true" />
+      <created>1758972726958</created>
+      <option name="number" value="00014" />
+      <option name="presentableId" value="LOCAL-00014" />
+      <option name="project" value="LOCAL" />
+      <updated>1758972726958</updated>
+    </task>
+    <task id="LOCAL-00015" summary="feat: implement embedding workflow with data loading, processing, and storage in LanceDB">
+      <option name="closed" value="true" />
+      <created>1758976504482</created>
+      <option name="number" value="00015" />
+      <option name="presentableId" value="LOCAL-00015" />
+      <option name="project" value="LOCAL" />
+      <updated>1758976504482</updated>
+    </task>
+    <task id="LOCAL-00016" summary="feat: add RAG query handler and embedding workflow with logging and configuration management">
+      <option name="closed" value="true" />
+      <created>1758981985980</created>
+      <option name="number" value="00016" />
+      <option name="presentableId" value="LOCAL-00016" />
+      <option name="project" value="LOCAL" />
+      <updated>1758981985980</updated>
+    </task>
+    <task id="LOCAL-00017" summary="feat: add RAG query handler and embedding workflow with logging and configuration management">
+      <option name="closed" value="true" />
+      <created>1758983222688</created>
+      <option name="number" value="00017" />
+      <option name="presentableId" value="LOCAL-00017" />
+      <option name="project" value="LOCAL" />
+      <updated>1758983222688</updated>
+    </task>
+    <task id="LOCAL-00018" summary="feat: add RAG query handler and embedding workflow with logging and configuration management">
+      <option name="closed" value="true" />
+      <created>1759023497887</created>
+      <option name="number" value="00018" />
+      <option name="presentableId" value="LOCAL-00018" />
+      <option name="project" value="LOCAL" />
+      <updated>1759023497887</updated>
+    </task>
+    <task id="LOCAL-00019" summary="feat: implement global query handler with logging and configuration management">
+      <option name="closed" value="true" />
+      <created>1759037031600</created>
+      <option name="number" value="00019" />
+      <option name="presentableId" value="LOCAL-00019" />
+      <option name="project" value="LOCAL" />
+      <updated>1759037031600</updated>
+    </task>
+    <task id="LOCAL-00020" summary="feat: enhance global query handler with JSON parsing, async processing, and context building">
+      <option name="closed" value="true" />
+      <created>1759075846759</created>
+      <option name="number" value="00020" />
+      <option name="presentableId" value="LOCAL-00020" />
+      <option name="project" value="LOCAL" />
+      <updated>1759075846759</updated>
+    </task>
+    <task id="LOCAL-00021" summary="feat: enhance global query handler with JSON parsing, async processing, and context building">
+      <option name="closed" value="true" />
+      <created>1759117906280</created>
+      <option name="number" value="00021" />
+      <option name="presentableId" value="LOCAL-00021" />
+      <option name="project" value="LOCAL" />
+      <updated>1759117906280</updated>
+    </task>
+    <task id="LOCAL-00022" summary="ceshi">
+      <option name="closed" value="true" />
+      <created>1760070568479</created>
+      <option name="number" value="00022" />
+      <option name="presentableId" value="LOCAL-00022" />
+      <option name="project" value="LOCAL" />
+      <updated>1760070568479</updated>
+    </task>
+    <task id="LOCAL-00023" summary="ceshi">
+      <option name="closed" value="true" />
+      <created>1760070603393</created>
+      <option name="number" value="00023" />
+      <option name="presentableId" value="LOCAL-00023" />
+      <option name="project" value="LOCAL" />
+      <updated>1760070603393</updated>
+    </task>
+    <task id="LOCAL-00024" summary="ceshi">
+      <option name="closed" value="true" />
+      <created>1760084302588</created>
+      <option name="number" value="00024" />
+      <option name="presentableId" value="LOCAL-00024" />
+      <option name="project" value="LOCAL" />
+      <updated>1760084302588</updated>
+    </task>
+    <task id="LOCAL-00025" summary="ceshi">
+      <option name="closed" value="true" />
+      <created>1760099677620</created>
+      <option name="number" value="00025" />
+      <option name="presentableId" value="LOCAL-00025" />
+      <option name="project" value="LOCAL" />
+      <updated>1760099677620</updated>
+    </task>
+    <task id="LOCAL-00026" summary="feat: add functionality to list recent batch jobs and cancel specified jobs">
+      <option name="closed" value="true" />
+      <created>1762875053255</created>
+      <option name="number" value="00026" />
+      <option name="presentableId" value="LOCAL-00026" />
+      <option name="project" value="LOCAL" />
+      <updated>1762875053255</updated>
+    </task>
+    <task id="LOCAL-00027" summary="feat: implement community importance calculation and reporting functionality">
+      <option name="closed" value="true" />
+      <created>1762875142526</created>
+      <option name="number" value="00027" />
+      <option name="presentableId" value="LOCAL-00027" />
+      <option name="project" value="LOCAL" />
+      <updated>1762875142526</updated>
+    </task>
+    <task id="LOCAL-00028" summary="feat: add quick and resume scripts for batch job recovery from cloud">
+      <option name="closed" value="true" />
+      <created>1762875347346</created>
+      <option name="number" value="00028" />
+      <option name="presentableId" value="LOCAL-00028" />
+      <option name="project" value="LOCAL" />
+      <updated>1762875347346</updated>
+    </task>
+    <task id="LOCAL-00029" summary="add final_graph.json">
+      <option name="closed" value="true" />
+      <created>1762875507529</created>
+      <option name="number" value="00029" />
+      <option name="presentableId" value="LOCAL-00029" />
+      <option name="project" value="LOCAL" />
+      <updated>1762875507529</updated>
+    </task>
+    <task id="LOCAL-00030" summary="feat: add community discovery job recovery and logging enhancements">
+      <option name="closed" value="true" />
+      <created>1762915938995</created>
+      <option name="number" value="00030" />
+      <option name="presentableId" value="LOCAL-00030" />
+      <option name="project" value="LOCAL" />
+      <updated>1762915938995</updated>
+    </task>
+    <task id="LOCAL-00031" summary="feat: enhance community report generation with ID normalization and logging improvements">
+      <option name="closed" value="true" />
+      <created>1763005955344</created>
+      <option name="number" value="00031" />
+      <option name="presentableId" value="LOCAL-00031" />
+      <option name="project" value="LOCAL" />
+      <updated>1763005955344</updated>
+    </task>
+    <task id="LOCAL-00032" summary="feat: enhance community report generation with ID normalization and logging improvements">
+      <option name="closed" value="true" />
+      <created>1763005970309</created>
+      <option name="number" value="00032" />
+      <option name="presentableId" value="LOCAL-00032" />
+      <option name="project" value="LOCAL" />
+      <updated>1763005970309</updated>
+    </task>
+    <task id="LOCAL-00033" summary="feat: refactor indexing and PDF parsing with enhanced logging and state management">
+      <option name="closed" value="true" />
+      <created>1763008259647</created>
+      <option name="number" value="00033" />
+      <option name="presentableId" value="LOCAL-00033" />
+      <option name="project" value="LOCAL" />
+      <updated>1763008259647</updated>
+    </task>
+    <task id="LOCAL-00034" summary="feat: enhance graph and community report loading to support JSONL format">
+      <option name="closed" value="true" />
+      <created>1763104287750</created>
+      <option name="number" value="00034" />
+      <option name="presentableId" value="LOCAL-00034" />
+      <option name="project" value="LOCAL" />
+      <updated>1763104287750</updated>
+    </task>
+    <task id="LOCAL-00035" summary="feat: add EmbeddingTextCleaner for advanced text cleaning and integrate into embedding workflow">
+      <option name="closed" value="true" />
+      <created>1763353444509</created>
+      <option name="number" value="00035" />
+      <option name="presentableId" value="LOCAL-00035" />
+      <option name="project" value="LOCAL" />
+      <updated>1763353444509</updated>
+    </task>
+    <task id="LOCAL-00036" summary="feat: add EmbeddingTextCleaner for advanced text cleaning and integrate into embedding workflow">
+      <option name="closed" value="true" />
+      <created>1763353523322</created>
+      <option name="number" value="00036" />
+      <option name="presentableId" value="LOCAL-00036" />
+      <option name="project" value="LOCAL" />
+      <updated>1763353523322</updated>
+    </task>
+    <task id="LOCAL-00037" summary="feat: add EmbeddingTextCleaner for advanced text cleaning and integrate into embedding workflow">
+      <option name="closed" value="true" />
+      <created>1763369281306</created>
+      <option name="number" value="00037" />
+      <option name="presentableId" value="LOCAL-00037" />
+      <option name="project" value="LOCAL" />
+      <updated>1763369281306</updated>
+    </task>
+    <task id="LOCAL-00038" summary="feat: add global query handler with async processing and context chunking">
+      <option name="closed" value="true" />
+      <created>1763446183561</created>
+      <option name="number" value="00038" />
+      <option name="presentableId" value="LOCAL-00038" />
+      <option name="project" value="LOCAL" />
+      <updated>1763446183561</updated>
+    </task>
+    <task id="LOCAL-00039" summary="feat: add TextSegment model for tracking text positions and enhance chunking with metadata">
+      <option name="closed" value="true" />
+      <created>1763448168318</created>
+      <option name="number" value="00039" />
+      <option name="presentableId" value="LOCAL-00039" />
+      <option name="project" value="LOCAL" />
+      <updated>1763448168318</updated>
+    </task>
+    <task id="LOCAL-00040" summary="feat: add TextSegment model for tracking text positions and enhance chunking with metadata">
+      <option name="closed" value="true" />
+      <created>1763453837384</created>
+      <option name="number" value="00040" />
+      <option name="presentableId" value="LOCAL-00040" />
+      <option name="project" value="LOCAL" />
+      <updated>1763453837384</updated>
+    </task>
+    <task id="LOCAL-00041" summary="feat: load configuration settings from YAML file for dynamic directory and chunking parameters">
+      <option name="closed" value="true" />
+      <created>1763522598302</created>
+      <option name="number" value="00041" />
+      <option name="presentableId" value="LOCAL-00041" />
+      <option name="project" value="LOCAL" />
+      <updated>1763522598302</updated>
+    </task>
+    <task id="LOCAL-00042" summary="feat: implement chunk ID mapping and citation resolution for enhanced source tracking">
+      <option name="closed" value="true" />
+      <created>1763522717886</created>
+      <option name="number" value="00042" />
+      <option name="presentableId" value="LOCAL-00042" />
+      <option name="project" value="LOCAL" />
+      <updated>1763522717886</updated>
+    </task>
+    <task id="LOCAL-00043" summary="feat: implement chunk ID mapping and citation resolution for enhanced source tracking">
+      <option name="closed" value="true" />
+      <created>1763523623059</created>
+      <option name="number" value="00043" />
+      <option name="presentableId" value="LOCAL-00043" />
+      <option name="project" value="LOCAL" />
+      <updated>1763523623059</updated>
+    </task>
+    <task id="LOCAL-00044" summary="feat: implement chunk ID mapping and citation resolution for enhanced source tracking">
+      <option name="closed" value="true" />
+      <created>1763523689281</created>
+      <option name="number" value="00044" />
+      <option name="presentableId" value="LOCAL-00044" />
+      <option name="project" value="LOCAL" />
+      <updated>1763523689281</updated>
+    </task>
+    <task id="LOCAL-00045" summary="feat: implement chunk ID mapping and citation resolution for enhanced source tracking">
+      <option name="closed" value="true" />
+      <created>1763523827589</created>
+      <option name="number" value="00045" />
+      <option name="presentableId" value="LOCAL-00045" />
+      <option name="project" value="LOCAL" />
+      <updated>1763523827589</updated>
+    </task>
+    <task id="LOCAL-00046" summary="feat: implement chunk ID mapping and citation resolution for enhanced source tracking">
+      <option name="closed" value="true" />
+      <created>1763524367960</created>
+      <option name="number" value="00046" />
+      <option name="presentableId" value="LOCAL-00046" />
+      <option name="project" value="LOCAL" />
+      <updated>1763524367960</updated>
+    </task>
+    <task id="LOCAL-00047" summary="feat: implement chunk ID mapping and citation resolution for enhanced source tracking">
+      <option name="closed" value="true" />
+      <created>1763533780660</created>
+      <option name="number" value="00047" />
+      <option name="presentableId" value="LOCAL-00047" />
+      <option name="project" value="LOCAL" />
+      <updated>1763533780660</updated>
+    </task>
+    <task id="LOCAL-00048" summary="feat: implement chunk ID mapping and citation resolution for enhanced source tracking">
+      <option name="closed" value="true" />
+      <created>1763545081495</created>
+      <option name="number" value="00048" />
+      <option name="presentableId" value="LOCAL-00048" />
+      <option name="project" value="LOCAL" />
+      <updated>1763545081495</updated>
+    </task>
+    <task id="LOCAL-00049" summary="feat: implement local query handler with context building and citation resolution">
+      <option name="closed" value="true" />
+      <created>1763545111950</created>
+      <option name="number" value="00049" />
+      <option name="presentableId" value="LOCAL-00049" />
+      <option name="project" value="LOCAL" />
+      <updated>1763545111950</updated>
+    </task>
+    <task id="LOCAL-00050" summary="feat: enhance local query handling with K-hop neighborhood expansion and context building">
+      <option name="closed" value="true" />
+      <created>1763546591095</created>
+      <option name="number" value="00050" />
+      <option name="presentableId" value="LOCAL-00050" />
+      <option name="project" value="LOCAL" />
+      <updated>1763546591096</updated>
+    </task>
+    <task id="LOCAL-00051" summary="feat: enhance local query handling with K-hop neighborhood expansion and context building">
+      <option name="closed" value="true" />
+      <created>1763547281532</created>
+      <option name="number" value="00051" />
+      <option name="presentableId" value="LOCAL-00051" />
+      <option name="project" value="LOCAL" />
+      <updated>1763547281532</updated>
+    </task>
+    <task id="LOCAL-00052" summary="feat: enhance local query handling with K-hop neighborhood expansion and context building">
+      <option name="closed" value="true" />
+      <created>1763547343522</created>
+      <option name="number" value="00052" />
+      <option name="presentableId" value="LOCAL-00052" />
+      <option name="project" value="LOCAL" />
+      <updated>1763547343522</updated>
+    </task>
+    <task id="LOCAL-00053" summary="feat: implement DriftSearchHandler and GraphRouter for enhanced query routing and context-aware drift search">
+      <option name="closed" value="true" />
+      <created>1763547753177</created>
+      <option name="number" value="00053" />
+      <option name="presentableId" value="LOCAL-00053" />
+      <option name="project" value="LOCAL" />
+      <updated>1763547753177</updated>
+    </task>
+    <task id="LOCAL-00054" summary="feat: implement DriftSearchHandler and GraphRouter for enhanced query routing and context-aware drift search">
+      <option name="closed" value="true" />
+      <created>1763548082288</created>
+      <option name="number" value="00054" />
+      <option name="presentableId" value="LOCAL-00054" />
+      <option name="project" value="LOCAL" />
+      <updated>1763548082288</updated>
+    </task>
+    <task id="LOCAL-00055" summary="feat: refactor run_indexing.py to simplify execution and enhance compatibility with VLMPdfParser">
+      <option name="closed" value="true" />
+      <created>1763548657151</created>
+      <option name="number" value="00055" />
+      <option name="presentableId" value="LOCAL-00055" />
+      <option name="project" value="LOCAL" />
+      <updated>1763548657151</updated>
+    </task>
+    <task id="LOCAL-00056" summary="feat: refactor run_indexing.py to simplify execution and enhance compatibility with VLMPdfParser">
+      <option name="closed" value="true" />
+      <created>1763548670455</created>
+      <option name="number" value="00056" />
+      <option name="presentableId" value="LOCAL-00056" />
+      <option name="project" value="LOCAL" />
+      <updated>1763548670455</updated>
+    </task>
+    <task id="LOCAL-00057" summary="feat: refactor run_indexing.py to simplify execution and enhance compatibility with VLMPdfParser">
+      <option name="closed" value="true" />
+      <created>1763548707470</created>
+      <option name="number" value="00057" />
+      <option name="presentableId" value="LOCAL-00057" />
+      <option name="project" value="LOCAL" />
+      <updated>1763548707470</updated>
+    </task>
+    <task id="LOCAL-00058" summary="feat: implement DriftSearchHandler and GraphRouter for enhanced query routing and context-aware drift search">
+      <option name="closed" value="true" />
+      <created>1763548923824</created>
+      <option name="number" value="00058" />
+      <option name="presentableId" value="LOCAL-00058" />
+      <option name="project" value="LOCAL" />
+      <updated>1763548923824</updated>
+    </task>
+    <option name="localTasksCounter" value="59" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -125,11 +527,50 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="feat: implement PDF processing workflow with batch job management and state persistence" />
-    <MESSAGE value="add XML configuration for migration states and enhance PDF processing with state management" />
-    <MESSAGE value="add XML configuration for migration states and enhance PDF processing with state management" />
-    <MESSAGE value="feat: add XML configuration for migration states and enhance PDF processing with state management" />
-    <MESSAGE value="implement JSON text extraction and chunking process" />
-    <option name="LAST_COMMIT_MESSAGE" value="implement JSON text extraction and chunking process" />
+    <MESSAGE value="feat: add cleanup tool and enhance graph processing with community detection and summaries" />
+    <MESSAGE value="feat: implement embedding workflow with data loading, processing, and storage in LanceDB" />
+    <MESSAGE value="feat: add prompt template loading for RAG query handling and update configuration" />
+    <MESSAGE value="feat: add RAG query handler and embedding workflow with logging and configuration management" />
+    <MESSAGE value="feat: implement global query handler with logging and configuration management" />
+    <MESSAGE value="feat: enhance global query handler with JSON parsing, async processing, and context building" />
+    <MESSAGE value="ceshi" />
+    <MESSAGE value="feat: add functionality to list recent batch jobs and cancel specified jobs" />
+    <MESSAGE value="feat: implement community importance calculation and reporting functionality" />
+    <MESSAGE value="feat: add quick and resume scripts for batch job recovery from cloud" />
+    <MESSAGE value="add final_graph.json" />
+    <MESSAGE value="feat: add community discovery job recovery and logging enhancements" />
+    <MESSAGE value="feat: enhance community report generation with ID normalization and logging improvements" />
+    <MESSAGE value="feat: refactor indexing and PDF parsing with enhanced logging and state management" />
+    <MESSAGE value="feat: enhance graph and community report loading to support JSONL format" />
+    <MESSAGE value="feat: add EmbeddingTextCleaner for advanced text cleaning and integrate into embedding workflow" />
+    <MESSAGE value="feat: add global query handler with async processing and context chunking" />
+    <MESSAGE value="feat: add TextSegment model for tracking text positions and enhance chunking with metadata" />
+    <MESSAGE value="feat: load configuration settings from YAML file for dynamic directory and chunking parameters" />
+    <MESSAGE value="feat: implement chunk ID mapping and citation resolution for enhanced source tracking" />
+    <MESSAGE value="feat: implement local query handler with context building and citation resolution" />
+    <MESSAGE value="feat: enhance local query handling with K-hop neighborhood expansion and context building" />
+    <MESSAGE value="feat: refactor run_indexing.py to simplify execution and enhance compatibility with VLMPdfParser" />
+    <MESSAGE value="feat: reconstructed vlm_pdf_parser" />
+    <MESSAGE value="feat: reconstructed vlm_pdf_parser" />
+    <option name="LAST_COMMIT_MESSAGE" value="feat: reconstructed vlm_pdf_parser" />
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <default-breakpoints>
+        <breakpoint type="python-exception">
+          <properties notifyOnTerminate="true" exception="BaseException">
+            <option name="notifyOnTerminate" value="true" />
+          </properties>
+        </breakpoint>
+      </default-breakpoints>
+    </breakpoint-manager>
+  </component>
+  <component name="github-copilot-workspace">
+    <instructionFileLocations>
+      <option value=".github/instructions" />
+    </instructionFileLocations>
+    <promptFileLocations>
+      <option value=".github/prompts" />
+    </promptFileLocations>
   </component>
 </project>
