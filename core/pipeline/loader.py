@@ -2,26 +2,38 @@
 import hashlib
 import json
 import os
+from pathlib import Path
 from typing import Any, Dict, List, Literal
 import pandas as pd
+import yaml
 from pydantic import BaseModel, Field
 
-# --- 配置参数 ---
-# 源数据文件夹
-SOURCE_JSON_DIR = "../../data/processed_jsons/"
-# 分块后数据存储文件夹
-OUTPUT_DIR = "../../data/chunks/"
-# 分块后文件名
-FILENAME_MAP = {
-    "jsonl": "text_units.jsonl",
-    "json": "text_units.json",
-    "parquet": "text_units.parquet",
-}
-OUTPUT_FORMAT: Literal['jsonl', 'json', 'parquet'] = 'jsonl'
+# --- 加载配置参数 ---
+def load_settings():
+    """从 settings.yaml 加载配置"""
+    # 获取项目根目录
+    project_root = Path(__file__).resolve().parents[2]
+    settings_path = project_root / "config" / "settings.yaml"
 
-# GraphRAG 风格的分块策略参数
-CHUNK_SIZE = 500  # 每个文本块的目标大小 (字符数)
-CHUNK_OVERLAP = 100  # 相邻文本块之间的重叠大小 (字符数)
+    with open(settings_path, 'r', encoding='utf-8') as f:
+        settings = yaml.safe_load(f)
+
+    # 转换为绝对路径
+    loader_config = settings['loader']
+    loader_config['source_json_dir'] = str(project_root / loader_config['source_json_dir'])
+    loader_config['output_dir'] = str(project_root / loader_config['output_dir'])
+
+    return loader_config
+
+
+# 加载配置
+_CONFIG = load_settings()
+SOURCE_JSON_DIR = _CONFIG['source_json_dir']
+OUTPUT_DIR = _CONFIG['output_dir']
+FILENAME_MAP = _CONFIG['filename_map']
+OUTPUT_FORMAT: Literal['jsonl', 'json', 'parquet'] = _CONFIG['output_format']
+CHUNK_SIZE = _CONFIG['chunk_size']
+CHUNK_OVERLAP = _CONFIG['chunk_overlap']
 
 
 # =================================================================

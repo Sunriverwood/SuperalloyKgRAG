@@ -23,6 +23,17 @@ llm:
     input_dir: "data/raw_pdfs"
     output_dir: "data/processed_jsons"
 
+loader:
+  source_json_dir: "data/processed_jsons/"
+  output_dir: "data/chunks/"
+  output_format: "jsonl"  # jsonl, json, or parquet
+  chunk_size: 500  # 每个文本块的目标大小 (字符数)
+  chunk_overlap: 100  # 相邻文本块之间的重叠大小 (字符数)
+  filename_map:
+    jsonl: "text_units.jsonl"
+    json: "text_units.json"
+    parquet: "text_units.parquet"
+
 extraction:
   input_dir: "data/chunks"
   input_filename: "text_units.jsonl"
@@ -66,10 +77,10 @@ embedding:
 
 query:
   top_k: 5
-  generation_model: "gemini-2.5-pro"
+  generation_model: "gemini-2.5-flash"
   temperature: 0.1
   top_p: 0.9
-  search_config: "False" # allow_general_knowledge or not
+  search_config: false # allow_general_knowledge or not
 
   text_db_path: "data/embeddings/text.db"
   text_table_name: "text"
