@@ -234,6 +234,7 @@ async def main():
         if args.query:
             print(f"正在处理: {args.query}")
             answer = await router.route_and_answer(args.query)
+            logging.info(f"最终答案:\n{answer}")
             print("\n--- 最终答案 ---\n")
             print(answer)
         else:
@@ -242,6 +243,7 @@ async def main():
                 q = input("\n问题: ")
                 if q.lower() in ["exit", "quit"]: break
                 answer = await router.route_and_answer(q)
+                logging.info(f"问题: {q}\n答案:\n{answer}")
                 print(f"\n>>> 答案:\n{answer}\n")
 
     except Exception as e:
