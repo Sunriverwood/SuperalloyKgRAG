@@ -77,12 +77,13 @@ embedding:
 
 query:
   top_k: 5
-  generation_model: "gemini-2.5-flash"
+  generation_model: "gemini-2.5-pro"
   temperature: 1
   top_p: 0.9
   search_config: false # allow_general_knowledge or not
   local_top_k: 10
   max_local_context_tokens: 12000
+  k_hop: 1  # K-hop邻域扩展深度 (1或2)
 
   text_db_path: "data/embeddings/text.db"
   text_table_name: "text"

@@ -11,9 +11,10 @@ import numpy as np
 import lancedb
 import yaml
 from google.genai import types
-from typing import Dict, Any, List, Coroutine, Optional
+from typing import Dict, Any, List
 from concurrent.futures import Executor
 from utils.client_factory import create_gemini_client
+from utils.local_context import LocalSearchContextBuilder
 
 # --- 项目根目录定义 ---
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -57,7 +58,6 @@ def load_config(settings_filename: str = "settings.yaml") -> Dict[str, Any]:
 
 class LocalQueryHandler:
     """
-    封装 GraphRAG 局部搜索 (Local Search) 逻辑。
     思路：Query Embedding -> Entity Search -> Context Building -> LLM Generation
     """
 
@@ -74,6 +74,9 @@ class LocalQueryHandler:
 
         # Token限制 (简单估算，用于截断上下文)
         self.max_context_tokens = self.config["query"].get("max_local_context_tokens", 12000)
+
+        # K-hop expansion depth for neighborhood
+        self.k_hop = self.config["query"].get("k_hop", 1)
 
         self.client = create_gemini_client(self.api_key, self.proxy)
         self.embedding_model_name = self.config["embedding"]["model"]
@@ -104,6 +107,19 @@ class LocalQueryHandler:
 
         # 加载 chunk ID 到源信息的映射
         self.chunk_id_map = self._load_chunk_id_map()
+
+        # 加载图数据、文本单元和社区报告用于上下文构建
+        self.graph_data = self._load_graph_data()
+        self.text_units = self._load_text_units()
+        self.community_reports = self._load_community_reports()
+
+        # 初始化局部上下文构建器
+        self.context_builder = LocalSearchContextBuilder(
+            graph_data=self.graph_data,
+            text_units=self.text_units,
+            community_reports=self.community_reports,
+            context_token_limit=self.max_context_tokens
+        )
 
     def _load_prompt(self, filename: str) -> str:
         prompt_path = PROJECT_ROOT / self.prompt_dir / filename
@@ -152,6 +168,76 @@ class LocalQueryHandler:
             return {}
         except Exception as e:
             logging.error(f"❌ 加载文本单元映射时出错: {e}", exc_info=True)
+            return {}
+
+    def _load_graph_data(self) -> Dict[str, Any]:
+        """加载 final_graph.json 数据"""
+        graph_path = PROJECT_ROOT / self.config["query"]["input_graph_path"]
+        try:
+            logging.info(f"正在加载图数据: {graph_path}")
+            with open(graph_path, 'r', encoding='utf-8') as f:
+                graph_data = json.load(f)
+            logging.info(f"✅ 成功加载图数据，包含 {len(graph_data.get('nodes', []))} 个节点")
+            return graph_data
+        except FileNotFoundError:
+            logging.warning(f"⚠️ 未找到图数据文件: {graph_path}")
+            return {"nodes": [], "links": []}
+        except Exception as e:
+            logging.error(f"❌ 加载图数据时出错: {e}", exc_info=True)
+            return {"nodes": [], "links": []}
+
+    def _load_text_units(self) -> Dict[str, str]:
+        """加载文本单元，构建 chunk_id -> text 的映射"""
+        text_units_path = PROJECT_ROOT / self.config["embedding"]["input_text_units_path"]
+        text_map = {}
+        try:
+            logging.info(f"正在加载文本单元: {text_units_path}")
+            with open(text_units_path, 'r', encoding='utf-8') as f:
+                for line in f:
+                    if line.strip():
+                        unit = json.loads(line)
+                        chunk_id = unit.get("id")
+                        text = unit.get("text", "")
+                        if chunk_id and text:
+                            text_map[chunk_id] = text
+            logging.info(f"✅ 成功加载 {len(text_map)} 个文本单元")
+            return text_map
+        except FileNotFoundError:
+            logging.warning(f"⚠️ 未找到文本单元文件: {text_units_path}")
+            return {}
+        except Exception as e:
+            logging.error(f"❌ 加载文本单元时出错: {e}", exc_info=True)
+            return {}
+
+    def _load_community_reports(self) -> Dict[str, str]:
+        """加载社区报告，构建 community_id -> report 的映射"""
+        reports_path = PROJECT_ROOT / self.config["query"]["input_community_report_path"]
+        reports_map = {}
+        try:
+            logging.info(f"正在加载社区报告: {reports_path}")
+            with open(reports_path, 'r', encoding='utf-8') as f:
+                for line in f:
+                    if line.strip():
+                        report_data = json.loads(line)
+                        community_id = report_data.get("community_id")
+                        report = report_data.get("report", {})
+                        if community_id and report:
+                            # 将整个报告结构化为字符串
+                            report_str = f"**{report.get('title', 'Community Report')}**\n\n"
+                            report_str += f"{report.get('summary', '')}\n\n"
+                            findings = report.get("findings", [])
+                            if findings:
+                                report_str += "**Key Findings:**\n"
+                                for finding in findings:
+                                    report_str += f"- {finding.get('summary', '')}\n"
+                            reports_map[community_id] = report_str
+            logging.info(f"✅ 成功加载 {len(reports_map)} 个社区报告")
+            return reports_map
+        except FileNotFoundError:
+            logging.warning(f"⚠️ 未找到社区报告文件: {reports_path}")
+            return {}
+        except Exception as e:
+            logging.error(f"❌ 加载社区报告时出错: {e}", exc_info=True)
             return {}
 
     def _resolve_chunk_citations(self, text: str) -> str:
@@ -295,60 +381,35 @@ class LocalQueryHandler:
 
     def _build_local_context(self, query_vector: List[float]) -> str:
         """
-        构建局部查询上下文 (针对自定义 Schema 优化)：
-        表结构: id, text(描述), vector, payload_node_data_json(其他属性)
+        构建局部查询上下文 (使用 LocalSearchContextBuilder):
+        1. 向量检索 Top-K 实体
+        2. K-hop 邻域扩展
+        3. 收集实体、关系、原始文本和社区报告
         """
         logging.info(f"正在搜索 Top {self.top_k} 相关实体...")
         try:
-            # 搜索 entities 表
+            # 1. 向量检索实体
             results = self.entity_table.search(query_vector).limit(self.top_k).to_list()
 
             if not results:
+                logging.warning("向量检索未找到任何相关实体")
                 return ""
 
-            context_parts = []
-            context_parts.append("### Entities & Descriptions")
+            logging.info(f"✅ 检索到 {len(results)} 个相关实体")
 
-            current_tokens = 0
+            # 2. 使用 LocalSearchContextBuilder 构建完整上下文
+            # 注意：需要确保 LanceDB 结果中的 ID 与 final_graph.json 中的节点 ID 一致
+            context = self.context_builder.build(
+                selected_entities=results,
+                k_hop=self.k_hop
+            )
 
-            for entity in results:
-                # 描述现在直接存储在 'text' 列中
-                description = entity.get("text", "No description available.")
+            if not context:
+                logging.warning("LocalSearchContextBuilder 未能构建有效上下文")
+                return ""
 
-                # --- 解析 Payload 获取名称和来源 ---
-                payload_json_str = entity.get("payload_node_data_json", "{}")
-                try:
-                    payload = json.loads(payload_json_str)
-                except json.JSONDecodeError:
-                    logging.warning(f"无法解析实体 payload: {payload_json_str[:50]}...")
-                    payload = {}
-
-                # 从 payload 获取名称
-                name = payload.get("name", "Unknown Entity")
-
-                # 从 payload 获取 source IDs (chunk_id)
-                source_ids = []
-                if "chunk_id" in payload:
-                    cid = payload["chunk_id"]
-                    if isinstance(cid, str):
-                        source_ids.append(cid)
-
-                # 去重并格式化 Source IDs
-                source_ids = sorted(list(set([s.strip() for s in source_ids if s])))
-                chunk_ids_str = ", ".join(source_ids)
-
-                # --- 构建实体记录块 ---
-                entity_block = f"**Entity**: {name}\n**Description**: {description}\n**Source IDs**: [{chunk_ids_str}]\n"
-
-                # 简单的 Token 计数估算 (防止上下文超长)
-                if current_tokens + len(entity_block) > self.max_context_tokens * 4:
-                    break
-
-                context_parts.append(entity_block)
-                current_tokens += len(entity_block)
-
-            logging.info(f"构建了包含 {len(context_parts) - 1} 个实体的上下文。")
-            return "\n".join(context_parts)
+            logging.info(f"✅ 成功构建局部上下文，长度约 {len(context)} 字符")
+            return context
 
         except Exception as e:
             logging.error(f"❌ 构建局部上下文失败: {e}", exc_info=True)
@@ -424,6 +485,7 @@ async def main():
             answer = await handler.answer_query(args.query)
             print("\n--- 局部搜索生成的答案 ---\n")
             print(answer)
+            logging.info(f"局部搜索生成的答案: {answer}")
             print("\n--------------------------\n")
         else:
             print("已进入局部查询交互模式。输入 'exit' 或 'quit' 退出。")
