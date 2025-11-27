@@ -234,10 +234,15 @@ def create_embedding_requests(documents: List[Dict], model_name: str, output_pat
     logging.info(f"{level_tag}嵌入请求已写入到 {output_path}")
 
 
-def submit_and_monitor_embedding_job(client: genai.Client, requests_path: Path, model_name: str, sleep_interval: int, data_type: str = "") -> Any:
-    """上传文件，创建并监控批量嵌入作业。"""
+def submit_and_monitor_embedding_job(client: genai.Client, requests_path: Path, model_name: str, sleep_interval: int, data_type: str = "", batch_index: int = 0, total_batches: int = 1) -> Any:
+    """
+    上传文件，创建并监控批量嵌入作业。
+    batch_index: 当前批次索引（从0开始）
+    total_batches: 总批次数
+    """
     level_tag = f"[{data_type.upper()}] " if data_type else ""
-    logging.info(f"{level_tag}📤 正在上传请求文件: {requests_path.name}...")
+    batch_tag = f"[批次 {batch_index+1}/{total_batches}] " if total_batches > 1 else ""
+    logging.info(f"{level_tag}{batch_tag}📤 正在上传请求文件: {requests_path.name}...")
     try:
         uploaded_file = client.files.upload(
             file=str(requests_path),
@@ -246,43 +251,46 @@ def submit_and_monitor_embedding_job(client: genai.Client, requests_path: Path, 
                 "mime_type": 'application/jsonl'
             }
         )
-        logging.info(f"{level_tag}✅ 文件上传成功: {uploaded_file.name}")
+        logging.info(f"{level_tag}{batch_tag}✅ 文件上传成功: {uploaded_file.name}")
     except Exception as e:
-        logging.error(f"{level_tag}❌ 文件上传失败: {e}")
+        logging.error(f"{level_tag}{batch_tag}❌ 文件上传失败: {e}")
         return None
 
-    logging.info(f"{level_tag}🚀 正在创建批量嵌入作业...")
+    logging.info(f"{level_tag}{batch_tag}🚀 正在创建批量嵌入作业...")
     try:
         batch_job = client.batches.create_embeddings(
             model=f"{model_name}",
             src={'file_name': uploaded_file.name},
             config={'display_name': f"embedding-job-{requests_path.stem}"},
         )
-        logging.info(f"{level_tag}✅ 批量作业已创建: {batch_job.name}")
+        logging.info(f"{level_tag}{batch_tag}✅ 批量作业已创建: {batch_job.name}")
     except Exception as e:
-        logging.error(f"{level_tag}❌ 创建批量作业失败: {e}")
-        client.files.delete(name=uploaded_file.name)  # 清理已上传的文件
+        logging.error(f"{level_tag}{batch_tag}❌ 创建批量作业失败: {e}")
+        try:
+            client.files.delete(name=uploaded_file.name)  # 清理已上传的文件
+        except:
+            pass
         return None
 
     job_name = batch_job.name
     completed_states = {'JOB_STATE_SUCCEEDED', 'JOB_STATE_FAILED', 'JOB_STATE_CANCELLED', 'JOB_STATE_EXPIRED'}
 
     if sleep_interval == 0:
-        logging.info(f"{level_tag}sleep_interval=0，跳过轮询，直接返回作业对象。")
+        logging.info(f"{level_tag}{batch_tag}sleep_interval=0，跳过轮询，直接返回作业对象。")
         return batch_job
 
     else:
-        logging.info(f"{level_tag}⏳ 开始轮询作业 '{job_name}' 状态，每 {sleep_interval} 秒检查一次...")
+        logging.info(f"{level_tag}{batch_tag}⏳ 开始轮询作业 '{job_name}' 状态，每 {sleep_interval} 秒检查一次...")
         while True:
             try:
                 batch_job_status = client.batches.get(name=job_name)
                 current_state = batch_job_status.state.name
-                logging.info(f"{level_tag}  当前状态: {current_state}")
+                logging.info(f"{level_tag}{batch_tag}  当前状态: {current_state}")
                 if current_state in completed_states:
                     break
                 time.sleep(sleep_interval)
             except Exception as e:
-                logging.error(f"{level_tag}  轮询失败: {e}")
+                logging.error(f"{level_tag}{batch_tag}  轮询失败: {e}")
                 time.sleep(sleep_interval * 2)
         return batch_job_status
 
@@ -391,11 +399,11 @@ def store_embeddings_lancedb(db_path: Path, table_name: str, embedded_data: List
 def process_data_type(data_type: str, documents: List[Dict], config: Dict[str, Any], client: genai.Client):
     """
     处理单个数据类型的完整工作流：创建请求 -> 提交和监控 -> 处理结果 -> 存储。
-    这个函数将被并行执行。
+    支持批次分割处理，避免API配额错误。
     """
     if not documents:
         logging.info(f"[{data_type.upper()}] 没有需要处理的数据，跳过。")
-        return f" {data_type.upper()}: 无数据，跳过。"
+        return f"{data_type.upper()}: 无数据，跳过。"
 
     logging.info(f"\n{'='*60}\n[{data_type.upper()}] 开始处理\n{'='*60}")
 
@@ -403,21 +411,60 @@ def process_data_type(data_type: str, documents: List[Dict], config: Dict[str, A
     dimensionality = config["embedding"]["dimensionality"]
     sleep_interval = config["embedding"]["sleep_interval"]
     requests_dir = PROJECT_ROOT / config["embedding"]["requests_path"]
-    requests_path = requests_dir / f"embedding_{data_type}_requests.jsonl"
     db_path = PROJECT_ROOT / config["embedding"]["output_db_path"]
 
-    create_embedding_requests(documents, model_name, requests_path, dimensionality, data_type)
+    # 获取批次大小配置（默认2000）
+    batch_size = int(config["embedding"].get("batch_size", 2000))
 
-    final_batch_job_status = submit_and_monitor_embedding_job(client, requests_path, model_name, sleep_interval, data_type)
+    # 计算批次数量
+    num_documents = len(documents)
+    num_batches = (num_documents + batch_size - 1) // batch_size
 
-    embedded_documents = process_embedding_results(final_batch_job_status, client, documents, data_type)
+    if num_batches > 1:
+        logging.info(f"⚙️ [{data_type.upper()}] 文档数量 {num_documents} 超过批次大小 {batch_size}，将拆分为 {num_batches} 个批次处理")
 
-    store_embeddings_lancedb(db_path, data_type, embedded_documents, data_type)
+    all_embedded_documents = []
 
-    if not embedded_documents:
+    # 分批处理
+    for batch_idx in range(num_batches):
+        start_idx = batch_idx * batch_size
+        end_idx = min((batch_idx + 1) * batch_size, num_documents)
+        batch_documents = documents[start_idx:end_idx]
+
+        # 为每个批次创建单独的请求文件
+        if num_batches > 1:
+            requests_path = requests_dir / f"embedding_{data_type}_requests_batch_{batch_idx+1}.jsonl"
+        else:
+            requests_path = requests_dir / f"embedding_{data_type}_requests.jsonl"
+
+        logging.info(f"🔄 [{data_type.upper()}] 处理批次 {batch_idx+1}/{num_batches}：文档 {start_idx+1}-{end_idx} (共 {len(batch_documents)} 个)")
+
+        # 创建批次请求
+        create_embedding_requests(batch_documents, model_name, requests_path, dimensionality, data_type)
+
+        # 提交并监控批次作业
+        batch_job_status = submit_and_monitor_embedding_job(
+            client, requests_path, model_name, sleep_interval, data_type, batch_idx, num_batches
+        )
+
+        # 处理批次结果
+        embedded_batch = process_embedding_results(batch_job_status, client, batch_documents, data_type)
+
+        if embedded_batch:
+            all_embedded_documents.extend(embedded_batch)
+            logging.info(f"✅ [{data_type.upper()}] 批次 {batch_idx+1}/{num_batches} 完成，获得 {len(embedded_batch)} 个嵌入向量")
+        else:
+            logging.warning(f"⚠️ [{data_type.upper()}] 批次 {batch_idx+1}/{num_batches} 未获得有效嵌入向量")
+
+    # 合并结果并存储
+    if all_embedded_documents:
+        logging.info(f"🎉 [{data_type.upper()}] 所有批次处理完成，共获得 {len(all_embedded_documents)} 个嵌入向量")
+        store_embeddings_lancedb(db_path, data_type, all_embedded_documents, data_type)
+        return f"[{data_type.upper()}] 成功处理 {len(all_embedded_documents)} 个文档。"
+    else:
+        logging.error(f"❌ [{data_type.upper()}] 所有批次均未获得有效嵌入向量")
         return f"[{data_type.upper()}] 处理失败或未返回向量。"
 
-    return f"[{data_type.upper()}] 成功处理 {len(embedded_documents)} 个文档。"
 
 
 # --- 主执行函数 ---

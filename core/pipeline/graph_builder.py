@@ -371,26 +371,35 @@ def _create_temp_embedding_requests(entities: List[Tuple[str, str]], output_path
             f.write(json.dumps(req, ensure_ascii=False) + "\n")
 
 
-def _submit_and_monitor_embedding_job(client: genai.Client, requests_path: Path, model_name: str, sleep_interval: int):
-    logging.info(f"📤 [EntityEmb] 上传临时嵌入请求: {requests_path.name} ...")
+def _submit_and_monitor_embedding_job(client: genai.Client, requests_path: Path, model_name: str, sleep_interval: int, batch_index: int = 0, total_batches: int = 1):
+    """
+    提交单个批量嵌入作业并监控。
+    batch_index: 当前批次索引（从0开始）
+    total_batches: 总批次数
+    """
+    batch_tag = f"[批次 {batch_index+1}/{total_batches}]" if total_batches > 1 else ""
+    logging.info(f"📤 [EntityEmb] {batch_tag} 上传临时嵌入请求: {requests_path.name} ...")
     try:
         up = client.files.upload(file=str(requests_path), config={"display_name": f'emb-entity-{requests_path.stem}', "mime_type": 'application/jsonl'})
-        logging.info(f"✅ [EntityEmb] 文件上传成功: {up.name}")
+        logging.info(f"✅ [EntityEmb] {batch_tag} 文件上传成功: {up.name}")
     except Exception as e:
-        logging.error(f"❌ [EntityEmb] 文件上传失败: {e}")
+        logging.error(f"❌ [EntityEmb] {batch_tag} 文件上传失败: {e}")
         return None
 
-    logging.info("🚀 [EntityEmb] 创建批量嵌入作业...")
+    logging.info(f"🚀 [EntityEmb] {batch_tag} 创建批量嵌入作业...")
     try:
         job = client.batches.create_embeddings(model=f"{model_name}", src={'file_name': up.name}, config={'display_name': f"emb-entity-job-{requests_path.stem}"})
-        logging.info(f"✅ [EntityEmb] 作业已创建: {job.name}")
+        logging.info(f"✅ [EntityEmb] {batch_tag} 作业已创建: {job.name}")
     except Exception as e:
-        logging.error(f"❌ [EntityEmb] 创建嵌入作业失败: {e}")
-        client.files.delete(name=up.name)
+        logging.error(f"❌ [EntityEmb] {batch_tag} 创建嵌入作业失败: {e}")
+        try:
+            client.files.delete(name=up.name)
+        except:
+            pass
         return None
 
     done = {'JOB_STATE_SUCCEEDED', 'JOB_STATE_FAILED', 'JOB_STATE_CANCELLED', 'JOB_STATE_EXPIRED'}
-    logging.info(f"⏳ [EntityEmb] 轮询 '{job.name}' 状态，每 {sleep_interval} 秒...")
+    logging.info(f"⏳ [EntityEmb] {batch_tag} 轮询 '{job.name}' 状态，每 {sleep_interval} 秒...")
     while True:
         try:
             st = client.batches.get(name=job.name)
@@ -398,7 +407,7 @@ def _submit_and_monitor_embedding_job(client: genai.Client, requests_path: Path,
                 return st
             time.sleep(sleep_interval)
         except Exception as e:
-            logging.error(f"  - [EntityEmb] 轮询失败: {e}")
+            logging.error(f"  - [EntityEmb] {batch_tag} 轮询失败: {e}")
             time.sleep(max(2, sleep_interval * 2))
 
 
@@ -1025,6 +1034,8 @@ def run_entity_merge_stage(client: genai.Client, graph: nx.DiGraph, config: Dict
     entity_topk = int(config["graph_builder"].get("entity_merge_topk", 10))
     entity_min_sim = float(config["graph_builder"].get("entity_merge_min_sim", 0.82))
 
+    embedding_batch_size = int(config["graph_builder"].get("embedding_batch_size", 1000))
+
     logging.info("--- 阶段2: 实体合并（聚类 + LLM 仲裁） ---")
     ent_ids: List[str] = []
     ent_texts: List[Tuple[str, str]] = []
@@ -1038,9 +1049,46 @@ def run_entity_merge_stage(client: genai.Client, graph: nx.DiGraph, config: Dict
         logging.info("可用于合并的实体数量不足，跳过该阶段。")
         return graph
 
-    _create_temp_embedding_requests(ent_texts, tmp_emb_req_path, model_name=embed_model, dim=embed_dim)
-    emb_job = _submit_and_monitor_embedding_job(client, tmp_emb_req_path, embed_model, sleep_interval)
-    V = _process_embedding_results(emb_job, client, ent_ids)
+    # 分批处理嵌入请求
+    num_entities = len(ent_texts)
+    num_batches = (num_entities + embedding_batch_size - 1) // embedding_batch_size
+
+    if num_batches > 1:
+        logging.info(f"⚙️ 实体数量 {num_entities} 超过批次大小 {embedding_batch_size}，将拆分为 {num_batches} 个批次处理")
+
+    all_embeddings = []
+
+    for batch_idx in range(num_batches):
+        start_idx = batch_idx * embedding_batch_size
+        end_idx = min((batch_idx + 1) * embedding_batch_size, num_entities)
+        batch_ent_texts = ent_texts[start_idx:end_idx]
+        batch_ent_ids = ent_ids[start_idx:end_idx]
+
+        # 为每个批次创建单独的请求文件
+        if num_batches > 1:
+            batch_req_path = tmp_emb_req_path.parent / f"{tmp_emb_req_path.stem}_batch_{batch_idx+1}.jsonl"
+        else:
+            batch_req_path = tmp_emb_req_path
+
+        logging.info(f"🔄 处理批次 {batch_idx+1}/{num_batches}：实体 {start_idx+1}-{end_idx} (共 {len(batch_ent_texts)} 个)")
+
+        _create_temp_embedding_requests(batch_ent_texts, batch_req_path, model_name=embed_model, dim=embed_dim)
+        emb_job = _submit_and_monitor_embedding_job(client, batch_req_path, embed_model, sleep_interval, batch_idx, num_batches)
+        batch_V = _process_embedding_results(emb_job, client, batch_ent_ids)
+
+        if batch_V.shape[0] > 0:
+            all_embeddings.append(batch_V)
+            logging.info(f"✅ 批次 {batch_idx+1}/{num_batches} 完成，获得 {batch_V.shape[0]} 个嵌入向量")
+        else:
+            logging.warning(f"⚠️ 批次 {batch_idx+1}/{num_batches} 未获得有效嵌入向量")
+
+    # 合并所有批次的嵌入向量
+    if all_embeddings:
+        V = np.vstack(all_embeddings)
+        logging.info(f"🎉 所有批次处理完成，共获得 {V.shape[0]} 个嵌入向量")
+    else:
+        logging.error("❌ 所有批次均未获得有效嵌入向量")
+        V = np.zeros((0, embed_dim), dtype=float)
 
     clusters = build_candidate_clusters(V, ent_ids, topk=entity_topk, min_sim=entity_min_sim)
     logging.info(f"候选同义簇数量: {len(clusters)}")

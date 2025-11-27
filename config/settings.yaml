@@ -63,6 +63,7 @@ graph_builder:
   enable_entity_merge: True
   entity_merge_topk: 10
   entity_merge_min_sim: 0.82
+  embedding_batch_size: 1000 # 每批次处理的实体嵌入数量，避免API配额错误
 
 embedding:
   model: "gemini-embedding-001"
@@ -75,6 +76,7 @@ embedding:
   output_text_table_name: "text"
   requests_path: "data/cache"
   sleep_interval: 600
+  batch_size: 1000  # 每批次处理的嵌入数量，避免API配额错误
 
 query:
   top_k: 5
