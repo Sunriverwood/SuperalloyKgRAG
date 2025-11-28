@@ -31,7 +31,7 @@ def setup_logging(config: Dict[str, Any]):
     """设置路由专用日志"""
     log_config = config.get("logging", {})
     level = getattr(logging, log_config.get("level", "INFO").upper(), logging.INFO)
-    relative_log_path = log_config.get("log_file", "logs/router.log")
+    relative_log_path = log_config.get("log_file", "logs/router_qwen.log")
     log_file = PROJECT_ROOT / relative_log_path
     log_file.parent.mkdir(exist_ok=True, parents=True)
 

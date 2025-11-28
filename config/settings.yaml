@@ -13,9 +13,9 @@ vlm_parser:
   output_dir: "data/processed_jsons/"
 
 llm:
-  provider: google
-  model: gemini-2.5-pro
-  api_key: ${GEMINI_API_KEY}
+  provider: QWEN                   # GEMINI
+  model: qwen3-max                 # gemini-2.5-pro
+  api_key: ${QWEN_API_KEY}         # ${GEMINI_API_KEY}
   batch_mode: true                 # 是否启用批处理
   temperature: 0.1                 # 控制生成的稳定性
   top_p: 0.9
@@ -71,11 +71,11 @@ embedding:
   input_text_units_path: "data/chunks/text_units.jsonl"
   input_graph_path: "data/graphs/final_graph.json"
   input_community_report_path: "data/reports/community_summaries.jsonl"
-  output_db_path: "data/embeddings/no_entities_merge.db"
+  output_db_path: "data/embeddings/embedding.db"  #no_entities_merge
   output_db_text_path: "data/embeddings/text.db"
   output_text_table_name: "text"
   requests_path: "data/cache"
-  sleep_interval: 600
+  sleep_interval: 60
   batch_size: 10000  # 每批次处理的嵌入数量，避免API配额错误
 
 query:
@@ -95,10 +95,10 @@ query:
   output_dir: "data/answers"
   output_filename: "answers_text.jsonl"
   requests_path: "data/cache"
-  sleep_interval: 600
+  sleep_interval: 60
   basic_rag_prompt: "config/prompts/basic_rag.md"
 
-  embedding_db_path: "data/embeddings/no_entities_merge.db"
+  embedding_db_path: "data/embeddings/embedding.db"  #no_entities_merge
   global_table_name: "communities"
   local_table_name: "entities"
   prompt_dir: "config/prompts"

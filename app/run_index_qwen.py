@@ -50,7 +50,7 @@ def setup_logging(config: Dict[str, Any]):
     """根据配置文件设置日志记录器"""
     log_config = config.get("logging", {})
     level = getattr(logging, log_config.get("level", "INFO").upper(), logging.INFO)
-    relative_log_path = log_config.get("log_file", "logs/run_indexing.log")
+    relative_log_path = log_config.get("log_file", "logs/run_indexing_qwen.log")
     log_file = PROJECT_ROOT / relative_log_path
 
     log_file.parent.mkdir(exist_ok=True, parents=True)
@@ -399,12 +399,12 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 执行示例:
-  python run_indexing.py                    # 执行完整流水线 (步骤1-5)
-  python run_indexing.py --start 3          # 从步骤3开始执行到步骤5
-  python run_indexing.py --start 2 --end 4  # 执行步骤2-4
-  python run_indexing.py --step 3           # 仅执行步骤3
-  python run_indexing.py --reset            # 重置流水线状态后执行
-  python run_indexing.py --resume           # 从上次中断处继续
+  python run_indexing_qwen.py                    # 执行完整流水线 (步骤1-5)
+  python run_indexing_qwen.py --start 3          # 从步骤3开始执行到步骤5
+  python run_indexing_qwen.py --start 2 --end 4  # 执行步骤2-4
+  python run_indexing_qwen.py --step 5           # 仅执行步骤5
+  python run_indexing_qwen.py --reset            # 重置流水线状态后执行
+  python run_indexing_qwen.py --resume           # 从上次中断处继续
 
 步骤说明:
   1 - OCR解析 (PDF → JSON)
