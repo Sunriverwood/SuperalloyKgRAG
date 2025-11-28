@@ -66,27 +66,27 @@ graph_builder:
   embedding_batch_size: 1000 # 每批次处理的实体嵌入数量，避免API配额错误
 
 embedding:
-  model: "gemini-embedding-001"
+  model: "text-embedding-v4"  #"gemini-embedding-001""text-embedding-v4"
   dimensionality: 768
   input_text_units_path: "data/chunks/text_units.jsonl"
   input_graph_path: "data/graphs/final_graph.json"
   input_community_report_path: "data/reports/community_summaries.jsonl"
-  output_db_path: "data/embeddings/embeddings.db"
+  output_db_path: "data/embeddings/no_entities_merge.db"
   output_db_text_path: "data/embeddings/text.db"
   output_text_table_name: "text"
   requests_path: "data/cache"
   sleep_interval: 600
-  batch_size: 1000  # 每批次处理的嵌入数量，避免API配额错误
+  batch_size: 10000  # 每批次处理的嵌入数量，避免API配额错误
 
 query:
-  top_k: 5
-  generation_model: "gemini-2.5-pro"
+  top_k: 20
+  generation_model: "qwen3-max"  #gemini-2.5-pro""qwen3-max"
   temperature: 1
   top_p: 0.9
   search_config: false # allow_general_knowledge or not
   local_top_k: 10
-  max_local_context_tokens: 12000
-  k_hop: 1  # K-hop邻域扩展深度 (1或2)
+  max_local_context_tokens: 30000
+  k_hop: 2  # K-hop邻域扩展深度 (1或2)
   drift_k_followups: 2  # 当启用drift时，允许的后续问题数量
   drift_max_steps: 2 # 当启用drift时，最大漂移步数
 
@@ -98,7 +98,7 @@ query:
   sleep_interval: 600
   basic_rag_prompt: "config/prompts/basic_rag.md"
 
-  embedding_db_path: "data/embeddings/embeddings.db"
+  embedding_db_path: "data/embeddings/no_entities_merge.db"
   global_table_name: "communities"
   local_table_name: "entities"
   prompt_dir: "config/prompts"
