@@ -112,7 +112,7 @@ def calculate_community_importance(
     nx.set_edge_attributes(graph, centrality_scores_valid, "betweenness_centrality")
     logging.info(f"已将 {len(centrality_scores_valid)} 条边的介数中心性分数更新到图中。")
 
-    # 3) 计算综合重要性分数（更合理的权重归一化：用 min-max 而非固定 /10）
+    # 3) 计算综合重要性分数（对权重和介数中心性都做 min-max 归一化）
     # 收集已有权重
     weights = []
     for _, _, data in graph.edges(data=True):
@@ -126,6 +126,18 @@ def calculate_community_importance(
     w_max = max(weights) if weights else 1.0
     denom = (w_max - w_min) if (w_max > w_min) else 1.0
 
+    # 收集介数中心性并做 min-max 归一化准备
+    central_values = []
+    for _, _, data in graph.edges(data=True):
+        try:
+            central_values.append(float(data.get("betweenness_centrality", 0.0)))
+        except (TypeError, ValueError):
+            central_values.append(0.0)
+
+    c_min = min(central_values) if central_values else 0.0
+    c_max = max(central_values) if central_values else 1.0
+    c_denom = (c_max - c_min) if (c_max > c_min) else 1.0
+
     composite_scores = {}
     for u, v, data in graph.edges(data=True):
         raw_w = data.get("weight", 0.0)
@@ -134,10 +146,19 @@ def calculate_community_importance(
         except (TypeError, ValueError):
             raw_w = 0.0
 
+        # 对权重做 0..1 的 min-max 归一化并截断
         normalized_weight = (raw_w - w_min) / denom
-        centrality = float(data.get("betweenness_centrality", 0.0))
+        normalized_weight = max(0.0, min(1.0, normalized_weight))
 
-        score = (weight_alpha * centrality) + ((1.0 - weight_alpha) * normalized_weight)
+        # 对介数中心性做 0..1 的 min-max 归一化并截断
+        try:
+            centrality = float(data.get("betweenness_centrality", 0.0))
+        except (TypeError, ValueError):
+            centrality = 0.0
+        normalized_centrality = (centrality - c_min) / c_denom
+        normalized_centrality = max(0.0, min(1.0, normalized_centrality))
+
+        score = (weight_alpha * normalized_centrality) + ((1.0 - weight_alpha) * normalized_weight)
         composite_scores[(u, v)] = score
 
     nx.set_edge_attributes(graph, composite_scores, "composite_importance")
