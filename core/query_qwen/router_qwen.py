@@ -13,6 +13,7 @@ from openai import OpenAI
 # 复用现有模块
 from global_query_qwen import GlobalQueryHandler
 from local_query_qwen import LocalQueryHandler
+from reasoning_query_qwen import ReasoningQueryHandler
 
 # --- 项目根目录定义 ---
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -163,6 +164,11 @@ class DriftSearchHandler(LocalQueryHandler):
 class GraphRouter:
     """
     智能路由器：负责意图识别和分发。
+    支持四种查询模式：
+    1. GLOBAL: 全局查询（摘要、主题等）
+    2. LOCAL: 局部查询（特定实体、关系）
+    3. REASONING: 推理查询（多跳推理、因果关系）
+    4. DRIFT: 漂移搜索（需要上下文扩展的查询）
     """
 
     def __init__(self, config: Dict[str, Any]):
@@ -185,58 +191,253 @@ class GraphRouter:
         self.global_handler = GlobalQueryHandler(config)
         self.drift_handler = DriftSearchHandler(config)
 
+        # 初始化推理处理器（智能检测模型）
+        try:
+            model_path = PROJECT_ROOT / config.get('reasoning', {}).get('output', {}).get('model_path', 'data/reasoning/model.pt')
+            load_model = model_path.exists()
+
+            if load_model:
+                logging.info(f"检测到推理模型: {model_path}")
+                self.reasoning_handler = ReasoningQueryHandler(config, load_trained_model=True)
+                self.reasoning_enabled = True
+            else:
+                logging.warning(f"未找到推理模型: {model_path}，推理功能将被禁用")
+                self.reasoning_handler = None
+                self.reasoning_enabled = False
+        except Exception as e:
+            logging.error(f"加载推理处理器失败: {e}，推理功能将被禁用")
+            self.reasoning_handler = None
+            self.reasoning_enabled = False
+
     async def route_and_answer(self, query: str) -> str:
         """
         路由并回答问题的入口函数。
+        使用 CoT (Chain of Thought) 技术进行智能分类和方法选择。
         """
-        # 1. 意图分类
-        intent = await self._classify_intent(query)
+        # 1. CoT 意图分类（包含推理模式）
+        classification_result = await self._cot_classify_intent(query)
+        intent = classification_result['intent']
+        reasoning = classification_result['reasoning']
+        method = classification_result.get('method', 'ppr')
+
+        logging.info(f"CoT 分类结果:")
+        logging.info(f"  意图: {intent}")
+        logging.info(f"  推理: {reasoning}")
+        if intent == "REASONING":
+            logging.info(f"  推理方法: {method}")
 
         # 2. 分发执行
         if intent == "GLOBAL":
             logging.info(f"路由判定: 全局查询 (Global) -> '{query}'")
             return await self.global_handler.answer_query(query)
-        else:
-            logging.info(f"路由判定: 局部/漂移查询 (Local/Drift) -> '{query}'")
+
+        elif intent == "REASONING":
+            if not self.reasoning_enabled:
+                logging.warning("推理功能未启用，降级为漂移搜索模式")
+                return await self.drift_handler.perform_drift_search(query)
+
+            logging.info(f"路由判定: 推理查询 (Reasoning) with method={method} -> '{query}'")
+            # 使用同步方法，但包装在 executor 中
+            loop = asyncio.get_running_loop()
+            result = await loop.run_in_executor(
+                None,
+                lambda: self.reasoning_handler.query(query, method=method, include_llm_answer=True)
+            )
+            # 提取答案文本
+            return result.get('answer', '未能生成答案')
+
+        elif intent == "DRIFT":
+            logging.info(f"路由判定: 漂移搜索 (Drift) -> '{query}'")
             return await self.drift_handler.perform_drift_search(query)
 
-    async def _classify_intent(self, query: str) -> Literal["GLOBAL", "LOCAL"]:
-        """
-        使用 LLM 判断查询意图。
-        """
-        prompt = f"""
-        You are a query intent classifier for a Knowledge Graph RAG system.
+        else:  # LOCAL
+            logging.info(f"路由判定: 局部查询 (Local) -> '{query}'")
+            # 使用 DriftHandler 的基础 LocalQueryHandler 功能
+            # 直接调用一次检索即可
+            query_vector = self.drift_handler._embed_query(query)
+            context = self.drift_handler._build_local_context(query_vector)
 
-        Query: "{query}"
+            # 使用模板生成答案
+            from string import Template
+            template = Template(self.drift_handler.local_prompt_template)
+            prompt = template.safe_substitute(
+                context_data=context,
+                query=query,
+                constraints="严格基于提供的上下文回答，禁止编造。"
+            )
 
-        Classify this query into one of two categories:
-        1. "GLOBAL": The user asks for a summary, main themes, or an overview of the entire dataset/document collection. The answer requires aggregating information from many clusters.
-        2. "LOCAL": The user asks about specific entities (people, places, concepts), their attributes, or specific relationships between them. The answer requires finding specific nodes in the graph.
+            response_text = await self.drift_handler.generate_async_wrapper(prompt=prompt)
+            return self.drift_handler._resolve_chunk_citations(response_text)
 
-        Return ONLY the word "GLOBAL" or "LOCAL". Do not add punctuation.
+    async def _cot_classify_intent(self, query: str) -> Dict[str, Any]:
         """
+        使用 Chain of Thought (CoT) 技术进行意图分类和方法选择。
+
+        Returns:
+            Dict with keys: 'intent', 'reasoning', 'method' (for REASONING intent)
+        """
+        cot_prompt = f"""
+You are an intelligent query classifier for a Knowledge Graph RAG system. Use Chain of Thought reasoning to classify the query.
+
+Query: "{query}"
+
+Think step by step:
+
+1. **Query Analysis**: What is the user asking for?
+   - Is it asking for a summary/overview of the entire dataset? (GLOBAL)
+   - Is it asking about specific entities and their direct attributes? (LOCAL)
+   - Does it require multi-hop reasoning or finding relationships between entities? (REASONING)
+   - Does it need context expansion through multiple retrieval steps? (DRIFT)
+
+2. **Complexity Assessment**: 
+   - Simple fact lookup → LOCAL
+   - Relationship discovery/causal reasoning → REASONING
+   - Broad overview/summary → GLOBAL
+   - Needs iterative refinement → DRIFT
+
+3. **Keywords Identification**:
+   - GLOBAL indicators: "summarize", "overview", "main themes", "in general"
+   - LOCAL indicators: "what is", "define", "describe [specific entity]"
+   - REASONING indicators: "relationship between", "why", "how does X affect Y", "connection", "path from X to Y"
+   - DRIFT indicators: "comprehensive analysis", "explore", "deep dive"
+
+4. **Method Selection** (if REASONING):
+   - PPR (Personalized PageRank): Better for discovering related entities through graph structure
+   - GNN (Graph Neural Network): Better for complex multi-hop reasoning with learned patterns
+   - Use PPR for: "find related", "what connects", "entities similar to"
+   - Use GNN for: "why", "causal relationship", "complex interaction"
+
+Now classify the query:
+
+**Reasoning Process**:
+[Your step-by-step analysis here]
+
+**Classification**:
+Intent: [GLOBAL/LOCAL/REASONING/DRIFT]
+{f"Method: [ppr/gnn] (only if REASONING)" if "relationship" in query.lower() or "why" in query.lower() else ""}
+
+Provide your response in this exact format:
+REASONING: <your detailed reasoning>
+INTENT: <GLOBAL/LOCAL/REASONING/DRIFT>
+METHOD: <ppr/gnn> (only if REASONING)
+"""
 
         try:
-            # 修改：使用 OpenAI 兼容的同步调用，并包装在 run_in_executor 中
+            loop = asyncio.get_running_loop()
+
+            def call_classifier():
+                response = self.client.chat.completions.create(
+                    model=self.model_name,
+                    messages=[{"role": "user", "content": cot_prompt}],
+                    temperature=0.3  # 适中温度，允许一定创造性
+                )
+                return response.choices[0].message.content
+
+            result_text = await loop.run_in_executor(None, call_classifier)
+
+            # 解析 CoT 输出
+            reasoning = ""
+            intent = "LOCAL"  # 默认
+            method = "ppr"  # 默认
+
+            lines = result_text.strip().split('\n')
+            for line in lines:
+                line = line.strip()
+                if line.startswith("REASONING:"):
+                    reasoning = line.replace("REASONING:", "").strip()
+                elif line.startswith("INTENT:"):
+                    intent_str = line.replace("INTENT:", "").strip().upper()
+                    if intent_str in ["GLOBAL", "LOCAL", "REASONING", "DRIFT"]:
+                        intent = intent_str
+                elif line.startswith("METHOD:"):
+                    method_str = line.replace("METHOD:", "").strip().lower()
+                    if method_str in ["ppr", "gnn"]:
+                        method = method_str
+
+            # 如果没有推理模型，自动降级 REASONING 为 DRIFT
+            if intent == "REASONING" and not self.reasoning_enabled:
+                logging.info("检测到 REASONING 意图，但推理模型未启用，降级为 DRIFT")
+                intent = "DRIFT"
+
+            return {
+                'intent': intent,
+                'reasoning': reasoning,
+                'method': method
+            }
+
+        except Exception as e:
+            logging.error(f"CoT 意图分类失败: {e}，使用简单分类降级")
+            # 降级为简单分类
+            return await self._simple_classify_intent(query)
+
+    async def _simple_classify_intent(self, query: str) -> Dict[str, Any]:
+        """
+        简单的意图分类（作为 CoT 的降级方案）。
+        """
+        prompt = f"""
+Classify this query into one category:
+1. "GLOBAL": Summary/overview of entire dataset
+2. "LOCAL": Specific entity attributes
+3. "REASONING": Multi-hop reasoning or relationships
+4. "DRIFT": Needs context expansion
+
+Query: "{query}"
+
+Return ONLY one word: GLOBAL, LOCAL, REASONING, or DRIFT
+"""
+
+        try:
             loop = asyncio.get_running_loop()
 
             def call_classifier():
                 response = self.client.chat.completions.create(
                     model=self.model_name,
                     messages=[{"role": "user", "content": prompt}],
-                    temperature=0.1  # 分类任务建议低温度
+                    temperature=0.1
                 )
                 return response.choices[0].message.content
 
             result_text = await loop.run_in_executor(None, call_classifier)
             result = result_text.strip().upper()
 
-            if "GLOBAL" in result: return "GLOBAL"
-            return "LOCAL"
+            # 检测关键词以选择方法
+            method = "ppr"  # 默认
+            if "why" in query.lower() or "cause" in query.lower():
+                method = "gnn"
+
+            for intent in ["GLOBAL", "LOCAL", "REASONING", "DRIFT"]:
+                if intent in result:
+                    # 如果没有推理模型，降级
+                    if intent == "REASONING" and not self.reasoning_enabled:
+                        intent = "DRIFT"
+
+                    return {
+                        'intent': intent,
+                        'reasoning': f"Simple classification based on keywords",
+                        'method': method
+                    }
+
+            return {
+                'intent': "LOCAL",
+                'reasoning': "Default fallback",
+                'method': "ppr"
+            }
 
         except Exception as e:
-            logging.error(f"意图分类失败: {e}，默认使用 LOCAL 模式。")
-            return "LOCAL"
+            logging.error(f"简单分类也失败: {e}，默认使用 LOCAL 模式")
+            return {
+                'intent': "LOCAL",
+                'reasoning': "Error fallback",
+                'method': "ppr"
+            }
+
+    async def _classify_intent(self, query: str) -> Literal["GLOBAL", "LOCAL"]:
+        """
+        使用 LLM 判断查询意图。
+        （保留用于向后兼容，现在推荐使用 _cot_classify_intent）
+        """
+        result = await self._simple_classify_intent(query)
+        return result['intent']
 
 
 async def main():

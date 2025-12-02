@@ -29,7 +29,7 @@ def setup_logging(config: Dict[str, Any]):
     """根据配置文件设置日志记录器"""
     log_config = config.get("logging", {})
     level = getattr(logging, log_config.get("level", "INFO").upper(), logging.INFO)
-    relative_log_path = log_config.get("log_file", "logs/reasoning_query.log")
+    relative_log_path = log_config.get("log_file", "logs/superalloyKgRAG.log")
     log_file = PROJECT_ROOT / relative_log_path
 
     log_file.parent.mkdir(exist_ok=True, parents=True)
@@ -423,7 +423,7 @@ def interactive_mode(config: Dict[str, Any]):
 
     # Query loop
     while True:
-        print("\n" + "-"*80)
+        print("\n" + "-" * 80)
         query = input("\nEnter your query (or 'quit' to exit): ").strip()
 
         if query.lower() in ['quit', 'exit', 'q']:
@@ -451,9 +451,9 @@ def interactive_mode(config: Dict[str, Any]):
                 output_file = "data/reasoning/query_result.json"
 
         # Run query
-        print("\n" + "="*80)
+        print("\n" + "=" * 80)
         print("Processing query...")
-        print("="*80)
+        print("=" * 80)
 
         try:
             results = handler.query(
@@ -464,6 +464,34 @@ def interactive_mode(config: Dict[str, Any]):
 
             # Print results
             print_results(results)
+
+            # Write human-readable results to log
+            log_lines = []
+            log_lines.append("\n" + "=" * 80)
+            log_lines.append("REASONING RESULTS")
+            log_lines.append("=" * 80)
+            log_lines.append(f"Query: {results.get('query', query)}")
+            log_lines.append("\nTop Relevant Entities:")
+            for i, node in enumerate(results.get('top_nodes', [])[:10], 1):
+                log_lines.append(f"{i}. {node.get('name', '<unknown>')} (score: {node.get('score', 0):.4f})")
+
+            log_lines.append("\nReasoning Paths:")
+            paths = results.get('paths', [])
+            if paths:
+                for i, path_info in enumerate(paths[:5], 1):
+                    log_lines.append(f"\nPath {i} (confidence: {path_info.get('score', 0):.4f}):")
+                    log_lines.append(path_info.get('explanation', '').strip())
+            else:
+                log_lines.append("No reasoning paths found.")
+
+            if 'answer' in results:
+                log_lines.append("\nFinal Answer:")
+                log_lines.append(results.get('answer', '').strip())
+
+            logging.info("\n".join(log_lines))
+
+            # Also log full JSON for traceability
+            logging.info("Reasoning results (JSON):\n%s", json.dumps(results, ensure_ascii=False, indent=2))
 
             # Save if requested
             if output_file:
