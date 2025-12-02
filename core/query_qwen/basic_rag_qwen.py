@@ -9,13 +9,8 @@ from typing import Dict, Any, List
 
 import lancedb
 import yaml
-# 修改：引入 OpenAI SDK
 from openai import OpenAI
 
-# 移除 google.genai 和 client_factory
-# from google import genai
-# from google.genai import types
-# from utils.client_factory import create_gemini_client
 
 # --- 项目根目录定义 ---
 PROJECT_ROOT = Path(__file__).resolve().parents[2]

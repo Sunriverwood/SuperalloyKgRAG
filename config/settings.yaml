@@ -98,7 +98,7 @@ query:
   sleep_interval: 60
   basic_rag_prompt: "config/prompts/basic_rag.md"
 
-  embedding_db_path: "data/embeddings/embedding.db"  #no_entities_merge
+  embedding_db_path: "data/embeddings/embedding.db"  #no_entities_merge   embedding.db
   global_table_name: "communities"
   local_table_name: "entities"
   prompt_dir: "config/prompts"
@@ -121,3 +121,66 @@ evaluation:
   qa_pairs_path: "data/evaluation_sets/qa_pairs.csv"
   ground_truth_path: "data/evaluation_sets/ground_truth.json"
   metrics: ["faithfulness", "relevance", "factual_accuracy"]
+
+reasoning:
+  # Graph Reasoning Model Configuration
+  model:
+    gnn_type: "rgat"  # Relational Graph Attention Network
+    hidden_dim: 256
+    num_layers: 3
+    num_heads: 4
+    dropout: 0.1
+    use_query_aware: true
+    use_edge_weights: true  # Use composite_importance as edge weights
+
+  # Training Configuration
+  training:
+    batch_size: 512
+    learning_rate: 0.001
+    num_epochs: 100
+    weight_decay: 0.0001
+    early_stopping_patience: 10
+
+    # Self-supervised task weights
+    loss_weights:
+      link_prediction: 1.0
+      contrastive: 0.5
+      pseudo_query: 1.0
+
+    # Negative sampling
+    num_negatives: 5
+    negative_sampling_strategy: "random"  # random, hard, mixed
+
+    # Checkpointing
+    checkpoint_dir: "data/reasoning/checkpoints"
+    save_interval: 5  # epochs
+
+  # Inference Configuration
+  inference:
+    top_k_nodes: 20
+    ppr_alpha: 0.15  # Personalized PageRank restart probability
+    ppr_max_iter: 100
+    ppr_tol: 1.0e-6
+
+    # Path extraction
+    max_path_length: 3
+    max_paths_per_query: 10
+    min_path_score: 0.01
+
+    # Query encoding
+    use_cached_embeddings: true
+
+  # Data paths
+  data:
+    graph_path: "data/graphs/final_graph.json"
+    entity_embeddings_db: "data/embeddings/embedding.db"
+    entity_table: "entities"
+    relationship_table: "relationships"
+    pseudo_queries_path: "data/reasoning/pseudo_queries.jsonl"
+
+  # Output paths
+  output:
+    model_path: "data/reasoning/model.pt"
+    inference_results: "data/reasoning/inference_results.jsonl"
+    attention_viz: "data/reasoning/attention_viz"
+

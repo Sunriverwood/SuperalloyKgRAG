@@ -68,8 +68,8 @@ START_MODE = "EMBEDDING"
 # 作业ID配置（根据选择的模式填写对应的ID）
 DISAMBIGUATION_JOB_ID = "batch_req_xxxx" # 示例 ID
 EMBEDDING_JOB_ID = "batch_7f3f7022-7cff-4509-9b00-7f69873d6540"
-ENTITY_MERGE_JOB_ID = "batch_req_zzzz"
-COMMUNITY_SUMMARY_JOB_ID = "batch_req_aaaa"
+ENTITY_MERGE_JOB_ID = "batch_b7419a2b-3981-4b6a-8e45-073b4aa73a73"
+COMMUNITY_SUMMARY_JOB_ID = "batch_9ca421db-46c4-4102-a308-df489aca04d8"
 
 # ==================================================
 
