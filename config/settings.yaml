@@ -137,13 +137,13 @@ reasoning:
   training:
     batch_size: 512
     learning_rate: 0.001
-    num_epochs: 100
+    num_epochs: 1000
     weight_decay: 0.0001
     early_stopping_patience: 10
 
     # Self-supervised task weights
     loss_weights:
-      link_prediction: 1.0
+      link_prediction: 0.5
       contrastive: 0.5
       pseudo_query: 1.0
 
