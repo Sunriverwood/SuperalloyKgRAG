@@ -126,7 +126,7 @@ reasoning:
   # Graph Reasoning Model Configuration
   model:
     gnn_type: "rgat"  # Relational Graph Attention Network
-    hidden_dim: 256
+    hidden_dim: 1024
     num_layers: 3
     num_heads: 4
     dropout: 0.1
@@ -163,7 +163,7 @@ reasoning:
     ppr_tol: 1.0e-6
 
     # Path extraction
-    max_path_length: 3
+    max_path_length: 5
     max_paths_per_query: 10
     min_path_score: 0.01
 
