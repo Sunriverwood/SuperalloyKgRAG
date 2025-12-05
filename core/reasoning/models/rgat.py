@@ -87,7 +87,8 @@ class RGATLayer(nn.Module):
     def forward(self, x: torch.Tensor, edge_index: torch.Tensor,
                 edge_type_emb: torch.Tensor, edge_weights: Optional[torch.Tensor] = None,
                 query_emb: Optional[torch.Tensor] = None,
-                adjacency_mask: Optional[torch.Tensor] = None) -> torch.Tensor:
+                adjacency_mask: Optional[torch.Tensor] = None,
+                return_attention: bool = False):
         """
         Forward pass of RGAT layer.
 
@@ -99,9 +100,15 @@ class RGATLayer(nn.Module):
             edge_weights: Edge weights (composite_importance) [num_edges]
             query_emb: Query embedding [query_dim] or [batch, query_dim]
             adjacency_mask: Binary adjacency matrix [num_nodes, num_nodes] for constraints
+            return_attention: Whether to return attention weights
 
         Returns:
-            Updated node features [num_nodes, out_dim]
+            If return_attention is False:
+                Updated node features [num_nodes, out_dim]
+            If return_attention is True:
+                Tuple of (node_features, attention_weights)
+                - node_features: [num_nodes, out_dim]
+                - attention_weights: [num_edges, num_heads]
         """
         num_nodes = x.size(0)
 
@@ -191,6 +198,8 @@ class RGATLayer(nn.Module):
         # Concatenate heads and return
         out = out.view(num_nodes, -1)  # [num_nodes, out_dim]
 
+        if return_attention:
+            return out, alpha
         return out
 
     def softmax_per_node(self, scores: torch.Tensor, node_idx: torch.Tensor,
@@ -346,6 +355,53 @@ class QueryAwareRGAT(nn.Module):
 
         return h
 
+    def extract_attention(self, x: torch.Tensor, edge_index: torch.Tensor,
+                          edge_type_emb: torch.Tensor, edge_weights: Optional[torch.Tensor] = None,
+                          query_emb: Optional[torch.Tensor] = None,
+                          adjacency_mask: Optional[torch.Tensor] = None) -> Tuple[torch.Tensor, list]:
+        """
+        Extract attention weights from all layers during forward pass.
+
+        Args:
+            x: Initial node features [num_nodes, input_dim]
+            edge_index: Edge connectivity [2, num_edges]
+            edge_type_emb: Edge type embeddings [num_edges, input_dim]
+            edge_weights: Edge weights [num_edges]
+            query_emb: Query embedding [query_dim]
+            adjacency_mask: Adjacency mask [num_nodes, num_nodes]
+
+        Returns:
+            Tuple of:
+                - Final node representations [num_nodes, output_dim]
+                - List of attention weights, one per layer
+                  Each element: [num_edges, num_heads]
+        """
+        h = x
+        attentions = []
+
+        for i, layer in enumerate(self.layers):
+            # Get both output and attention weights
+            h_new, attn = layer(h, edge_index, edge_type_emb, edge_weights,
+                               query_emb, adjacency_mask, return_attention=True)
+
+            attentions.append(attn)
+
+            # Batch normalization
+            h_new = self.batch_norms[i](h_new)
+
+            # Residual connection (if dimensions match)
+            if h.size(-1) == h_new.size(-1):
+                h = h + h_new
+            else:
+                h = h_new
+
+            # Activation and dropout (except last layer)
+            if i < len(self.layers) - 1:
+                h = F.relu(h)
+                h = self.dropout(h)
+
+        return h, attentions
+
 
 if __name__ == "__main__":
     # Test the RGAT model
@@ -388,3 +444,15 @@ if __name__ == "__main__":
     print(f"  Input shape: {x.shape}")
     print(f"  Output shape: {output.shape}")
     print(f"  Parameters: {sum(p.numel() for p in model.parameters()):,}")
+
+    # Test attention extraction
+    output_with_attn, attentions = model.extract_attention(
+        x, edge_index, edge_type_emb, edge_weights, query_emb, adjacency_mask
+    )
+
+    print(f"\n✓ Attention extraction test successful!")
+    print(f"  Output shape: {output_with_attn.shape}")
+    print(f"  Number of attention layers: {len(attentions)}")
+    for i, attn in enumerate(attentions):
+        print(f"  Layer {i} attention shape: {attn.shape}")
+

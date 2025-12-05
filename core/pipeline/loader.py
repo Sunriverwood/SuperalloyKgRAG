@@ -152,10 +152,8 @@ class DocumentLoader:
                     text_content = block.get("content", "").strip()
                     if text_content:
                         block_id = block.get('block_id', 'N/A')
-                        # 添加源信息，但作为文本的一部分，以便LLM理解上下文
                         # metadata可以存储更结构化的信息
-                        source_prefix = f"[Source: Page {page_number}, Block: {block_id}]"
-                        full_block_text = f"{source_prefix}\n{text_content}"
+                        full_block_text = text_content
                         full_text_blocks.append(full_block_text)
 
                         # 记录文本段的位置信息

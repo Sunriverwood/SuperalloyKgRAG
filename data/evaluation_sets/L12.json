@@ -1,0 +1,911 @@
+[
+  {
+    "id": 1,
+    "question": "高温合金通常是指以哪三种金属为基的合金？",
+    "ground_truth": "高温合金是指以铁、镍、钴为基，能在高温及一定应力作用下长期工作的一类金属材料。",
+    "type": "Fact Retrieval",
+    "difficulty": "L1",
+    "domain": "Composition",
+    "source": "译者序"
+  },
+  {
+    "id": 2,
+    "question": "什么是γ'相？它在高温合金中通常富含哪些元素？",
+    "ground_truth": "γ'相是作为沉淀相形成的，往往与γ基体共格，富含Al、Ti和Ta等元素，其化学式通常为Ni3(Al, Ta, Ti)。",
+    "type": "Fact Retrieval",
+    "difficulty": "L1",
+    "domain": "Structure",
+    "source": "P34"
+  },
+  {
+    "id": 3,
+    "question": "铸造高温合金相比于锻造高温合金，在应用于涡轮叶片时有何优势？",
+    "ground_truth": "铸造材料具有更好的蠕变性能。",
+    "type": "Reasoning",
+    "difficulty": "L2",
+    "domain": "Property",
+    "source": "P19"
+  },
+  {
+    "id": 4,
+    "question": "什么是定向凝固技术？它相对于传统铸造技术如何改善合金性能？",
+    "ground_truth": "定向凝固是一种改良的铸造技术，它可以消除横向晶界的柱状晶结构来提升合金水平，从而提高性能。",
+    "type": "Reasoning",
+    "difficulty": "L2",
+    "domain": "Process",
+    "source": "P19"
+  },
+  {
+    "id": 5,
+    "question": "单晶高温合金相比于定向凝固柱状晶合金，其主要优势是什么？",
+    "ground_truth": "单晶高温合金完全去除了晶界，因此可以去掉传统添加的诸如B和C等晶界强化元素，这使得合金能更好地通过热处理来减少铸造产生的少量显微偏析，同时合金的疲劳寿命也提高了。",
+    "type": "Reasoning",
+    "difficulty": "L2",
+    "domain": "Comparison",
+    "source": "P19"
+  },
+  {
+    "id": 6,
+    "question": "什么是反相畴界（APB）？它为何在γ'相中具有很高的能量？",
+    "ground_truth": "当晶体的一部分相对于另一部分发生a/2<110>的位移时，会形成反相畴界（APB）。在APB附近，原子间的有序排列被破坏，形成了大量“禁止的”Ni-Ni和Al-Al键，取代了能量更低的Ni-Al键，因此引起了较大的APB能。",
+    "type": "Reasoning",
+    "difficulty": "L2",
+    "domain": "Structure",
+    "source": "P65"
+  },
+  {
+    "id": 7,
+    "question": "什么是反常屈服效应？",
+    "ground_truth": "反常屈服效应是指许多高温合金的屈服应力不随温度升高而下降，反而随温度升高而增加，直至一个峰值温度（约800℃）的现象。",
+    "type": "Fact Retrieval",
+    "difficulty": "L1",
+    "domain": "Property",
+    "source": "P82"
+  },
+  {
+    "id": 8,
+    "question": "什么是奥罗万（Orowan）强化机制？",
+    "ground_truth": "奥罗万强化是指当合金中存在不可被位错切过的硬质第二相颗粒时，位错线会绕过这些颗粒继续运动，并在颗粒周围留下位错环，从而增加后续位错运动的阻力，达到强化效果。",
+    "type": "Fact Retrieval",
+    "difficulty": "L1",
+    "domain": "Property",
+    "source": "P73, P82"
+  },
+  {
+    "id": 9,
+    "question": "为什么在单晶高温合金中通常不添加或严格控制C和B元素的含量？",
+    "ground_truth": "因为C和B是晶界强化剂，而单晶高温合金没有晶界，因此无需晶界强化。去掉这些元素可以提高合金的初熔温度，进行更高温度的热处理。",
+    "type": "Reasoning",
+    "difficulty": "L2",
+    "domain": "Composition",
+    "source": "P52"
+  },
+  {
+    "id": 10,
+    "question": "简述粉末冶金工艺制备涡轮盘高温合金相比于传统铸锻工艺的两个主要优点。",
+    "ground_truth": "粉末冶金工艺可以消除宏观偏析，获得更均匀的微观组织和更细小的晶粒尺寸，从而提高材料的综合性能，特别是抗疲劳性能。",
+    "type": "Reasoning",
+    "difficulty": "L2",
+    "domain": "Process",
+    "source": "P219"
+  },
+  {
+    "id": 11,
+    "question": "什么是“弱耦合”和“强耦合”位错对？它们与γ'颗粒尺寸的关系是什么？",
+    "ground_truth": "在位错对切过γ'颗粒时，若两个位错间距相比颗粒直径较大，则为“弱耦合”（常见于欠时效的小颗粒）；若位错对间距与颗粒直径相当，则为“强耦合”（常见于过时效的大颗粒）。",
+    "type": "Reasoning",
+    "difficulty": "L2",
+    "domain": "Structure",
+    "source": "P74, P77"
+  },
+  {
+    "id": 12,
+    "question": "镍基高温合金在1000℃下工作时，其归一化工作温度（T工作/T熔点）约等于多少？",
+    "ground_truth": "0.74-0.83",
+    "type": "Numerical",
+    "difficulty": "L2",
+    "domain": "Property",
+    "source": "P18"
+  },
+  {
+    "id": 13,
+    "question": "新一代超临界燃煤蒸汽发电站的锅炉管，需要在多少摄氏度的温度和多大应力下承受多长时间？",
+    "ground_truth": "750℃和1000MPa应力下承受200000h",
+    "type": "Numerical",
+    "difficulty": "L2",
+    "domain": "Application",
+    "source": "P2"
+  },
+  {
+    "id": 14,
+    "question": "从1940年到2000年，大型民用航空发动机的涡轮进口温度（TET）大约提升了多少摄氏度？",
+    "ground_truth": "700℃",
+    "type": "Numerical",
+    "difficulty": "L1",
+    "domain": "Application",
+    "source": "P4"
+  },
+  {
+    "id": 15,
+    "question": "设计涡轮盘合金时，为了得到高的强度和疲劳性能，γ’相的体积分数应该为多少？",
+    "ground_truth": "40%~55%之间",
+    "type": "Numerical",
+    "difficulty": "L2",
+    "domain": "Design",
+    "source": "P224"
+  },
+  {
+    "id": 16,
+    "question": "在850℃、500MPa的蠕变条件下，第三代单晶高温合金RR3000相比于第一代SRR99合金，蠕变断裂寿命提高到原本的多少倍？",
+    "ground_truth": "10倍",
+    "type": "Numerical",
+    "difficulty": "L2",
+    "domain": "Comparison",
+    "source": "P19"
+  },
+  {
+    "id": 17,
+    "question": "根据休姆-罗瑟里（Hume-Rothery）法则，当溶质元素的原子直径与镍的原子直径差异在正负百分之多少的范围内时，才会有较大的固溶度？",
+    "ground_truth": "15%",
+    "type": "Numerical",
+    "difficulty": "L1",
+    "domain": "Theory",
+    "source": "P40, 图2.9"
+  },
+  {
+    "id": 18,
+    "question": "γ'相Ni3Al中，每个Al原子与多少个Ni原子作为最近邻？",
+    "ground_truth": "12",
+    "type": "Numerical",
+    "difficulty": "L1",
+    "domain": "Structure",
+    "source": "P40"
+  },
+  {
+    "id": 19,
+    "question": "对于单晶Mar-M200合金，其屈服应力的峰值出现在大约多少摄氏度？",
+    "ground_truth": "约720℃",
+    "type": "Numerical",
+    "difficulty": "L1",
+    "domain": "Property",
+    "source": "P84, 图2.53"
+  },
+  {
+    "id": 20,
+    "question": "蠕变速率的应力指数n通常在什么范围内？",
+    "ground_truth": "对于纯金属和II类合金，n=5；对于I类合金，n=3；对于单晶高温合金，通过将幂律公式与蠕变数据拟合得到的应力指数n通常大于8",
+    "type": "Fact Retrieval",
+    "difficulty": "L2",
+    "domain": "Theory",
+    "source": "P97，P100"
+  },
+  {
+    "id": 21,
+    "question": "对于CMSX-4单晶高温合金，在850°C和300 MPa条件下，与完美的单晶相比，引入一个取向差为7°的晶界会导致其蠕变寿命降低大约百分之多少？",
+    "ground_truth": "约99%",
+    "type": "Numerical",
+    "difficulty": "L2",
+    "domain": "Defect",
+    "source": "P127"
+  },
+  {
+    "id": 22,
+    "question": "添加铼（Re）元素后，单晶高温合金的蠕变强度显著提高，但当Re含量超过多少质量百分比（wt.%）时，TCP相的形成倾向会急剧增加？",
+    "ground_truth": "当超过3wt.%后，在较高温度（约1000℃）应力（约150MPa）下，部分合金会出现大量TCP相。Re含量从3 wt%增加到6 wt%时，合金对TCP相的形成变得不稳定。",
+    "type": "Reasoning",
+    "difficulty": "L2",
+    "domain": "Design",
+    "source": "P152，P336"
+  },
+  {
+    "id": 23,
+    "question": "涡轮盘的无损检测中，超声检测通常能发现多大尺寸的缺陷？",
+    "ground_truth": "当使用包含直径为0.8 mm平底孔的标准块进行校准时，检测灵敏度通常设定为其尺寸的10%，因此预期的缺陷检测灵敏度为0.08 mm",
+    "type": "Numerical",
+    "difficulty": "L2",
+    "domain": "Process",
+    "source": "P259"
+  },
+  {
+    "id": 24,
+    "question": "目前用作热障涂层（TBC）陶瓷层的最常用材料是什么？其晶体结构是什么？",
+    "ground_truth": "6wt.%~11wt.%氧化钇稳定氧化锆，特别是含有约7wt.%氧化钇（Y₂O₃）的氧化锆（ZrO₂）。这种成分的材料在从高温冷却后，其晶体结构为亚稳态的“不可相变的”四方相t'。",
+    "type": "Fact Retrieval",
+    "difficulty": "L1",
+    "domain": "Coating",
+    "source": "P283"
+  },
+  {
+    "id": 25,
+    "question": "对于在750°C和234 MPa有效应力下测试的Nimonic 80A多晶高温合金，预应变会导致蠕变应变增加多少？",
+    "ground_truth": "150%，表明预变形在此条件下导致了蠕变软化。",
+    "type": "Numerical",
+    "difficulty": "L2",
+    "domain": "Property",
+    "source": "P101"
+  },
+  {
+    "id": 26,
+    "question": "对于TMS-75单晶高温合金，在900°C和1100°C下测试时，能获得最长蠕变断裂寿命的最佳γ'相体积分数大约是多少？",
+    "ground_truth": "65%~75%",
+    "type": "Numerical",
+    "difficulty": "L1",
+    "domain": "Design",
+    "source": "P146"
+  },
+  {
+    "id": 27,
+    "question": "在FCC金属中，位错分解是否有利可以通过什么规则来判断？",
+    "ground_truth": "可以应用弗兰克（Frank）规则——它声明位错的弹性能正比于伯格斯矢量大小的平方——以证明分解是否有利。",
+    "type": "Reasoning",
+    "difficulty": "L1",
+    "domain": "Theory",
+    "source": "P55"
+  },
+  {
+    "id": 28,
+    "question": "什么是扩散的空位机制？自扩散的表观激活能由哪两部分组成？",
+    "ground_truth": "扩散的空位机制是指原子通过迁移到相邻的空位来实现扩散的过程。自扩散的表观激活能 Qself 由空位形成焓 ΔHVa_f 和原子-空位迁移焓 ΔHNi−Va_mig 两项组成。",
+    "type": "Reasoning",
+    "difficulty": "L2",
+    "domain": "Theory",
+    "source": "P61"
+  },
+  {
+    "id": 29,
+    "question": "在Ni3Al化合物中，偏离化学当量的成分是如何通过点缺陷来调节的？",
+    "ground_truth": "在Ni3Al中，非化学当量总是由反位缺陷所调节：对富Ni成分，由Ni原子占据Al位置来调节；对贫Ni成分，由Al原子占据Ni位置来调节。",
+    "type": "Reasoning",
+    "difficulty": "L2",
+    "domain": "Structure",
+    "source": "P70"
+  },
+  {
+    "id": 30,
+    "question": "单晶高温合金设计中的“筏排化”（Rafting）现象是什么？",
+    "ground_truth": "筏排化是指在高温蠕变应力作用下，立方状的γ'相会发生定向粗化并合并，错配度为负时，筏化宽面的法向与应力轴垂直，为正时，针状筏化长轴平行于加载方向。",
+    "type": "Reasoning",
+    "difficulty": "L2",
+    "domain": "Defect",
+    "source": "P171，P173"
+  },
+  {
+    "id": 31,
+    "question": "什么是低周疲劳（LCF）？它主要与燃气涡轮发动机的哪种工况相关？",
+    "ground_truth": "低周疲劳是指在名义值高于或等于弹性极限的应变幅下，材料经历较少循环次数（通常<10^5次）即发生断裂的现象。它主要与发动机的起飞、降落等启停循环相关。",
+    "type": "Reasoning",
+    "difficulty": "L2",
+    "domain": "Application",
+    "source": "P179"
+  },
+  {
+    "id": 32,
+    "question": "涡轮盘设计中采用的“损伤容限”（Damage Tolerance）设计方法的核心思想是什么？",
+    "ground_truth": "核心思想是确保即使存在允许尺寸内的最大初始缺陷，该缺陷在规定的检测周期内也不会扩展至引起灾难性失效的临界尺寸。",
+    "type": "Reasoning",
+    "difficulty": "L2",
+    "domain": "Design",
+    "source": "P248"
+  },
+  {
+    "id": 33,
+    "question": "什么是“相图计算”（CALPHAD）方法？它在高温合金开发中有什么应用？",
+    "ground_truth": "CALPHAD是一种基于热力学数据库，通过计算来预测多元合金体系相平衡和相图的方法。它被广泛应用于指导高温合金的成分设计，预测相的稳定性，避免生成有害的TCP相等。",
+    "type": "Reasoning",
+    "difficulty": "L2",
+    "domain": "Design",
+    "source": "P37"
+  },
+  {
+    "id": 34,
+    "question": "第四代高温合金的开发中，添加了哪种关键的铂族元素？",
+    "ground_truth": "第四代单晶高温合金的特征是添加了钌（Ru）。",
+    "type": "Fact Retrieval",
+    "difficulty": "L1",
+    "domain": "Composition",
+    "source": "P335"
+  },
+  {
+    "id": 35,
+    "question": "MCrAlY涂层中的“Y”代表什么元素？它在涂层中起什么关键作用？",
+    "ground_truth": "“Y”代表活性元素钇（Yttrium）。利用“活性元素效应”提高氧化铝保护层的附着力，通过与硫杂质反应形成硫化物，阻止硫偏聚，增强抗剥落能力。",
+    "type": "Reasoning",
+    "difficulty": "L2",
+    "domain": "Coating",
+    "source": "P310"
+  },
+  {
+    "id": 36,
+    "question": "什么是蠕变-疲劳交互作用？为什么它是评估涡轮盘寿命的关键？",
+    "ground_truth": "是一种组合损伤机制，时间相关的蠕变损伤与循环相关的疲劳损伤相结合。在保载疲劳（Dwell Fatigue）工况下，蠕变会显著加速裂纹扩展，这对涡轮盘尤其关键。",
+    "type": "Reasoning",
+    "difficulty": "L2",
+    "domain": "Defect",
+    "source": "P231, P250"
+  },
+  {
+    "id": 37,
+    "question": "第二代单晶高温合金CMSX-4中，关键强化元素铼（Re）的质量分数是多少？",
+    "ground_truth": "3.0wt.%",
+    "type": "Numerical",
+    "difficulty": "L1",
+    "domain": "Composition",
+    "source": "P20, 表1.3"
+  },
+  {
+    "id": 38,
+    "question": "第三代单晶高温合金CMSX-10中，铼（Re）的质量分数增加到了多少？",
+    "ground_truth": "6.0wt.%",
+    "type": "Numerical",
+    "difficulty": "L1",
+    "domain": "Composition",
+    "source": "P20, 表1.3"
+  },
+  {
+    "id": 39,
+    "question": "第四代单晶高温合金MC-NG中，钌（Ru）的质量分数是多少？",
+    "ground_truth": "4.0wt.%",
+    "type": "Numerical",
+    "difficulty": "L1",
+    "domain": "Composition",
+    "source": "P21, 表1.3"
+  },
+  {
+    "id": 40,
+    "question": "在单晶高温合金CMSX-4中，γ'相的固溶温度大约是多少摄氏度？",
+    "ground_truth": "1300℃",
+    "type": "Numerical",
+    "difficulty": "L1",
+    "domain": "Property",
+    "source": "P147,图3.30"
+  },
+  {
+    "id": 41,
+    "question": "在700°C和690 MPa条件下，将Udimet 720合金的晶粒尺寸从360μm细化到19μm，其蠕变断裂寿命降低了多少？",
+    "ground_truth": "降低了66.7%（从600h降至200h）",
+    "type": "Numerical",
+    "difficulty": "L2",
+    "domain": "Comparison",
+    "source": "P234"
+  },
+  {
+    "id": 42,
+    "question": "在单晶叶片凝固的Bridgman工艺中，典型的抽拉速率是多少mm/h？",
+    "ground_truth": "50-130mm/h",
+    "type": "Numerical",
+    "difficulty": "L1",
+    "domain": "Process",
+    "source": "P121，P125"
+  },
+  {
+    "id": 43,
+    "question": "如果要求一个涡轮盘在800 MPa的应力下至少能安全工作10000个循环，需要设定的无损检测极限（即假定的初始缺陷尺寸）大约是多少？",
+    "ground_truth": "0.30 mm",
+    "type": "Numerical",
+    "difficulty": "L2",
+    "domain": "Design",
+    "source": "P249"
+  },
+  {
+    "id": 44,
+    "question": "在使用Paris定律评估疲劳裂纹扩展时，对于高温合金，指数m的值通常在什么范围内？",
+    "ground_truth": "3~4",
+    "type": "Numerical",
+    "difficulty": "L1",
+    "domain": "Theory",
+    "source": "P251"
+  },
+  {
+    "id": 45,
+    "question": "MCrAlY涂层中，Y的含量通常是多少（质量分数）？",
+    "ground_truth": "0.5wt.%",
+    "type": "Numerical",
+    "difficulty": "L1",
+    "domain": "Coating",
+    "source": "P289"
+  },
+  {
+    "id": 46,
+    "question": "用于TBC的7-8wt.% YSZ陶瓷涂层，其热导率在1000℃时大约是多少 W/(m⋅K)？",
+    "ground_truth": "1.3W/(m⋅K)",
+    "type": "Numerical",
+    "difficulty": "L1",
+    "domain": "Property",
+    "source": "P285"
+  },
+  {
+    "id": 47,
+    "question": "在典型的扩散渗铝涂层中，外层的NiAl相厚度大约是多少微米？",
+    "ground_truth": "15μm左右",
+    "type": "Numerical",
+    "difficulty": "L1",
+    "domain": "Coating",
+    "source": "P280"
+  },
+  {
+    "id": 48,
+    "question": "什么是堆垛层错（Stacking Fault）？请说明内禀层错和外禀层错的区别。",
+    "ground_truth": "当FCC晶体ABCABC...的正常堆垛顺序被中断时产生堆垛层错。移除一个晶面引入内禀层错（ABCACABC...）；插入一个晶面引入外禀层错（ABCACBCABC...）。",
+    "type": "Reasoning",
+    "difficulty": "L2",
+    "domain": "Structure",
+    "source": "P54"
+  },
+  {
+    "id": 49,
+    "question": "高温合金中的碳化物（如MC、M23C6）主要分布在何处？起什么作用？",
+    "ground_truth": "MC碳化物通常在枝晶间区域出现；M23C6通常在γ晶界沉淀。它们通过抑制晶界滑移起到晶界强化剂的作用。",
+    "type": "Reasoning",
+    "difficulty": "L2",
+    "domain": "Structure",
+    "source": "P52"
+  },
+  {
+    "id": 50,
+    "question": "什么是热疲劳？它在哪个航空发动机部件中尤为关键？",
+    "ground_truth": "热疲劳是由温度循环变化引起的热应力导致的材料疲劳损伤。它在涡轮叶片，特别是叶片尖端尤为关键。",
+    "type": "Fact Retrieval",
+    "difficulty": "L1",
+    "domain": "Application",
+    "source": "P6"
+  },
+  {
+    "id": 51,
+    "question": "Ni3Al化合物在成分上是稳定的，其Al含量的范围大约是多少原子百分比（at.%）？",
+    "ground_truth": "23at.%~27at.%",
+    "type": "Numerical",
+    "difficulty": "L2",
+    "domain": "Structure",
+    "source": "P70"
+  },
+  {
+    "id": 52,
+    "question": "估算γ'颗粒切割应力时，其反相畴界能γAPB的典型值大约是多少 J/m²？",
+    "ground_truth": "0.1J/m²",
+    "type": "Numerical",
+    "difficulty": "L2",
+    "domain": "Property",
+    "source": "P73"
+  },
+  {
+    "id": 53,
+    "question": "在高温合金Nimonic PE16中，获得峰值强化效果的最佳γ'颗粒平均半径在什么范围？",
+    "ground_truth": "26~30nm",
+    "type": "Numerical",
+    "difficulty": "L2",
+    "domain": "Process",
+    "source": "P80"
+  },
+  {
+    "id": 54,
+    "question": "在高温合金Nimonic 105中，获得峰值强化效果的最佳γ'颗粒平均半径在什么范围？",
+    "ground_truth": "55~85nm",
+    "type": "Numerical",
+    "difficulty": "L2",
+    "domain": "Process",
+    "source": "P80"
+  },
+  {
+    "id": 55,
+    "question": "对于固溶强化的Ni-8at.%Al合金，其在室温下的0.2%条件屈服应力大约是多少MPa？",
+    "ground_truth": "约150MPa",
+    "type": "Numerical",
+    "difficulty": "L1",
+    "domain": "Property",
+    "source": "P83, 图2.52"
+  },
+  {
+    "id": 56,
+    "question": "在FCC金属中，泊松比ν的典型值是多少？",
+    "ground_truth": "0.33",
+    "type": "Numerical",
+    "difficulty": "L1",
+    "domain": "Theory",
+    "source": "P56"
+  },
+  {
+    "id": 57,
+    "question": "对于扩散控制的位错攀移蠕变，应力指数n的理论值是多少？",
+    "ground_truth": "5",
+    "type": "Numerical",
+    "difficulty": "L1",
+    "domain": "Theory",
+    "source": "P93"
+  },
+  {
+    "id": 58,
+    "question": "一个高压涡轮叶片的长度为10厘米，平均半径为0.5米。假设叶片密度为9000kg/m³，转速为6000转/分钟，请计算叶片根部的离心应力。",
+    "ground_truth": "178MPa",
+    "type": "Numerical",
+    "difficulty": "L2",
+    "domain": "Application",
+    "source": "P119"
+  },
+  {
+    "id": 59,
+    "question": "对于第一代单晶高温合金，其密度大约是多少 g/cm³ ？",
+    "ground_truth": "7.87~9.07g/cm³",
+    "type": "Numerical",
+    "difficulty": "L1",
+    "domain": "Property",
+    "source": "P144,表3.2"
+  },
+  {
+    "id": 60,
+    "question": "对4个涡轮盘进行了转子台试验，失效周次分别为8821, 9276, 9946和10592周。依据“首裂纹寿命”方法，假设失效率为1/750，置信度为95%，计算该部件的许用安全寿命。",
+    "ground_truth": "3077.63周",
+    "type": "Numerical",
+    "difficulty": "L2",
+    "domain": "Design",
+    "source": "P248,式4.6"
+  },
+  {
+    "id": 61,
+    "question": "涡轮盘合金晶粒尺寸通常选用多少？",
+    "ground_truth": "30~50μm",
+    "type": "Numerical",
+    "difficulty": "L1",
+    "domain": "Structure",
+    "source": "P233"
+  },
+  {
+    "id": 62,
+    "question": "对于在650°C和690 MPa下进行应力断裂测试的IN718合金，添加40 ppm的Pb（铅）会使其断裂寿命降低百分之多少？",
+    "ground_truth": "约50%",
+    "type": "Numerical",
+    "difficulty": "L2",
+    "domain": "Defect",
+    "source": "P221,图4.5"
+  },
+  {
+    "id": 63,
+    "question": "粉末冶金工艺中，快速凝固的冷却速率可以达到多少K/s？",
+    "ground_truth": "100K/s",
+    "type": "Numerical",
+    "difficulty": "L1",
+    "domain": "Process",
+    "source": "P220"
+  },
+  {
+    "id": 64,
+    "question": "电子束物理气相沉积（EB-PVD）工艺中，真空室的真空度通常需要达到多少Pa？",
+    "ground_truth": "1.33322×10⁻²Pa (10⁻⁴Torr)",
+    "type": "Numerical",
+    "difficulty": "L1",
+    "domain": "Process",
+    "source": "P271"
+  },
+  {
+    "id": 65,
+    "question": "7-8 wt.% Y₂O₃稳定的ZrO₂（YSZ）陶瓷涂层稳定的最高使用温度大约是多少？",
+    "ground_truth": "1200℃",
+    "type": "Numerical",
+    "difficulty": "L1",
+    "domain": "Coating",
+    "source": "P283，P284"
+  },
+  {
+    "id": 66,
+    "question": "根据纯镍在371°C的恒载荷蠕变曲线，当施加184 MPa的应力时，达到0.6的工程蠕变应变大约需要多少小时？",
+    "ground_truth": "大约950h",
+    "type": "Numerical",
+    "difficulty": "L2",
+    "domain": "Property",
+    "source": "P90"
+  },
+  {
+    "id": 67,
+    "question": "典型的热障涂层体系中，热生长氧化层（TGO）的主要成分是什么？",
+    "ground_truth": "α-Al₂O₃",
+    "type": "Fact Retrieval",
+    "difficulty": "L1",
+    "domain": "Coating",
+    "source": "P309"
+  },
+  {
+    "id": 68,
+    "question": "在FCC金属中，两个连续密排面之间的位移矢量大小是多少（用晶格常数a表示）？",
+    "ground_truth": "a/√6",
+    "type": "Numerical",
+    "difficulty": "L2",
+    "domain": "Structure",
+    "source": "P54"
+  },
+  {
+    "id": 69,
+    "question": "在纯Ni中，空位形成焓 ΔH_f_Va 的数值大约是多少 kJ/mol？",
+    "ground_truth": "160",
+    "type": "Numerical",
+    "difficulty": "L1",
+    "domain": "Structure",
+    "source": "P58"
+  },
+  {
+    "id": 70,
+    "question": "在熔点温度下，纯Ni中的平衡空位分数大约是多少？",
+    "ground_truth": "8.5×10⁻⁵",
+    "type": "Numerical",
+    "difficulty": "L2",
+    "domain": "Structure",
+    "source": "P58"
+  },
+  {
+    "id": 71,
+    "question": "纯Ni的自扩散表观激活能 Q_self 大约是多少 kJ/mol？",
+    "ground_truth": "280",
+    "type": "Numerical",
+    "difficulty": "L1",
+    "domain": "Property",
+    "source": "P61"
+  },
+  {
+    "id": 72,
+    "question": "在L1₂结构的Ni₃Al中，复杂堆垛层错（CSF）的能量估计值是多少 J/m²？",
+    "ground_truth": "250mJ/m²",
+    "type": "Numerical",
+    "difficulty": "L2",
+    "domain": "Structure",
+    "source": "P67"
+  },
+  {
+    "id": 73,
+    "question": "在L1₂结构的Ni₃Al中，超点阵内禀层错（SISF）的能量大约是多少 J/m²？",
+    "ground_truth": "10mJ/m²数量级，难以精确测量",
+    "type": "Numerical",
+    "difficulty": "L2",
+    "domain": "Structure",
+    "source": "P67"
+  },
+  {
+    "id": 74,
+    "question": "在定向凝固过程中，什么是“糊状区”（Mushy Zone）？",
+    "ground_truth": "糊状区是指在凝固过程中的半固态区域，其温度梯度较小，常出现斑点、伪晶、小角晶界等缺陷。",
+    "type": "Fact Retrieval",
+    "difficulty": "L1",
+    "domain": "Process",
+    "source": "P133"
+  },
+  {
+    "id": 75,
+    "question": "什么是包埋渗（Pack Cementation）？它是一种用于制备何种涂层的工艺？",
+    "ground_truth": "包埋渗是将组件浸入反应罐内的粉末混合物中加热，指导形成足够厚度的涂层。常用于制备热障涂层。",
+    "type": "Reasoning",
+    "difficulty": "L2",
+    "domain": "Coating",
+    "source": "P277"
+  },
+  {
+    "id": 76,
+    "question": "什么是高周疲劳（HCF）？它的应力来源通常是什么？",
+    "ground_truth": "高周疲劳是指在弹性区较低应力幅下，经历大量循环次数（通常>10⁵次）发生的疲劳。应力来源通常是高频振动或共振（如气动颤振）。",
+    "type": "Reasoning",
+    "difficulty": "L2",
+    "domain": "Property",
+    "source": "P179"
+  },
+  {
+    "id": 77,
+    "question": "简述等离子喷涂（Plasma Spraying）的基本原理。",
+    "ground_truth": "利用热电离气体能量熔化和推动细金属或氧化物粒子粉末至表面，使它们黏着并凝聚在表面形成涂层的工艺。",
+    "type": "Fact Retrieval",
+    "difficulty": "L1",
+    "domain": "Process",
+    "source": "P272"
+  },
+  {
+    "id": 78,
+    "question": "在热障涂层（TBC）体系中，热生长氧化层（TGO）是如何形成的？",
+    "ground_truth": "热生长氧化层（TGO）是在热循环过程中，陶瓷层和粘结层界面处发生氧化生成的。",
+    "type": "Reasoning",
+    "difficulty": "L2",
+    "domain": "Coating",
+    "source": "P309"
+  },
+  {
+    "id": 79,
+    "question": "在单晶叶片凝固过程中，什么是“斑点”（Freckles）缺陷？",
+    "ground_truth": "“斑点”或通道偏析，是由局部成分不均匀产生的薄链状等轴晶，富集了从枝晶间合金液中分离出的元素。",
+    "type": "Fact Retrieval",
+    "difficulty": "L1",
+    "domain": "Defect",
+    "source": "P138"
+  },
+  {
+    "id": 80,
+    "question": "什么是科尔-维尔斯多夫锁（Kear-Wilsdorf Lock）？",
+    "ground_truth": "指在L1₂结构中，一个在{111}面上分解的超点阵位错，其部分（如APB）交叉滑移至{010}立方体面上，形成一种固定的、不可移动的位错组态。",
+    "type": "Reasoning",
+    "difficulty": "L2",
+    "domain": "Structure",
+    "source": "P70"
+  },
+  {
+    "id": 81,
+    "question": "什么是超点阵内禀层错（SISF）？其能量与APB和CSF相比有何特点？",
+    "ground_truth": "在L1₂结构中，沿{111}面发生a/3<211>剪切，相当于移除单个{111}晶面。由于不违反最近邻原则，其能量较小，远低于APB和CSF。",
+    "type": "Reasoning",
+    "difficulty": "L2",
+    "domain": "Structure",
+    "source": "P67"
+  },
+  {
+    "id": 82,
+    "question": "什么是位错分解？请写出FCC结构中一个全位错分解为两个肖克莱（Shockley）偏位错的反应式。",
+    "ground_truth": "高能量的全位错分解为两个或多个能量较低的偏位错。反应式：a/2<110> → a/6<211> + a/6<121>。",
+    "type": "Fact Retrieval",
+    "difficulty": "L2",
+    "domain": "Theory",
+    "source": "P54-55"
+  },
+  {
+    "id": 83,
+    "question": "高温合金中的γ''相是什么？它主要在哪类合金中作为强化相？",
+    "ground_truth": "γ''相是含Nb的Ni-Fe高温合金（如IN718）中的主要强化沉淀，为体心四方（BCT）有序化合物，成分近似于Ni₃Nb。",
+    "type": "Fact Retrieval",
+    "difficulty": "L1",
+    "domain": "Structure",
+    "source": "P47-48"
+  },
+  {
+    "id": 84,
+    "question": "请简述面心立方（FCC）结构。镍的晶体结构是什么？",
+    "ground_truth": "面心立方（FCC）结构由周期性为3的密排面堆垛组成（ABCABC...）。镍的晶体结构为FCC。",
+    "type": "Fact Retrieval",
+    "difficulty": "L1",
+    "domain": "Structure",
+    "source": "P32, P54"
+  },
+  {
+    "id": 85,
+    "question": "什么是拓扑密堆（TCP）相？指出至少两种TCP相的例子。",
+    "ground_truth": "由过量的Cr、Mo、W和Re等元素形成的具有高原子堆垛密度的金属间化合物相。例子包括μ相、σ相、Laves相。",
+    "type": "Fact Retrieval",
+    "difficulty": "L1",
+    "domain": "Defect",
+    "source": "P34, P49"
+  },
+  {
+    "id": 86,
+    "question": "燃气涡轮发动机中，涡轮进口温度（TET）的提高对发动机效率有何影响？",
+    "ground_truth": "TET提高会增加热机的有用功，从而提高热效率（需要配合合理的总压比）。",
+    "type": "Reasoning",
+    "difficulty": "L2",
+    "domain": "Application",
+    "source": "P12"
+  },
+  {
+    "id": 87,
+    "question": "什么是热障涂层（TBC）？它主要由哪几部分组成？",
+    "ground_truth": "用于隔热和防护的陶瓷涂层系统。主要包含陶瓷顶层（如氧化锆）和金属粘结层。",
+    "type": "Fact Retrieval",
+    "difficulty": "L1",
+    "domain": "Coating",
+    "source": "P2, P281"
+  },
+  {
+    "id": 88,
+    "question": "什么是蠕变三大阶段？",
+    "ground_truth": "第一阶段（减速蠕变）；第二阶段（稳态蠕变，速率恒定）；第三阶段（加速蠕变，直至断裂）。",
+    "type": "Fact Retrieval",
+    "difficulty": "L1",
+    "domain": "Property",
+    "source": "P89"
+  },
+  {
+    "id": 89,
+    "question": "在高温合金的凝固过程中，哪些缺陷的形成与定向凝固工艺参数有关？",
+    "ground_truth": "大角度晶界、再结晶和夹杂等。",
+    "type": "Fact Retrieval",
+    "difficulty": "L1",
+    "domain": "Defect",
+    "source": "P136"
+  },
+  {
+    "id": 90,
+    "question": "镍（Ni）的熔点是多少摄氏度？",
+    "ground_truth": "1455℃",
+    "type": "Numerical",
+    "difficulty": "L1",
+    "domain": "Property",
+    "source": "P32"
+  },
+  {
+    "id": 91,
+    "question": "钛合金因抗氧化能力差，其应用温度通常被限制在多少摄氏度以下？",
+    "ground_truth": "700℃以下",
+    "type": "Numerical",
+    "difficulty": "L1",
+    "domain": "Property",
+    "source": "P2"
+  },
+  {
+    "id": 92,
+    "question": "晶粒内二次和三次γ'相出现在哪里？典型的γ'相尺寸是多少？",
+    "ground_truth": "出现在γ相内，分别为100nm和50nm。",
+    "type": "Fact Retrieval",
+    "difficulty": "L2",
+    "domain": "Structure",
+    "source": "P227"
+  },
+  {
+    "id": 93,
+    "question": "理想气体卡诺循环的热效率公式是什么？它与哪两个温度有关？",
+    "ground_truth": "η=1-T2/T1。与气体与冷库接触后的最终温度T2和与热库接触后的初始温度T1有关。",
+    "type": "Fact Retrieval",
+    "difficulty": "L1",
+    "domain": "Theory",
+    "source": "P10"
+  },
+  {
+    "id": 94,
+    "question": "在一个涡轮进口温度为1400K、总压比为25的理想涡轮喷气发动机循环中，其热效率估算值是多少？",
+    "ground_truth": "0.60",
+    "type": "Numerical",
+    "difficulty": "L2",
+    "domain": "Application",
+    "source": "P11"
+  },
+  {
+    "id": 95,
+    "question": "现代民用涡扇航空发动机的涵道比（Bypass Ratio）通常介于什么范围之间？",
+    "ground_truth": "6:1 ~ 9:1",
+    "type": "Numerical",
+    "difficulty": "L1",
+    "domain": "Application",
+    "source": "P13"
+  },
+  {
+    "id": 96,
+    "question": "衡量高温合金蠕变性能时，蒙克曼-格兰特（Monkman-Grant）公式中的常数B在数值上等于什么物理量？",
+    "ground_truth": "蠕变延性的常数，即蠕变失效应变。",
+    "type": "Fact Retrieval",
+    "difficulty": "L2",
+    "domain": "Theory",
+    "source": "P17"
+  },
+  {
+    "id": 97,
+    "question": "评估涡轮叶片材料性能时，通常采用在137MPa应力下，蠕变寿命达到1000小时所对应的温度作为指标。第一代单晶高温合金大约是在什么温度下达到该指标的？",
+    "ground_truth": "1000℃",
+    "type": "Numerical",
+    "difficulty": "L1",
+    "domain": "Comparison",
+    "source": "P18, 图1.17"
+  },
+  {
+    "id": 98,
+    "question": "镍的相对原子质量是多少？其室温下的密度是多少 kg/m³？",
+    "ground_truth": "58.71，8907kg/m³",
+    "type": "Numerical",
+    "difficulty": "L1",
+    "domain": "Property",
+    "source": "P32"
+  },
+  {
+    "id": 99,
+    "question": "β-NiAl化合物的形成焓大约是多少 kJ/(mol·原子)？",
+    "ground_truth": "-60",
+    "type": "Numerical",
+    "difficulty": "L1",
+    "domain": "Property",
+    "source": "P41, 图2.10"
+  },
+  {
+    "id": 100,
+    "question": "在IN706合金中，γ''相沉淀的形状如何，厚度通常是多大？直径又是多大？",
+    "ground_truth": "片状，厚度10nm左右，直径约50nm",
+    "type": "Fact Retrieval",
+    "difficulty": "L2",
+    "domain": "Structure",
+    "source": "P50, 图2.22"
+  },
+  {
+    "id": 101,
+    "question": "在多晶高温合金中，为了抑制晶界滑移，碳（C）的浓度通常高达多少（重量百分比）？",
+    "ground_truth": "0.2wt.%",
+    "type": "Numerical",
+    "difficulty": "L1",
+    "domain": "Composition",
+    "source": "P34"
+  }
+]

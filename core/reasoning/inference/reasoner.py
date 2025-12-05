@@ -243,19 +243,42 @@ class GraphReasoner:
         Returns:
             Dictionary mapping (source_id, target_id) -> attention_weight
         """
-        # This is a simplified version - in practice, you'd need to modify RGAT to return attention
-        # For now, return empty dict
-        logging.warning("Attention extraction not yet implemented, using edge weights")
-
         attention_dict = {}
         edge_index = self.graph_data.edge_index.cpu().numpy()
-        edge_weights = self.graph_data.edge_weights.cpu().numpy()
 
-        for i in range(edge_index.shape[1]):
-            src_idx, tgt_idx = edge_index[0, i], edge_index[1, i]
-            src_id = self.graph_data.idx_to_node[src_idx]
-            tgt_id = self.graph_data.idx_to_node[tgt_idx]
-            attention_dict[(src_id, tgt_id)] = float(edge_weights[i])
+        # Use GNN's extract_attention method to get real attention weights
+        try:
+            _, attentions = self.gnn.extract_attention(
+                x=self.graph_data.node_embeddings,
+                edge_index=self.graph_data.edge_index,
+                edge_type_emb=self.graph_data.edge_type_embeddings[self.graph_data.edge_types],
+                edge_weights=self.graph_data.edge_weights,
+                query_emb=query_emb,
+                adjacency_mask=self.graph_data.adjacency_mask
+            )
+
+            # Use attention from the last layer, averaged across heads
+            last_layer_attn = attentions[-1]  # [num_edges, num_heads]
+            avg_attention = last_layer_attn.mean(dim=-1).cpu().numpy()  # [num_edges]
+
+            for i in range(edge_index.shape[1]):
+                src_idx, tgt_idx = edge_index[0, i], edge_index[1, i]
+                src_id = self.graph_data.idx_to_node[src_idx]
+                tgt_id = self.graph_data.idx_to_node[tgt_idx]
+                attention_dict[(src_id, tgt_id)] = float(avg_attention[i])
+
+            logging.debug(f"Extracted attention scores for {len(attention_dict)} edges")
+
+        except Exception as e:
+            # Fallback to edge weights if attention extraction fails
+            logging.warning(f"Attention extraction failed: {e}, using edge weights as fallback")
+            edge_weights = self.graph_data.edge_weights.cpu().numpy()
+
+            for i in range(edge_index.shape[1]):
+                src_idx, tgt_idx = edge_index[0, i], edge_index[1, i]
+                src_id = self.graph_data.idx_to_node[src_idx]
+                tgt_id = self.graph_data.idx_to_node[tgt_idx]
+                attention_dict[(src_id, tgt_id)] = float(edge_weights[i])
 
         return attention_dict
 

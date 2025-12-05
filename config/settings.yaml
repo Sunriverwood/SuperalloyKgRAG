@@ -28,8 +28,9 @@ loader:
   source_json_dir: "data/processed_jsons/"
   output_dir: "data/chunks/"
   output_format: "jsonl"  # jsonl, json, or parquet
-  chunk_size: 500  # 每个文本块的目标大小 (字符数)
-  chunk_overlap: 100  # 相邻文本块之间的重叠大小 (字符数)
+  chunk_size: 1000  # 每个文本块的目标大小 (字符数)
+  chunk_overlap: 200  # 相邻文本块之间的重叠大小 (字符数)
+  split_table_chart: true  # 是否将表格按行、图表按数据点拆分为独立句子，避免被切分
   filename_map:
     jsonl: "text_units.jsonl"
     json: "text_units.json"
@@ -42,6 +43,11 @@ extraction:
   output_filename: "extracted_graph.jsonl"
   requests_dir: "data/cache" # 临时存放批量请求文件的目录
   prompt_path: "config/prompts/text_to_graph.md"
+  media_prompts:
+    table: "config/prompts/table_to_graph.md"
+    chart: "config/prompts/chart_to_graph.md"
+    schematic: "config/prompts/schematic_to_graph.md"
+    photograph: "config/prompts/photograph_to_graph.md"
 
 graph_builder:
   input_path: "data/graphs/extracted/extracted_graph.jsonl"
@@ -80,13 +86,13 @@ embedding:
 
 query:
   top_k: 20
-  generation_model: "qwen3-max"  #gemini-2.5-pro""qwen3-max"
-  temperature: 1
+  generation_model: "qwen3-max-preview"  #gemini-2.5-pro""qwen3-max"
+  temperature: 0.1
   top_p: 0.9
   search_config: false # allow_general_knowledge or not
-  local_top_k: 10
+  local_top_k: 20
   max_local_context_tokens: 30000
-  k_hop: 2  # K-hop邻域扩展深度 (1或2)
+  k_hop: 1  # K-hop邻域扩展深度 (1或2)
   drift_k_followups: 2  # 当启用drift时，允许的后续问题数量
   drift_max_steps: 2 # 当启用drift时，最大漂移步数
 
@@ -118,9 +124,40 @@ logging:
   log_file: "logs/superalloyKgRAG.log"
 
 evaluation:
+  # 评测数据路径
   qa_pairs_path: "data/evaluation_sets/qa_pairs.csv"
   ground_truth_path: "data/evaluation_sets/ground_truth.json"
+  evaluation_sets_dir: "data/evaluation_sets"
+
+  # 输出路径
+  answers_output_dir: "data/answers"
+  reports_output_dir: "data/reports"
+
+  # 并发与性能控制
+  max_concurrency: 5               # 最大并发请求数
+  request_timeout: 600             # 单次请求超时时间(秒)
+  retry_count: 2                   # 失败重试次数
+
+  # 评分配置
   metrics: ["faithfulness", "relevance", "factual_accuracy"]
+
+  # 评判 Prompt 路径
+  prompts:
+    l3_evaluation: "config/prompts/evaluation_l3.md"
+    l4_evaluation: "config/prompts/evaluation_l4.md"
+
+  # 评分权重配置
+  scoring_weights:
+    l1l2:
+      keyword_match: 0.6
+      semantic_similarity: 0.4
+    l3:
+      llm_judge: 0.8
+      semantic_similarity: 0.2
+    l4:
+      conflict_identification: 0.3
+      mechanism_invocation: 0.35
+      solution_proposal: 0.35
 
 reasoning:
   # Graph Reasoning Model Configuration
