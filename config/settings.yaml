@@ -49,8 +49,41 @@ extraction:
     schematic: "config/prompts/schematic_to_graph.md"
     photograph: "config/prompts/photograph_to_graph.md"
 
+table_extraction:
+  input_dir: "data/processed_jsons"  # VLM 解析后的 JSON 文件目录
+  output_dir: "data/chunks"  # 中间文件保存位置（与 loader 一致）
+  output_filename: "table_units.jsonl"  # 表格 text units 文件
+  graph_output_dir: "data/graphs/extracted"  # 图谱输出目录
+  graph_output_filename: "extracted_table_graph.jsonl"  # 表格图谱文件
+  requests_dir: "data/cache"  # 批量请求文件目录
+  requests_filename: "extraction_table_requests.jsonl"  # 批量请求文件名
+  prompt_path: "config/prompts/table_to_graph.md"
+
+abstract_extraction:
+  input_excel: "data/papers/superalloy_research.xlsx"  # Excel 文件路径
+  output_dir: "data/chunks"  # abstract_units.jsonl 保存位置
+  output_filename: "abstract_units.jsonl"  # 摘要 text units 文件
+  graph_output_dir: "data/graphs/extracted"  # 图谱输出目录
+  graph_output_filename: "extracted_abstract_graph.jsonl"  # 摘要图谱文件
+  requests_dir: "data/cache"  # 批量请求文件目录
+  requests_filename: "extraction_abstract_requests.jsonl"  # 批量请求文件名
+
+image_extraction:
+  input_dir: "data/processed_jsons"  # VLM 解析后的 JSON 文件目录
+  output_dir: "data/chunks"  # 中间文件保存位置（与 loader 一致）
+  output_filename: "image_units.jsonl"  # 图片 text units 文件
+  graph_output_dir: "data/graphs/extracted"  # 图谱输出目录
+  graph_output_filename: "extracted_image_graph.jsonl"  # 图片图谱文件
+  requests_dir: "data/cache"  # 批量请求文件目录
+  requests_filename: "extraction_image_requests.jsonl"  # 批量请求文件名
+
+enrich_extraction:
+  extracted_dir: "data/graphs/extracted"  # 提取的图谱存放目录
+  enriched_dir: "data/graphs/enriched"  # 富化后的图谱存放目录
+  enriched_filename: "enriched_graph.jsonl"  # 富化图谱文件名
+
 graph_builder:
-  input_path: "data/graphs/extracted/extracted_graph.jsonl"
+  input_path: "data/graphs/enriched/enriched_graph.jsonl"
   disambiguation_graph_path: "data/graphs/disambiguation_graph.json"
   merged_graph_path: "data/graphs/merged_graph.json"
   output_graph_path: "data/graphs/final_graph.json"

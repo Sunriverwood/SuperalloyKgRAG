@@ -194,13 +194,15 @@ class ReasoningQueryHandler:
             # Fallback to zero vector
             return np.zeros(self.graph_data.embed_dim)
 
-    def generate_answer(self, query: str, reasoning_results: Dict[str, Any]) -> str:
+    def generate_answer(self, query: str, reasoning_results: Dict[str, Any],
+                       strict_mode: bool = True) -> str:
         """
         Generate final answer using LLM with reasoning context.
 
         Args:
             query: Original query
             reasoning_results: Results from graph reasoning
+            strict_mode: If True, strictly prohibit LLM from using its own knowledge
 
         Returns:
             Generated answer
@@ -222,8 +224,28 @@ class ReasoningQueryHandler:
 
         context = "\n".join(context_parts)
 
-        # Create prompt
-        prompt = f"""Based on the following knowledge graph reasoning results, please answer the question.
+        # Create prompt based on mode
+        if strict_mode:
+            system_prompt = """You are a knowledge graph reasoning assistant. 
+
+CRITICAL CONSTRAINTS:
+1. You MUST ONLY use information from the provided knowledge graph reasoning results
+2. You MUST NOT use your own training data or general knowledge
+3. If the provided reasoning results don't contain enough information to answer, say "Based on the available knowledge graph data, I cannot find sufficient information to answer this question."
+4. Every statement in your answer must be traceable to the provided entities and reasoning paths
+5. Do not make assumptions or inferences beyond what is explicitly stated in the reasoning results"""
+
+            prompt = f"""Question: {query}
+
+Knowledge Graph Reasoning Results:
+{context}
+
+IMPORTANT: Answer ONLY based on the above reasoning results. Do NOT use any external knowledge or your training data. If the reasoning results are insufficient, explicitly state that."""
+
+        else:
+            system_prompt = "You are a helpful assistant that answers questions based on knowledge graph reasoning."
+
+            prompt = f"""Based on the following knowledge graph reasoning results, please answer the question.
 
 Question: {query}
 
@@ -236,7 +258,7 @@ Explain how the paths support your answer."""
             response = self.client.chat.completions.create(
                 model=self.generation_model_name,
                 messages=[
-                    {"role": "system", "content": "You are a helpful assistant that answers questions based on knowledge graph reasoning."},
+                    {"role": "system", "content": system_prompt},
                     {"role": "user", "content": prompt}
                 ],
                 temperature=self.temperature
@@ -250,7 +272,7 @@ Explain how the paths support your answer."""
             return "Error generating answer. Please try again."
 
     def query(self, query_text: str, method: str = 'ppr',
-             include_llm_answer: bool = True) -> Dict[str, Any]:
+             include_llm_answer: bool = True, strict_mode: bool = True) -> Dict[str, Any]:
         """
         Main query interface.
 
@@ -258,12 +280,14 @@ Explain how the paths support your answer."""
             query_text: Natural language query
             method: Reasoning method ('ppr' or 'gnn')
             include_llm_answer: Whether to generate final answer with LLM
+            strict_mode: If True, LLM only uses knowledge graph data (no external knowledge)
 
         Returns:
             Complete query results including reasoning and answer
         """
         logging.info("="*80)
         logging.info(f"Processing query: {query_text}")
+        logging.info(f"Mode: method={method}, include_llm={include_llm_answer}, strict_mode={strict_mode}")
         logging.info("="*80)
 
         # 1. Encode query
@@ -279,7 +303,7 @@ Explain how the paths support your answer."""
 
         # 3. Generate final answer (optional)
         if include_llm_answer:
-            answer = self.generate_answer(query_text, reasoning_results)
+            answer = self.generate_answer(query_text, reasoning_results, strict_mode=strict_mode)
             reasoning_results['answer'] = answer
 
         logging.info(f"Query processing complete")
@@ -442,6 +466,12 @@ def interactive_mode(config: Dict[str, Any]):
         llm_input = input("Generate LLM answer? (yes/no) [yes]: ").strip().lower()
         include_llm = llm_input not in ['no', 'n']
 
+        # Choose strict mode (only if generating LLM answer)
+        strict_mode = True  # Default
+        if include_llm:
+            strict_input = input("Use strict mode (LLM only uses knowledge graph data)? (yes/no) [yes]: ").strip().lower()
+            strict_mode = strict_input not in ['no', 'n']
+
         # Save to file?
         save_input = input("Save results to file? (yes/no) [no]: ").strip().lower()
         output_file = None
@@ -459,7 +489,8 @@ def interactive_mode(config: Dict[str, Any]):
             results = handler.query(
                 query_text=query,
                 method=method,
-                include_llm_answer=include_llm
+                include_llm_answer=include_llm,
+                strict_mode=strict_mode
             )
 
             # Print results
@@ -545,6 +576,8 @@ Examples:
                        help='Reasoning method (default: ppr)')
     parser.add_argument('--no-llm', action='store_true',
                        help='Skip LLM answer generation')
+    parser.add_argument('--no-strict', action='store_true',
+                       help='Allow LLM to use its own knowledge (default: strict mode - only knowledge graph data)')
 
     # Training parameters
     parser.add_argument('--epochs', '-e', type=int, default=50,
@@ -608,7 +641,8 @@ Examples:
         results = handler.query(
             query_text=args.query,
             method=args.method,
-            include_llm_answer=not args.no_llm
+            include_llm_answer=not args.no_llm,
+            strict_mode=not args.no_strict
         )
 
         # Print results
