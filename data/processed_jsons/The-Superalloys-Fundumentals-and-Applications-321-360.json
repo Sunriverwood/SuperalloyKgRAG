@@ -1,0 +1,1235 @@
+[
+  {
+    "page_number": 1,
+    "content_blocks": [
+      {
+        "block_id": "page_1_block_1",
+        "type": "image",
+        "caption": "Fig. 5.20. Thermal conductivity of yttria-stabilised zirconia (7YSZ) as a function of temperature and grain size [56].",
+        "image_type": "chart",
+        "content": {
+          "title": "Thermal conductivity of yttria-stabilised zirconia (7YSZ)",
+          "x_axis_label": "Temperature, T (°C)",
+          "y_axis_label": "Thermal conductivity, k (W/(m K))",
+          "legend": [
+            "Intrinsic",
+            "1 μm",
+            "100 nm",
+            "50 nm",
+            "10 nm",
+            "5 nm"
+          ],
+          "trend_description": "The chart displays the thermal conductivity of 7YSZ as a function of temperature for various grain sizes. Thermal conductivity decreases with increasing temperature for all conditions. At any given temperature, thermal conductivity is lower for smaller grain sizes, ranging from 'Intrinsic' (highest conductivity) down to 5 nm (lowest conductivity). The effect of grain size is most pronounced at lower temperatures, with the curves converging at higher temperatures around 1200 °C."
+        }
+      },
+      {
+        "block_id": "page_1_block_2",
+        "type": "text_block",
+        "content": "κ when deposited by PS than by EB-PVD. In general, porosity has been shown to have a profound influence on the thermal conductivity of TBCs fabricated by plasma spraying [57]. Reducing the grain size has also been found to reduce the thermal conductivity [56] (see Figure 5.20), although this effect is much less pronounced at elevated temperatures where only the point defects are effective. Alternatively, dopants have been introduced to YSZ-based ceramics to encourage phonon dispersion – rare-earth elements added in their oxide form, for example, erbia, ytterbia, neodymia and gadolinia, have been shown to be effective at reducing the thermal conductivity [56] (see Figure 5.21) because they act as phonon scatterers. A further novel strategy proposed recently has been a ‘layered' form of TBC produced by sequential evaporation of two compositional variants of ceramic using a single electron beam, made to jump between two different ceramic ingots. An advantage of this approach is that the layer/layer boundaries lie perpendicular to the TBC growth direction; see Figure 5.22. Columnar, mixed ceria-zirconia and alumina-zirconia TBCs have been produced in this way, with layers exhibiting periodicity as small as 0.1 µm [58]. Similar structures have been produced using a glow discharge plasma to vary the density of the coating deposited, the layering being produced in this case by oscillating the d.c. bias applied to the substrate during the EB-PVD process, with reductions of about 40% in κ being claimed relative to the state-of-the-art TBCs being used in service [56]. Further microstructural modifications in the form of 'herringbone' structures have been produced",
+        "references": [
+          "page_1_block_1",
+          "page_2_block_1",
+          "page_2_block_2"
+        ]
+      }
+    ]
+  },
+  {
+    "page_number": 2,
+    "content_blocks": [
+      {
+        "block_id": "page_2_block_1",
+        "type": "image",
+        "caption": "Fig. 5.21. Thermal conductivities of 250 µm-thick EB-PVD zirconia-based coatings doped with various rare-earth additions at a level of 4 mol%; data measured at room temperature [56].",
+        "image_type": "chart",
+        "content": {
+          "title": "Thermal conductivities of doped zirconia-based coatings",
+          "x_axis_label": "Coating Type",
+          "y_axis_label": "Thermal conductivity (W/(m K))",
+          "legend": [],
+          "trend_description": "The bar chart compares the thermal conductivity of a reference zirconia-based coating to coatings doped with various rare-earth elements. The reference coating has the highest conductivity at approximately 1.6 W/(m K). All doped coatings exhibit lower thermal conductivity. Erbia reduces it to about 1.3 W/(m K), while Ytterbia, Neodymia, and Gadolinia show more significant reductions to values around 0.9-1.0 W/(m K), with Gadolinia showing the lowest value.",
+          "extracted_data": [
+            {
+              "x": "Reference",
+              "y": 1.6
+            },
+            {
+              "x": "Erbia",
+              "y": 1.3
+            },
+            {
+              "x": "Ytterbia",
+              "y": 0.9
+            },
+            {
+              "x": "Neodymia",
+              "y": 0.95
+            },
+            {
+              "x": "Gadolinia",
+              "y": 0.85
+            }
+          ]
+        }
+      },
+      {
+        "block_id": "page_2_block_2",
+        "type": "image",
+        "caption": "Fig. 5.22. (a) Microstructure of multilayered EB-PVD ceria-stabilised zirconia TBC, illustrating (b) the formation of micro-columns formed from the vapour phase using the two-source jumping beam method [58].",
+        "image_type": "photograph",
+        "content": {
+          "description": "Two scanning electron micrographs, labeled (a) and (b), with 10 µm scale bars, show the microstructure of a ceria-stabilized zirconia TBC. Image (a) displays a multilayered structure with wavy, chevron-like patterns. Image (b) is a higher magnification view, revealing the formation of distinct micro-columns that constitute the overall layered structure."
+        }
+      },
+      {
+        "block_id": "page_2_block_3",
+        "type": "text_block",
+        "content": "by manipulation of the substrate during deposition, giving symmetrical zig-zag or wavy columns [59]; see Figure 5.23 – it has been claimed that the thermal conductivity of the coatings produced in this way can be up to 25% lower than so-called straight-columned TBCs produced ordinarily. Similar structures have been produced using high-velocity gas flows to focus the vapour plume, a process which has been christened ‘directed vapour deposition' - conductivities of the 7YSZ coatings produced in this way were shown to be equivalent to those produced by APS processing [60].",
+        "references": [
+          "page_3_block_1"
+        ]
+      }
+    ]
+  },
+  {
+    "page_number": 3,
+    "content_blocks": [
+      {
+        "block_id": "page_3_block_1",
+        "type": "image",
+        "caption": "Fig. 5.23. Thermal barrier coating produced with a ‘herringbone' microstructure [59]. (Courtesy of Martijn Koolloos, NLR, the Netherlands.)",
+        "image_type": "photograph",
+        "content": {
+          "description": "A cross-sectional scanning electron micrograph of a thermal barrier coating with a 50 µm scale bar. The image reveals a distinctive 'herringbone' microstructure, characterized by angled columnar grains that form a zig-zag pattern, deposited on a substrate layer."
+        }
+      },
+      {
+        "block_id": "page_3_block_2",
+        "type": "text_block",
+        "content": "5.3 Overlay coatings\nOverlay coatings placed on the superalloys are generally of MCrAlX type, where M is either nickel (Ni) or cobalt (Co) or a combination of the two, and X is a reactive element added in minor proportions – yttrium (Y) is very commonly used. The coatings are thus metallic in form. By their nature, the composition of the coating is independent of that of the substrate (although some interdiffusion inevitably occurs) – hence, in principle, they allow the desired surface properties to be attained for any given application, for example with an optimum blend of oxidation and corrosion resistances, strength and ductility. The first overlay coatings appeared in the late 1960s and were deposited using the emerging EB-PVD technology. These were based upon cobalt alloyed with 20 to 40 wt%Cr, 12 to 20 wt%Al and yttrium levels around 0.5 wt% – with the composition Co–25Cr–14Al–0.5Y being very successful [3]. Such Co-based overlay coatings are still used extensively and are recognised for their superior hot-corrosion resistance. However, following much subsequent research effort, a wide range of coating compositions are now available with additions such as Si, Ta, Hf [61,62] or precious metals such as Pt, Pd, Ru or Re [63] – Table 5.1 lists the compositions of some common overlay coatings, including some which featured in patent applications during this early period of alloy development [8]. As of 1998, it has been stated [64] that there were at least 40 patented variations of the original MCrAlY concept; the exact compositions are sometimes of a proprietary nature, and it should be noted that the compositions used in practice are those which circumvent existing patents and are not always those which display optimum properties. As an example, Figure 5.24 illustrates the improvement in cyclic oxidation performance of plasma-sprayed NiCoCrAlY-type coatings modified with additions of Si and Hf at optimised concentrations of 0.4 and 0.25 wt%,",
+        "references": [
+          "page_4_block_1",
+          "page_4_block_2"
+        ]
+      }
+    ]
+  },
+  {
+    "page_number": 4,
+    "content_blocks": [
+      {
+        "block_id": "page_4_block_1",
+        "type": "table",
+        "caption": "Table 5.1. Compositions of some commonly used and prototype [8] MCrAlY overlay coatings, in weight %",
+        "data": [
+          [
+            "",
+            "Ni",
+            "Co",
+            "Cr",
+            "Al",
+            "Y",
+            "Ti",
+            "Si",
+            "Hf",
+            "Others"
+          ],
+          [
+            "NiCrAlY",
+            "Bal",
+            "",
+            "25",
+            "6",
+            "0.4",
+            "",
+            "",
+            "",
+            ""
+          ],
+          [
+            "NiCrAlY",
+            "Bal",
+            "",
+            "22",
+            "10",
+            "1.0",
+            "",
+            "",
+            "",
+            ""
+          ],
+          [
+            "NiCrAlY",
+            "Bal",
+            "",
+            "31",
+            "11",
+            "0.6",
+            "",
+            "",
+            "",
+            ""
+          ],
+          [
+            "NiCrAlY",
+            "Bal",
+            "",
+            "35",
+            "6",
+            "0.5",
+            "",
+            "",
+            "",
+            ""
+          ],
+          [
+            "CoNiCrAlY",
+            "32",
+            "Bal",
+            "21",
+            "8",
+            "0.5",
+            "",
+            "",
+            "",
+            ""
+          ],
+          [
+            "CoCrAlY",
+            "",
+            "Bal",
+            "25",
+            "14",
+            "0.5",
+            "",
+            "",
+            "",
+            ""
+          ],
+          [
+            "NiCoCrAlTaY",
+            "Bal",
+            "23",
+            "20",
+            "8.5",
+            "0.6",
+            "",
+            "",
+            "",
+            "4 Ta"
+          ],
+          [
+            "NiCoCrAlYSi",
+            "Bal",
+            "0-40",
+            "12.5-20",
+            "2-8",
+            "0-0.25",
+            "0-10",
+            "2-10",
+            "",
+            "0-4 Nb\n0-4 Mo\n0-20 Fe\n0-5 Mn"
+          ],
+          [
+            "NiCrAlTi",
+            "Bal",
+            "",
+            "30-40",
+            "1-10",
+            "",
+            "1-5",
+            "",
+            "",
+            ""
+          ],
+          [
+            "NiCoCrAlHf",
+            "Bal",
+            "0-40",
+            "10-45",
+            "6-25",
+            "",
+            "",
+            "",
+            "0-10",
+            ""
+          ]
+        ],
+        "summary": "This table provides the elemental compositions in weight percent for various MCrAlY overlay coatings. It details the balances (Bal) and ranges for elements like Ni, Co, Cr, Al, Y, and other additions such as Ta, Si, Ti, Hf, Nb, Mo, Fe, and Mn."
+      },
+      {
+        "block_id": "page_4_block_2",
+        "type": "image",
+        "caption": "Fig. 5.24. Progressive degradation of EB-PVD deposited (EB) and PS sprayed overlay coatings showing synergistic benefit of silicon and hafnium additions [61].",
+        "image_type": "chart",
+        "content": {
+          "title": "Progressive degradation of overlay coatings",
+          "x_axis_label": "Hours of 1149 °C cyclic oxidation",
+          "y_axis_label": "Progressive failure stages",
+          "legend": [
+            "EB NiCoCrAlY",
+            "PS NiCoCrAlY (highY)",
+            "PS NiCoCrAlY + Hf",
+            "PS NiCoCrAlY + Si",
+            "PS NiCoCrAlY + Si + Hf"
+          ],
+          "trend_description": "The chart illustrates the time taken for different overlay coatings to reach various stages of failure during cyclic oxidation. The stages range from light oxide spall to substrate attack. Coatings with combined silicon (Si) and hafnium (Hf) additions show significantly longer times to failure compared to coatings with single additions or no additions, demonstrating a synergistic benefit of Si and Hf in improving oxidation resistance."
+        }
+      },
+      {
+        "block_id": "page_4_block_3",
+        "type": "text_block",
+        "content": "respectively [61]. Much of this work became possible because of the development of plasma-spraying technology, since it was found that the EB-PVD process was not amenable to the transfer of low-vapour-pressure elements (for example, Si, Ta, Hf) along with the required Ni, Cr, Al and Y in the desired proportions. From this work emerged the nickel-based overlay coatings which were designed with oxidation rather than corrosion resistance in mind, such that an adherent Al2O3-based oxide scale is formed during exposure to high",
+        "references": []
+      }
+    ]
+  },
+  {
+    "page_number": 5,
+    "content_blocks": [
+      {
+        "block_id": "page_5_block_1",
+        "type": "image",
+        "caption": "Fig. 5.25. Classification of Ni-Cr-Al alloys based on oxide and oxidation mechanism at 1000 °C [67].",
+        "image_type": "chart",
+        "content": {
+          "title": "Classification of Ni-Cr-Al alloys",
+          "x_axis_label": "Wt%Cr",
+          "y_axis_label": "Wt%Al",
+          "legend": [
+            "I",
+            "II",
+            "III"
+          ],
+          "trend_description": "This is a ternary diagram for the Ni-Cr-Al system, showing compositional regions corresponding to different oxidation mechanisms at 1000 °C. The diagram is divided into three zones (I, II, and III), which represent different types of oxide scale formation. Data points for various alloy compositions are plotted within the diagram to classify their behavior."
+        }
+      },
+      {
+        "block_id": "page_5_block_2",
+        "type": "text_block",
+        "content": "temperatures. Compositions such as Ni–25Cr–6Al–0.4Y and Ni–22Cr–10Al–1Y (wt%) now find frequent use as overlay coatings, for example, for the bond coats in TBC systems. Recently, the Siemens Company has introduced Re into their MCrAlY overlay coatings used for industrial gas turbines, and demonstrated that the oxidation and thermomechanical properties are much improved [63]. The microstructure of these coatings consists of a two-phase mixture of the ẞ-NiAl phase and the solid-solution of y–Ni [65].",
+        "references": []
+      },
+      {
+        "block_id": "page_5_block_3",
+        "type": "text_block",
+        "content": "5.3.1 Oxidation behaviour of Ni-based overlay coatings\nGiven the emergence of the NiCrAlY-type compositions as nickel-based overlay coatings, one should identify the physical reasons for their suitability for this application. Some early papers of Pettit and co-workers [66,67] provide considerable insight. In a series of careful and methodical experiments, it was confirmed that in Ni–Cr–Al ternary alloys, and depending upon the precise mean composition, either an alumina (Al2O3) or a chromia (Cr2O3) oxide scale can form exclusively during exposure to high temperatures, this despite nickel being the majority component in these alloys so that nickel oxide might have been expected under all circumstances. This effect has been christened ‘selective oxidation'. The ternary diagram in Figure 5.25 illustrates the regions in which the different scales were found to form – termed Group I, Group II and Group III behaviour – at 1000 °C,",
+        "references": [
+          "page_5_block_1"
+        ]
+      }
+    ]
+  },
+  {
+    "page_number": 6,
+    "content_blocks": [
+      {
+        "block_id": "page_6_block_1",
+        "type": "image",
+        "caption": "Fig. 5.26. The oxide morphologies formed during the high-temperature oxidation of Ni-Cr-Al alloys: (a) Group I, (b) Group II and (c) Group III [67].",
+        "image_type": "photograph",
+        "content": {
+          "description": "Three cross-sectional micrographs labeled (a), (b), and (c) display the distinct oxide morphologies on Ni-Cr-Al alloys. (a) Group I alloy shows a thick external NiO scale over a sub-scale (20 µm scale). (b) Group II alloy exhibits an external Cr2O3 scale with an internal Al2O3 sub-scale (10 µm scale). (c) Group III alloy forms a compact, continuous external Al2O3 scale with no sub-scale (10 µm scale)."
+        }
+      },
+      {
+        "block_id": "page_6_block_2",
+        "type": "text_block",
+        "content": "although it should be noted that the I/III, II/III and I/II boundaries can alter with temperature, heating rate and grain size. The features of the three different scales are illustrated in Figure 5.26. Group I alloys, which are rich in Ni and thus have only low levels of Al and Ti, are characterised by a continuous, external scale of NiO accompanied by a sub-scale of Cr2O3, Al2O3 and/or the spinel Ni(Al, Cr)2O4. Oxidation begins with the formation of Ni(Al, Cr)2O4, which is rapidly overtaken by a brittle, outward-growing NiO scale; Cr2O3, and then Al2O3, are found at further increasing depths into the substrate due to their low equilibrium partial pressures of oxygen. The oxidation of Group II alloys, which contain high levels of Cr, causes an external scale of Cr2O3 and internal precipitation of Al2O3 - these alloys contain relatively high and low concentrations of chromium and aluminium, respectively. Initially, a transient NiO/Ni(Al, Cr)2O4 mixed external scale and Cr2O3/Al2O3 sub-scale form as before; however, unlike Group I alloys, there is sufficient chromium to support the flux required to form a continuous Cr2O3 sub-scale, which, after time, replaces the NiO/Ni(Al, Cr)2O4 as the external oxide. Finally, oxidation of Group III alloys - which possess appreciable concentrations of both chromium and aluminium – result in the exclusive formation of a compact external Al2O3 scale; and, unlike Group I and Group II alloys, no evidence of internal sub-scale precipitation is shown. Once again, a NiO/Ni(Al, Cr)2O4 external scale arises first, but an internal and continuous sub-scale of",
+        "references": [
+          "page_6_block_1"
+        ]
+      }
+    ]
+  },
+  {
+    "page_number": 7,
+    "content_blocks": [
+      {
+        "block_id": "page_7_block_1",
+        "type": "image",
+        "caption": "Fig. 5.27. Schematic illustration of the oxidation mechanisms occurring in Ni-Cr-Al alloys [67].",
+        "image_type": "schematic",
+        "content": {
+          "description": "The schematic diagram illustrates the evolution of oxide layers on Ni-Cr-Al alloys, categorized into Group I, II, and III behaviors. It shows the initial alloy surface and the subsequent formation and layering of different oxides (NiO, Al2O3, Cr2O3) and spinels (S: Ni(Cr,Al)2O4). The diagrams for each group depict how the oxide scale develops under exposure to oxygen (O2), leading to distinct final structures.",
+          "ocr_text": "S NiO Alloy Group I O2 NiO S S Alloy Al Cr Group II Group III S NiO S S NiO S Alloy Al Cr S: Ni(Cr, Al)2O4 :Cr2O3 O: Al2O3"
+        }
+      },
+      {
+        "block_id": "page_7_block_2",
+        "type": "text_block",
+        "content": "Al2O3 forms soon afterwards; the NiO/Ni(Al, Cr)2O4 eventually spalls away, leaving the Al2O3 as the external scale. Thus the basis of the Pettit theory is that nuclei of all oxide constituents arise at temperature, but that Al2O3 or Cr2O3 can predominate because of their greater thermodynamic stability, despite their growth kinetics being much slower than for NiO. A schematic diagram of the oxidation processes occurring in Groups I-III is given in Figure 5.27. One very important conclusion from this work is that it is possible to form Group III morphologies in the ternary system at aluminium concentrations as little as 5 wt% – this is in contrast to the Ni–Al binary system, which requires aluminium concentrations in the vicinity of 10 wt%. The ability of chromium to encourage the premature external oxidation of aluminium has been referred to as a ‘gettering effect', but it may be more appropriate to refer to it as a ‘third-element effect' since it is likely that Cr is having an effect on the Al activity. For example, Figure 5.25 indicates that 20 wt%Al is required in a binary Ni–Al alloy for exclusive Al2O3 formation, but that this figure falls to 5 wt%Al when 5 wt%Cr is added.",
+        "references": [
+          "page_7_block_1",
+          "page_5_block_1"
+        ]
+      }
+    ]
+  },
+  {
+    "page_number": 8,
+    "content_blocks": [
+      {
+        "block_id": "page_8_block_1",
+        "type": "image",
+        "caption": "Fig. 5.28. The effect of yttrium or zirconium dopants (0.5 wt%) in producing Al2O3 scale adherence in 1100 °C cyclic oxidation tests of Ni–15Cr–13Al (1 h cycles) [69].",
+        "image_type": "chart",
+        "content": {
+          "title": "Effect of yttrium or zirconium dopants on scale adherence",
+          "x_axis_label": "Oxidation time (1 h cycles)",
+          "y_axis_label": "Weight change (mg/cm²)",
+          "legend": [
+            "NiCrAl + Zr",
+            "NiCrAl + Y",
+            "NiCrAl"
+          ],
+          "trend_description": "The chart shows weight change versus oxidation time for three NiCrAl alloys. The undoped NiCrAl alloy exhibits a continuous and significant weight loss, indicating poor scale adherence and spallation. In contrast, alloys doped with Zirconium (Zr) or Yttrium (Y) show a small initial weight gain followed by a stable or very slightly increasing weight, demonstrating excellent scale adherence during cyclic oxidation."
+        }
+      },
+      {
+        "block_id": "page_8_block_2",
+        "type": "text_block",
+        "content": "A comparison of Figure 5.25 and the compositions of common NiCrAlY-type coatings confirms that the formation of Al2O3 is expected, and this does indeed form during high temperatures. But why are the additions of Y made? The reason is the so-called 'reactive element effect' [68] by which the adherence of the Al2O3 scale is improved by small amounts (typically less than 1 wt%) of Y, La, Zr or Hf or other Group 3 and 4 elements, including the lanthanide and actinide series. Yttrium is considered to be one of the most effective of the reactive-element (RE) additions, and certainly for overlay coatings it is the most popular; however, zirconium has a positive effect also, as has been proven by measurement of the weight gain during thermal cycling; see Figure 5.28 [69]. It can be seen that the adherent scale on doped Ni-Cr-Al exhibits parabolic growth and only minimal weight gain; the undoped material, on the other hand, shows a mass loss which is very significant and approximately linear with time, consistent with a high rate of re-oxidation after spalling. It is generally accepted that the amount of the reactive-element dopant is critical if scale adhesion is to be optimal; see Figure 5.29 [70–72]. Low concentrations (less than 100 ppm) have been reported to reduce the growth stresses and scale-buckling effects arising from the higher specific volume of the scale. Levels around 0.1 wt% appear to be optimal for scale adhesion and low Al2O3 growth rates. However, at levels greater than about 0.5 wt%, the growth rate increases again – this can be attributed to the copious formation of oxides of the RE dopants, for example, from the oxidation of Ni5Y and Ni2AlZr precipitates, since the solubility limit of the dopant is then exceeded. One should note that the level of yttrium in the raw coating powder needs to be different from that in the deposited coating; for example, if air plasma spraying is used, the coating material needs to contain about 1 wt% yttrium to be most effective, since yttrium is oxidised by the plasma torch [69] – although this effect is less pronounced when vacuum plasma spraying is employed.\nThe reactive-element effect (sometimes known as the rare-earth effect) is very well known (see, for example, refs. [68] and [73]), and much research has been carried out in an attempt",
+        "references": [
+          "page_5_block_1",
+          "page_8_block_1",
+          "page_9_block_1"
+        ]
+      }
+    ]
+  },
+  {
+    "page_number": 9,
+    "content_blocks": [
+      {
+        "block_id": "page_9_block_1",
+        "type": "image",
+        "caption": "Fig. 5.29. Schematic diagram of the effects of dopant level on growth rate and degree of spallation in 100 h tests of MCrAlX alloys at 1100 °C [70–72]. (Courtesy of Jim Smialek, NASA.)",
+        "image_type": "chart",
+        "content": {
+          "title": "Effects of dopant level on growth rate and spallation",
+          "x_axis_label": "Additive, wt%",
+          "y_axis_label": "Specimen weight change (mg/cm²) / Total weight change (mg/cm²)",
+          "legend": [
+            "Isothermal",
+            "Cyclic",
+            "I Non-adherent slow growth",
+            "II Adherent slow growth",
+            "III Adherent, excessive growth"
+          ],
+          "trend_description": "This schematic shows the effect of dopant additive concentration on weight change for MCrAlX alloys under isothermal and cyclic conditions. Both curves show a U-shape, indicating an optimal dopant level (around 0.1 wt%) for minimizing weight change. The 'Cyclic' curve, which accounts for spallation, shows a much more pronounced effect than the 'Isothermal' curve. The plot is divided into three regimes: non-adherent growth at low dopant levels, adherent slow growth at optimal levels, and adherent but excessive growth at high dopant levels."
+        }
+      },
+      {
+        "block_id": "page_9_block_2",
+        "type": "text_block",
+        "content": "to explain the improved adherence which is conferred. For example, mechanisms proposed to account for the beneficial effects of the additions include (i) the formation of protective pegs which ‘anchor' the scale to the substrate metal alloy [68], (ii) the prevention of vacancy coalescence at the metal/scale interface by providing alternative sites for coalescence [74], (iii) the enhancement of scale plasticity [75] and (iv) the improvement of the cohesive energy between metal and scale [68,76]. Most of these ideas have not been developed in a quantitative fashion; much controversy still exists concerning the relative importance of these mechanisms, their plausibilities and possible interaction. However, in recent years, the most widely accepted explanation emphasises the role played by sulphur in promoting Al2O3 spallation [77]. It has been known for some time that sulphur embrittles nickel and its alloys due to its equilibrium segregation to grain boundaries, which is Gibbsian in nature (see, for example, refs. [78] and [79]); its solubility in y–Ni is strongly temperature-dependent, decreasing from about 500 ppm by atom at 1200 K to less than 10 ppm at 700 K, with elements such as Cr and Hf reducing the sulphur solubility and also its degree of grain-boundary segregation; see Figure 5.30. Consequently, it is not surprising that studies using Auger spectroscopy have also confirmed that sulphur segregation is present at the metal/scale interfaces formed during oxidation [80]; however, these also confirmed a role of yttrium in interacting with indigenous sulphur to form refractory sulphides such as YS and Y2S3, so that the amount available to concentrate at the scale/metal interface is then much reduced, or even eliminated [73]. These findings are supported by recent research on the PWA1480 single-crystal superalloy, hydrogen annealed in a gettered 5%H2/Ar flowing",
+        "references": [
+          "page_10_block_1"
+        ]
+      }
+    ]
+  },
+  {
+    "page_number": 10,
+    "content_blocks": [
+      {
+        "block_id": "page_10_block_1",
+        "type": "image",
+        "caption": "Fig. 5.30. Comparison between the sulphur solubility in Ni and its alloys, computed from grain-boundary segregation data, and that measured during an independent assessment [78].",
+        "image_type": "chart",
+        "content": {
+          "title": "Sulphur solubility in Ni and its alloys",
+          "x_axis_label": "Temperature (K) / Temperature (°C)",
+          "y_axis_label": "Sulphur solubility (atomic ppm)",
+          "legend": [
+            "Ni (published work)",
+            "Ni-8Mo",
+            "Ni-20Cr",
+            "Ni-5Al",
+            "Ni-0.5Hf",
+            "Ni (from ref. [78])"
+          ],
+          "trend_description": "The chart plots sulphur solubility (logarithmic scale) against temperature for pure nickel and several nickel alloys. For all materials shown, sulphur solubility decreases as temperature decreases. The addition of alloying elements like Mo, Cr, Al, and Hf consistently reduces the sulphur solubility compared to pure Ni, with Ni-0.5Hf showing the lowest solubility over the temperature range."
+        }
+      },
+      {
+        "block_id": "page_10_block_2",
+        "type": "text_block",
+        "content": "gas mixture – this reduced sulphur content from 6.7 to less than 0.12 ppm by weight, with very much improved scale adherence; see Figure 5.31. By considering alloys with various levels of yttrium doping, the critical Y/S ratio for adhesion was found to be ~1:1 atomic, or 3:1 by weight. These findings justify the recent efforts of the superalloy melting community to implement melt desulphurisation methods into the procedures used for the production of superclean casting stock. However, it is not yet confirmed whether the addition of reactive elements to a sulphur-free coating material leaves the scale adherence unaffected – as would be expected if the sole influence is via the ‘gettering' of sulphur; in fact, the results presented in ref. [77] indicate that the addition of a reactive element to a low-sulphur containing systems is beneficial to scale adhesion, presumably because the scale-metal interface is then strengthened.",
+        "references": [
+          "page_11_block_1"
+        ]
+      },
+      {
+        "block_id": "page_10_block_3",
+        "type": "text_block",
+        "content": "5.3.2 Mechanical properties of superalloys coated with overlay coatings\nThe deposition of an overlay coating alters the mechanical performance of a superalloy turbine blade component [81]. In general, the high-temperature strength of the coating is lower than that of the superalloy on which it is placed; consequently, upon loading, the yield stress of the coating is exceeded, so that the stresses in it are quickly relieved and",
+        "references": []
+      }
+    ]
+  },
+  {
+    "page_number": 11,
+    "content_blocks": [
+      {
+        "block_id": "page_11_block_1",
+        "type": "image",
+        "caption": "Fig. 5.31. Effect of sulphur content on the 1100 °C cyclic oxidation behaviour of the single-crystal superalloy PWA1480. Note ppmw = parts per million by weight. (Courtesy of Jim Smialek.)",
+        "image_type": "chart",
+        "content": {
+          "title": "Effect of sulphur content on cyclic oxidation behaviour of PWA1480",
+          "x_axis_label": "Oxidation time (1 h cycles)",
+          "y_axis_label": "Weight change (mg/cm²)",
+          "legend": [
+            "0.12 ppmw S",
+            "0.8 ppmw S",
+            "1.5 ppmw S",
+            "3.9 ppmw S",
+            "6.7 ppmw S"
+          ],
+          "trend_description": "The plot shows the effect of sulphur content on the weight change of superalloy PWA1480 during cyclic oxidation. Higher sulphur contents (e.g., 6.7 and 3.9 ppmw) lead to rapid and significant weight loss, indicating severe oxide spallation. As the sulphur content decreases, the weight loss becomes less severe. The alloy with the lowest sulphur content (0.12 ppmw) shows a slight, stable weight gain, indicating the formation of a protective and adherent oxide scale."
+        }
+      },
+      {
+        "block_id": "page_11_block_2",
+        "type": "text_block",
+        "content": "redistributed across the cross-section. In practice, the extent to which this is beneficial or detrimental depends upon a number of factors – the corrosiveness of the environment, the operating conditions which dictate the temperatures experienced, the nature of the loading (i.e. static or cyclic) since crack nucleation may, in fact, be promoted and the degree to which the surface microstructure and stress state is altered. For example, during isothermal creep conditions which are more representative of those experienced by blading in an industrial (land-based) gas turbine, Tamarin and co-workers [1] have shown that the stress rupture life of the JS6U superalloy at 800 °C and 900 °C is severely compromised when testing is carried out with a gas turbine fuel (GZT) synthetic ash applied to the specimens; however, the use of a Ni-20Co–20Cr–12Al-Y overlay coating restored the properties to levels equivalent to those of the uncoated material, even with the ash present; see Figure 5.32. Under thermal-mechanical fatigue (TMF) loading, overlay coatings are found to perform very much better than the aluminide coatings, which under isothermal LCF conditions have been shown to impair the fatigue life at 600 °C, i.e. below the ductile-to-brittle transition temperature (DBTT) of the aluminide coating, although the detrimental effect disappears at higher temperatures [82].\nWhen fatigue loading is severe – which is more representative of the aeroengine situation – property debits have been observed in isothermal laboratory tests when overlays are employed; thus, the behaviour can be compromised by the addition of this form of coating. Porosity inherited from plasma spraying, the increased surface roughness and the inherent brittleness of the coating contribute to this effect. For example, during isothermal low-cycle-fatigue (LCF) testing of the VJL12U superalloy, application of a Ni–20Cr–12Al–Y overlay coating by the EB-PVD method was found to be detrimental (see Figure 5.33), with the reduction in life being more pronounced when testing was carried out at 20 °C rather than 800 °C [1]. To explain this kind of observation, it has been noted that the overlay coatings are prone to cracking below a DBTT – the magnitude of which is dependent upon the coating composition. Traditionally, a recognition of the importance of the",
+        "references": [
+          "page_12_block_1",
+          "page_12_block_2"
+        ]
+      }
+    ]
+  },
+  {
+    "page_number": 12,
+    "content_blocks": [
+      {
+        "block_id": "page_12_block_1",
+        "type": "image",
+        "caption": "Fig. 5.32. Creep rupture curves for the JS6U superalloy, tested in the coated and uncoated conditions and with and without the application of a coating of synthetic ash [1].",
+        "image_type": "chart",
+        "content": {
+          "title": "Creep rupture curves for JS6U superalloy",
+          "x_axis_label": "Time to rupture (h)",
+          "y_axis_label": "Stress, σ (MPa)",
+          "legend": [
+            "No coating, in air",
+            "No coating, in ash",
+            "Coating Al-5Si-1.5Y, in ash",
+            "Coating Ni-20Co-20Cr-12Al-Yr in ash"
+          ],
+          "trend_description": "This is a log-log plot showing stress versus time to rupture for the JS6U superalloy under different conditions at 800°C and 900°C. For both temperatures, the presence of synthetic ash significantly reduces the rupture life of the uncoated alloy. Applying a Ni-20Co-20Cr-12Al-Yr overlay coating restores the creep life in ash to levels similar to or better than the uncoated alloy in air. The Al-5Si-1.5Y coating also shows improvement but is less effective."
+        }
+      },
+      {
+        "block_id": "page_12_block_2",
+        "type": "image",
+        "caption": "Fig. 5.33. Low-cycle-fatigue (LCF) test results [1] for the VJL12U superalloy tested at 20 °C, in the uncoated condition (1), with an aluminised coating (2) and with a Ni-20Cr-12Al-Y overlay coating (3).",
+        "image_type": "chart",
+        "content": {
+          "title": "Low-cycle-fatigue (LCF) test results for VJL12U superalloy",
+          "x_axis_label": "Number of cycles, N",
+          "y_axis_label": "Strain, ε (%)",
+          "legend": [
+            "(1) uncoated",
+            "(2) aluminised coating",
+            "(3) Ni-20Cr-12Al-Y overlay coating"
+          ],
+          "trend_description": "The log-log plot shows strain versus number of cycles to failure for the VJL12U superalloy at 20°C. The uncoated condition (1) has the longest fatigue life. The aluminised coating (2) slightly reduces the fatigue life. The Ni-20Cr-12Al-Y overlay coating (3) results in the most significant reduction in low-cycle-fatigue life at this temperature."
+        }
+      },
+      {
+        "block_id": "page_12_block_3",
+        "type": "text_block",
+        "content": "DBTT in controlling cracking tendency has been used with success where in-service fatigue problems are identified – for example, the replacement of an aluminide diffusion coating on the blading of Rolls-Royce's Pegasus engine (used on the Harrier, which pioneered the vertical take-off/landing (VTOL) capability), where a CoCrAlY overlay eliminated the problem of cracking, but only after the Al content had been reduced to 7.5 wt% to reduce",
+        "references": []
+      }
+    ]
+  },
+  {
+    "page_number": 13,
+    "content_blocks": [
+      {
+        "block_id": "page_13_block_1",
+        "type": "image",
+        "caption": "Fig. 5.34. Strain to cracking as a function of temperature for a number of CoCrAlY overlay coatings, illustrating the strong composition-dependence of the ductile-to-brittle transformation temperature [83].",
+        "image_type": "chart",
+        "content": {
+          "title": "Strain to cracking vs. temperature for CoCrAlY coatings",
+          "x_axis_label": "Temperature (°C)",
+          "y_axis_label": "Strain to crack (%)",
+          "legend": [
+            "Co-18Cr-9Al-Y",
+            "Co-18Cr-11Al-Y",
+            "Co-20Cr-12.5Al-Y",
+            "Diffused aluminide"
+          ],
+          "trend_description": "The chart shows the strain to cracking as a function of temperature for various overlay coatings, indicating their ductile-to-brittle transition temperature (DBTT). All coatings exhibit low strain tolerance at low temperatures and increasing ductility (higher strain to cracking) at higher temperatures. The transition temperature is highly dependent on composition; for example, the Co-18Cr-9Al-Y coating becomes ductile at a much lower temperature than the Co-20Cr-12.5Al-Y coating or the diffused aluminide coating."
+        }
+      },
+      {
+        "block_id": "page_13_block_2",
+        "type": "image",
+        "caption": "Fig. 5.35. Thermal mechanical fatigue (TMF) results (load control, out-of-phase temperature and loading cycles) showing the cyclic life of the CMSX-4 superalloy in the uncoated condition (4) and with Ni-7Co-12Cr–17Al–Y (3), Ni–8Co–12Cr–7Al–Y (2) and Co–32Ni–21Cr–8Al–Y (LCO-22) (1) overlay-type coatings [1,84].",
+        "image_type": "chart",
+        "content": {
+          "title": "Thermal mechanical fatigue (TMF) results for CMSX-4 superalloy",
+          "x_axis_label": "Number of cycles, N",
+          "y_axis_label": "Stress range (MPa)",
+          "legend": [
+            "(1) Co–32Ni–21Cr–8Al–Y",
+            "(2) Ni–8Co–12Cr–7Al–Y",
+            "(3) Ni–7Co–12Cr–17Al–Y",
+            "(4) Uncoated"
+          ],
+          "trend_description": "This log-log plot shows stress range versus number of cycles to failure for the CMSX-4 superalloy under TMF conditions. The uncoated condition (4) exhibits the longest fatigue life. All three overlay coatings reduce the TMF life. The cobalt-based LCO-22 coating (1) shows the most significant reduction in life, while the nickel-based coatings (2 and 3) perform better but are still detrimental compared to the uncoated substrate."
+        }
+      },
+      {
+        "block_id": "page_13_block_3",
+        "type": "text_block",
+        "content": "the DBTT by several hundred degrees; see Figure 5.34 [83]. During testing under thermal cycling conditions, the effect of an overlay coating is mixed. Tamarin and co-workers [1,84] have reported that when CMSX-4 is coated with overlay coatings and tested in a load-controlled thermal-mechanical fatigue (TMF) rig, the coating reduces specimen life very considerably, with cobalt-based overlays being more detrimental than nickel-based ones, consistent with their greater brittleness; see Figure 5.35. On the other hand, Wood et al. [85]",
+        "references": [
+          "page_13_block_1",
+          "page_13_block_2"
+        ]
+      }
+    ]
+  },
+  {
+    "page_number": 14,
+    "content_blocks": [
+      {
+        "block_id": "page_14_block_1",
+        "type": "image",
+        "caption": "Fig. 5.36. Cross-section of CoNiCrAlY overlay coating on IN738LC substrate after TMF testing, showing extensive evidence of cracking [85].",
+        "image_type": "photograph",
+        "content": {
+          "description": "Two cross-sectional micrographs, (a) and (b), of a CoNiCrAlY overlay coating after TMF testing. Image (a) is a lower magnification view showing multiple surface cracks. Image (b) is a higher magnification view (50 µm scale bar) focusing on a single, large crack that has propagated from the surface deep into the coating layer."
+        }
+      },
+      {
+        "block_id": "page_14_block_2",
+        "type": "text_block",
+        "content": "have tested a CoNiCrAlY-type coating on conventionally cast IN738LC in strain-controlled TMF, with cycling carried out between 300 °C and 900 °C with a two-minute dwell period after heating and cooling. Extensive cracking of the coating was observed prior to failure (see Figure 5.36); however, the fatigue lives of coated and uncoated specimens were not substantially different.",
+        "references": [
+          "page_14_block_1"
+        ]
+      },
+      {
+        "block_id": "page_14_block_3",
+        "type": "text_block",
+        "content": "When a thermal barrier coating (TBC) is employed, the resistance to thermal cycling (for example, in a burner rig test) is dependent upon the composition of the overlay coating onto which it is placed; see Figure 5.37 [86]. The TBC life has been found to correlate strongly with the resistance to oxidation displayed by the overlay, which is now acting as a bond coat [87,88]. For instance, during thermal cycling tests of TBCs fabricated from ZrO2–6.1 wt%Y2O3 and NiCrAlY overlay coatings of various compositions which were placed on the Mar-M200+Hf superalloy, the spallation life is found to correlate strongly with the specific weight gain due to oxidation; see Figure 5.38. TBC spallation life is lowest",
+        "references": [
+          "page_15_block_1",
+          "page_16_block_1"
+        ]
+      }
+    ]
+  },
+  {
+    "page_number": 15,
+    "content_blocks": [
+      {
+        "block_id": "page_15_block_1",
+        "type": "image",
+        "caption": "Fig. 5.37. Results from burner rig thermal cycle tests showing lives of TBCs using three different compositions of NiCrAlY bond coat, placed on Waspaloy substrates, with ZrO2–7 wt%Y2O3 top coat [86].",
+        "image_type": "chart",
+        "content": {
+          "title": "Lives of TBCs with different NiCrAlY bond coat compositions",
+          "x_axis_label": "Bond coat composition",
+          "y_axis_label": "Cycles",
+          "legend": [],
+          "trend_description": "The bar chart shows the thermal cycle life (in cycles) of TBCs with three different NiCrAlY bond coat compositions. The life increases significantly with changes in composition: Ni-16Cr-6Al-Y has the shortest life (around 300 cycles), Ni-18Cr-12Al-Y has an intermediate life (around 1000 cycles), and Ni-35Cr-6Al-Y has the longest life (around 1600 cycles)."
+        }
+      },
+      {
+        "block_id": "page_15_block_2",
+        "type": "text_block",
+        "content": "when the rate of oxidation is greatest, and vice versa. These effects are discussed further in Section 5.5.",
+        "references": []
+      },
+      {
+        "block_id": "page_15_block_3",
+        "type": "text_block",
+        "content": "5.4 Diffusion coatings\nAluminide coatings are prone to microstructural degradation during service. Broadly speak-ing, two distinct modes arise. The first involves interdiffusion of the aluminide coating – which is initially rich in the β–NiAl phase – with the superalloy substrate causing concentration gradients set up by the coating deposition to become less pronounced. In particular, the aluminium concentration becomes reduced over time such that the y' phase is promoted at the expense of ß, which itself becomes increasingly susceptible to transformation to the martensitic form β' via the reaction β → β' as its stoichiometry is lost [89]. Due to these interdiffusional fluxes, Kirkendall voiding can also be found in some coating/substrate combinations [90]. Particularly for the third-generation single-crystal superalloys which are rich in Re, interdiffusion promotes the formation of a 'secondary reaction zone' (SRZ) beneath the interdiffusion zone (IDZ) [91,92]; see Figure 5.39. This occurs by a discontinuous phase transformation, in which a y' matrix forms containing needles of the y and the topologically close-packed phase P; thus, SRZ formation causes recrystallisation of the γ/γ' structure, but it has been demonstrated that there is no significant texture induced [92]. It is interesting to note that a single-crystal superalloy can be prone to the SRZ effect even though TCP precipitation does not occur within the bulk, even after extended periods of time at temperature – an anomaly which occurs, for example, with the MC-NG superalloy [92].",
+        "references": [
+          "page_17_block_1"
+        ]
+      }
+    ]
+  },
+  {
+    "page_number": 16,
+    "content_blocks": [
+      {
+        "block_id": "page_16_block_1",
+        "type": "image",
+        "caption": "Fig. 5.38. Effect of bond coat concentration on the oxidation behaviour and TBC life of Ni-Cr-Al-Y/ZrO2–6.1 wt%Y2O3 system for cyclic testing to a maximum temperature of 1100 °C: (a) aluminium concentration and (b) yttrium concentration [87,88].",
+        "image_type": "chart",
+        "content": {
+          "title": "Effect of bond coat concentration on oxidation behaviour and TBC life",
+          "x_axis_label": "Cycles to failure",
+          "y_axis_label": "Specific weight gain (mg/cm²)",
+          "legend": [
+            "Ni-35.0Cr-5.9Al-0.95Y",
+            "Ni-35.4Cr-11.1Al-0.74Y",
+            "Ni-35.7Cr-18.5Al-0.80Y",
+            "Ni-35.4Cr-6.2Al-0.14Y",
+            "Ni-35.4Cr-6.2Al-0.22Y",
+            "Ni-35.4Cr-6.2Al-1.35Y"
+          ],
+          "trend_description": "Two charts, (a) and (b), plot specific weight gain versus cycles to failure. Chart (a) shows that increasing the aluminium concentration from 5.9Al to 18.5Al leads to higher rates of weight gain and significantly shorter TBC life. Chart (b) shows the effect of yttrium concentration. Very low (0.14Y) and very high (1.35Y) yttrium levels result in faster weight gain and shorter life compared to intermediate levels (0.22Y and 0.95Y), suggesting an optimal yttrium concentration exists."
+        }
+      }
+    ]
+  },
+  {
+    "page_number": 17,
+    "content_blocks": [
+      {
+        "block_id": "page_17_block_1",
+        "type": "image",
+        "caption": "Fig. 5.39. Scanning electron micrograph of a Pt-aluminide diffusion coating on the CMSX-10 single-crystal superalloy, heat treated at 1100 °C for 1000 h; note the formation of the secondary reaction zone (SRZ) beneath the interdiffusion zone. (Courtesy of Matthew Hook.)",
+        "image_type": "photograph",
+        "content": {
+          "description": "A cross-sectional scanning electron micrograph with a 40 µm scale bar. It shows a Pt-aluminide coating on a superalloy after heat treatment. Different zones are labeled: the outer γ' + IDZ (interdiffusion zone), the SRZ (secondary reaction zone) containing γ' + TCPs (topologically close-packed phases), and the underlying γ/γ' substrate."
+        }
+      },
+      {
+        "block_id": "page_17_block_2",
+        "type": "text_block",
+        "content": "When a SRZ forms, it is usually already present in the as-coated condition but it then thickens parabolically with time, consistent with growth being diffusion-controlled. The nucleation of the SRZ reaction has, however, been shown to depend upon the surface preparation of the superalloy prior to coating – electropolishing prevents the reaction in cases where shot peening promotes it, with grit-blasting and grinding giving behaviour between these two limits [91]. The second mode of degradation is due to the formation of an alumina scale by the process of oxidation. Both the first and second modes of degradation cause depletion of Al from the coating such that its useful working life is rendered finite.\nIn view of the high fraction of the β–NiAl phase in aluminide coatings, emphasis has been placed on elucidating the mechanism of Al2O3 formation which occurs on 'model' NiAl-based alloys and the effects of doping them with different elements [93]. It has become clear that pure β–NiAl is prone to the formation of metastable cubic (otherwise known as 'transition') aluminas such as γ, 8 or 0−Al2O3, particularly at temperatures below 1050 °C, when water vapour is present and/or when the oxygen partial pressure is low [94]. Characteristics of the cubic aluminas include (i) an unusual morphology consisting of whiskers, which is indicative of a growth mechanism controlled by outward migration of the Al3+ cation, as confirmed by 18O2 tracer studies [95] and (ii) an epitaxial orientation relationship with the superalloy substrate, which is absent for the a-Al2O3 compound [96]. However, transformation to the equilibrium a-Al2O3 is always observed to occur rapidly thereafter, beginning at the metal-oxide interface. The polycrystalline scale which forms always displays (at least for undoped NiAl) a characteristic ‘ridged' morphology at the high angle boundaries (see Figure 5.40) [93,97], probably as a consequence of outward diffusion of the Al3+ cation along them [98]; low-angle grain boundaries, cracks and porosity are also",
+        "references": [
+          "page_18_block_1"
+        ]
+      }
+    ]
+  },
+  {
+    "page_number": 18,
+    "content_blocks": [
+      {
+        "block_id": "page_18_block_1",
+        "type": "image",
+        "caption": "Fig. 5.40. Schematic illustration of the ridged morphology of a-Al2O3 formed on β–NiAl, the ridges forming due to the growth occurring from distinct nucleation events [97].",
+        "image_type": "schematic",
+        "content": {
+          "description": "This schematic illustrates the cross-section of a ridged oxide scale formed on a β-NiAl substrate. It labels various features including an outer oxide ridge, spoke-like ridges, radial transformation cracks, high-angle boundaries, sub-grain boundaries, porosity, Zr-rich precipitates, and an inner oxide ridge where cracks are healed by polycrystalline α-Al2O3. The diagram explains how ridges form from distinct nucleation events.",
+          "ocr_text": "Zr-rich precipitates Porosity High-angle boundary Sub-grain boundaries Outer oxide ridge Radial transformation crack Spoke-like ridges Inner oxide ridge, crack healed by polycrystalline α-Al2O3"
+        }
+      },
+      {
+        "block_id": "page_18_block_2",
+        "type": "image",
+        "caption": "Fig. 5.41. Scanning electron micrograph images of the surface of a CVD (Ni,Pt)Al coating oxidised at 1150 °C for 200 h. Note that no scale spallation is observed, but thin plates of alumina had apparently flaked off some parts of the surface, leaving the underlying scale intact [99].",
+        "image_type": "photograph",
+        "content": {
+          "description": "A top-down scanning electron micrograph of an oxidized (Ni,Pt)Al coating surface, with a 30 µm scale bar. The surface shows a network-like or cellular structure characteristic of the underlying grain boundaries. Some areas show evidence of thin plates of alumina that have flaked off, revealing the intact scale underneath, but no widespread spallation is visible."
+        }
+      },
+      {
+        "block_id": "page_18_block_3",
+        "type": "text_block",
+        "content": "present, see Figure 5.41 [99]. In their analysis of Zr-doped NiAl, which was oxidised first in 16O2 then 18O2 at 1200 °C, Prescott et al. [100] measured secondary ion mass spectrometry (SIMS) depth profiles on untransformed 0-Al2O3 and transformed a-Al2O3 (see Figure 5.42), and demonstrated that (i) one has 18O and 16O enrichment, respectively, in these two cases, (ii) a 18O signal, which is greater than that for 16O at depth, and (iii) a Zr",
+        "references": [
+          "page_18_block_2",
+          "page_19_block_1"
+        ]
+      }
+    ]
+  },
+  {
+    "page_number": 19,
+    "content_blocks": [
+      {
+        "block_id": "page_19_block_1",
+        "type": "image",
+        "caption": "Fig. 5.42. Secondary ion mass spectrometry (SIMS) depth profiles obtained from Zr-doped NiAl oxidised for 12 min at 1200 °C [100]: (a) from untransformed, metastable 0-Al2O3 and (b) from transformed, stable a-Al2O3.",
+        "image_type": "chart",
+        "content": {
+          "title": "SIMS depth profiles of Zr-doped NiAl",
+          "x_axis_label": "Time (min)",
+          "y_axis_label": "Counts/s",
+          "legend": [
+            "AlO(16)",
+            "AlO(18)",
+            "Ni",
+            "ZrO"
+          ],
+          "trend_description": "Two SIMS depth profiles, (a) for metastable θ-Al2O3 and (b) for stable α-Al2O3, are shown. The y-axis (Counts/s) is logarithmic. In (a), the AlO(18) signal is high near the surface and decreases with depth, while the AlO(16) signal is lower. In (b), the AlO(16) signal is high at the surface, and the AlO(18) signal is high deeper into the oxide layer. In both plots, the ZrO signal peaks near the metal-oxide interface. This indicates different growth mechanisms for the two oxide phases."
+        }
+      },
+      {
+        "block_id": "page_19_block_2",
+        "type": "text_block",
+        "content": "signal, which is greatest at the oxide/scale interface in the two cases. These observations imply that during growth of a-Al2O3 there is a strong component of O²- anion transport inwards; taken with the observation of the ridged morphology, it seems likely that growth occurs by mixed Al³+ cation and O²- anion grain-boundary transport. However, doping with reactive elements (REs) such as Y, Hf, La and Zr has some significant effects. There is a tendency for thick oxide scales to exhibit a columnar morphology, although the effects of the REs are less pronounced when scale formation occurs at higher temperatures [94]. It has been postulated in a 'dynamic segregation theory' that the REs, which have a strong tendency to segregate to the grain boundaries in a-Al2O3, suppress the outward diffusion of Al3+ [73]; while there is, as yet, no direct evidence to confirm this, it seems plausible on account of the significant affinity of the REs for oxygen, which should promote their migration outwards along the grain boundaries such that rare-earth oxides are formed at the scale/gas interface – for which there is considerable evidence [73]. The dominant",
+        "references": []
+      }
+    ]
+  },
+  {
+    "page_number": 20,
+    "content_blocks": [
+      {
+        "block_id": "page_20_block_1",
+        "type": "image",
+        "caption": "Fig. 5.43. Total mass gain of specimen/spall and specific spalled oxide for various Ni–Al alloys (+0.05 at% Hf) after ten 100 h cycles at 1200 °C [105].",
+        "image_type": "chart",
+        "content": {
+          "title": "Total mass gain and spalled oxide for Ni-Al alloys",
+          "x_axis_label": "Al content (at%)",
+          "y_axis_label": "Total mass gain (mg/cm²)",
+          "legend": [
+            "Total mass gain",
+            "Spalled oxide"
+          ],
+          "trend_description": "The bar chart shows the total mass gain and the mass of spalled oxide for Hf-doped Ni-Al alloys with varying Al content. At Al contents below ~40 at%, both the total mass gain and the amount of spalled oxide are very high, indicating poor oxidation resistance. Above 40 at% Al, both metrics drop significantly, indicating the formation of a stable, protective oxide scale. A peak in spallation is noted around 32.6 at% Al, associated with NiAl2O4 formation."
+        }
+      },
+      {
+        "block_id": "page_20_block_2",
+        "type": "text_block",
+        "content": "scale-spallation mechanism of Al2O3 from NiAl is the formation of interfacial voids, which presumably form by the Kirkendall effect; it has been widely reported that RE additions suppress such void formation [101–103].\nWith regard to the effects of differences in composition of β-NiAl, the results of a systematic series of studies [104,105] can be summarised as follows. The oxidation performance of β-NiAl is not strongly sensitive to changes in stoichiometry induced by differing Al/Ni ratios; however, once the Al concentration drops below ~40at% such that a substantial amount of Ni3Al is present, then spallation occurs more rapidly; see Figure 5.43. Hafnium-doped NiAl has been found to form an extremely slow-growing, adherent scale [105]; in fact, when doped with 0.05 at%Hf, NiAl has been found to be the most oxidation resistant substrate in a wide-ranging comparison of all types of a-Al2O3 formers and RE dopants [94]. Zirconium is also best suited at a dopant concentration of 0.05 at%, but Y is required at higher levels of 0.1 at% and La at lower levels of a few 100 ppm; there is some indication of a synergistic effect by which co-doping of two or more REs allows the total content to be reduced [106]. The solubility of the RE in the coating is considered to be an important issue, which explains why La and Y work less well than Zr in β–NiAl diffusion coatings, but adequately in the MCrAlY overlay coatings. The Pt effect has been studied, but no strong evidence has been found to support the widely held view that it acts as a diffusion barrier, or that it reduces substantially the a-Al2O3 scale growth rate [12,107]. Moreover, it appears that Pt does not act as a RE; 100 times more Pt than Hf is required to improve the scale adherence of near-stoichiometric NiAl (see Figure 5.44), and the scale morphology is not altered substantially. However, recent studies of the oxidation behaviour of ternary Ni-Al-Pt alloys have been revealing [105] – for pure Ni-Al unalloyed with Pt, the concentration below which a Ni-rich rather than an a–Al2O3 scale was found to form during 500 h cyclic oxidation between ambient and 1000 °C was found to lie between 40.0",
+        "references": [
+          "page_20_block_1",
+          "page_21_block_1"
+        ]
+      }
+    ]
+  },
+  {
+    "page_number": 21,
+    "content_blocks": [
+      {
+        "block_id": "page_21_block_1",
+        "type": "image",
+        "caption": "Fig. 5.44. Specimen mass change during oxidation (1 h cycles at 1150 °C in dry, flowing O2) for various near-stiochiometric NiAl alloys alloyed with Pt [105].",
+        "image_type": "chart",
+        "content": {
+          "title": "Specimen mass change during oxidation for NiAl alloys with Pt",
+          "x_axis_label": "Number of 1h cycles at 1150 °C",
+          "y_axis_label": "Specimen mass change (mg/cm²)",
+          "legend": [
+            "5.2 at%Pt",
+            "2.4 at%Pt",
+            "NiAl+Hf",
+            "1.0 at%Pt",
+            "0.12 at%Pt",
+            "Undoped NiAl"
+          ],
+          "trend_description": "The chart shows the specimen mass change versus number of oxidation cycles for NiAl alloys with different platinum (Pt) additions. Undoped NiAl shows initial weight gain followed by significant weight loss. Low Pt additions (0.12 and 1.0 at%) also result in weight loss after an initial gain. Higher Pt additions (2.4 and 5.2 at%) and the addition of Hf result in continuous, parabolic weight gain, indicating the formation of a stable, adherent oxide scale."
+        }
+      },
+      {
+        "block_id": "page_21_block_2",
+        "type": "text_block",
+        "content": "and 42.5 at%Al. However, when 5.6 at%Pt was added to Ni–38.7 at%Al, no Ni-rich scale was formed and low rates of mass gain were observed. Thus, the addition of Pt was found to suppress the formation of Ni-rich oxides and improved the selective oxidation of Al to a-Al2O3, by lowering the Al concentration required to achieve it. The strong influence of Pt on the behaviour of Al in Ni–Al–Pt ternary alloys has recently been confirmed by Gleeson and co-workers [107], who have reported up-hill diffusion of Al in the y' phase in the presence of a concentration gradient of platinum, implying that Pt reduces the Al activity; it is possible that similar effects would occur in the B-phase, but this needs to be tested. Platinum modification has been shown to reduce the sensitivity to sulphur and to suppress the formation of voids at the oxide/metal interface [108].\nRecently, much attention has been paid to the gradual surface roughening of the aluminide bond coats during thermal cycling, primarily because of its perceived influence on TBC life [109]. The effect occurs predominantly during cyclic oxidation (see Figure 5.45), being much less pronounced after isothermal oxidation [110]. The effect, which has also been termed 'rumpling', has been postulated to occur due to growth strains in the oxide combined with the oxide/metal thermal expansion mismatch [111,112]. Transformation strains associated with martensitic reaction of the B-phase have also been suggested to have an influence [113]. However, recent experiments have eliminated some of the possible reasons for the rumpling effect; it has been found to persist even when thermal cycling is carried out in vacuum and when cycling is carried out between 1150 °C and 750 °C, the lower temperature being above the martensite start temperature [114,115]. These observations imply that",
+        "references": [
+          "page_22_block_1"
+        ]
+      }
+    ]
+  },
+  {
+    "page_number": 22,
+    "content_blocks": [
+      {
+        "block_id": "page_22_block_1",
+        "type": "image",
+        "caption": "Fig. 5.45. Optical micrographs (plan view) of superalloy coupons with low-activity Pt-modified CVD aluminide coating and 7 wt%YSZ TBC deposited by EB-PVD, subjected to cyclic oxidation (dwell time of 1 h at 1150 °C) and viewed under oblique illumination to reveal the topology of the thermally grown oxide (TGO): (a) before oxidation, (b) after 250 cycles, (c) after 450 cycles and (d) after isothermal oxidation for 500 h at 1150 °C [110].",
+        "image_type": "photograph",
+        "content": {
+          "description": "Four optical micrographs, labeled (a) to (d), show the surface topology of a TBC-coated coupon at different stages. (a) 'As deposited' shows a relatively smooth surface. (b) 'Cyclic oxidation' after 250 cycles and (c) after 450 cycles show progressively increasing surface roughening or 'rumpling'. (d) 'Isothermal oxidation' for 500 h shows a much smoother surface compared to the cyclically oxidized samples, indicating that thermal cycling is the primary cause of the rumpling."
+        }
+      },
+      {
+        "block_id": "page_22_block_2",
+        "type": "text_block",
+        "content": "neither the martensitic reaction nor the growth of the alumina scale are required for rumpling to be observed, although it is conceivable that they contribute to the effect. Furthermore, no rumpling is observed on the surface of bulk (Ni, Pt)Al alloys chosen to have compositions similar to that of a typical Pt-Al bond coat [114,115]. Given these circumstances, it seems likely that interactions between the bond coat and the superalloy substrate are responsible for the rumpling effect. Moreover, since rumpling occurs with a characteristic wavelength close to the β-grain size of the aluminide coating [116,117], the β → γ' transformation is implicated since y' precipitation occurs preferentially on the β-grain boundaries contained within the coating.",
+        "references": []
+      },
+      {
+        "block_id": "page_22_block_3",
+        "type": "text_block",
+        "content": "5.5 Failure mechanisms in thermal barrier coating systems\n5.5.1 Introduction\nA thermal barrier coating (TBC) system is prone to failure under the action of thermal cycling between ambient temperature (as at engine start-up) and the working conditions experienced during service. Most usually, this manifests itself as delamination at (or near to) the interface between the bond coat and the ceramic top coat; see Figure 5.46 [118]. It occurs during cooling, or very soon after ambient conditions are attained; however, it is rare for the coating to fail completely – some pieces of it remain intact, and significant scatter is observed in the time to failure if testing is repeated under identical conditions. The driving force for delamination arises from the temperature gradients set up during thermal cycling coupled with the differing thermal expansion coefficients of the various constituents present (for example, superalloy substrate, bond coat, ceramic top coat), but, as will be seen, various degradation mechanisms arise [14,119]; some or all of these must operate before failure finally occurs. It is emphasised that, at this point, controversy exists concerning the circumstances leading to TBC failure – possibly due to the difficulty in reproducing the",
+        "references": [
+          "page_23_block_1"
+        ]
+      }
+    ]
+  },
+  {
+    "page_number": 23,
+    "content_blocks": [
+      {
+        "block_id": "page_23_block_1",
+        "type": "image",
+        "caption": "Fig. 5.46. Failure of an EB-PVD YSZ/NiCoCrAlY thermal barrier coating on a service-exposed high-pressure vane of a commercial civil aeroengine [118].",
+        "image_type": "photograph",
+        "content": {
+          "description": "A photograph of a high-pressure turbine vane from a commercial aeroengine. A large section of the thermal barrier coating has spalled off from the airfoil surface, exposing the darker substrate material underneath. This illustrates a typical in-service failure mode of a TBC."
+        }
+      },
+      {
+        "block_id": "page_23_block_2",
+        "type": "text_block",
+        "content": "failure conditions (for example, temperature gradients, cycling times) pertinent to the gas turbine in the laboratory; although much research is still being carried out on this topic, some common characteristics have been identified. It has also become clear that TBC life is very dependent upon the combination of materials (substrate, bond coat, ceramic) and processes (EB-PVD, plasma spraying) used. The possibility of TBC failure represents a major threat to the integrity of a turbine engine – consequently, much attention is being paid to the factors which exacerbate it. From an engineering standpoint, a predictive capability is required so that full advantage can be taken of the extra temperature capability warranted by the presence of the TBC; this will allow them to be used in ‘prime-reliant' rather than 'band-aid' mode. However, at the time of writing, this has not yet been achieved – there is a need to identify and quantify the chemical and mechanical factors which are the precursors to failure.",
+        "references": []
+      },
+      {
+        "block_id": "page_23_block_3",
+        "type": "text_block",
+        "content": "5.5.2 Observations of failure mechanisms in TBC systems\nIt is helpful to summarise the various observations which have been made concerning the microstructural degradation effects and failure mechanisms occurring in TBC systems. They are as follows.",
+        "references": []
+      }
+    ]
+  },
+  {
+    "page_number": 24,
+    "content_blocks": [
+      {
+        "block_id": "page_24_block_1",
+        "type": "image",
+        "caption": "Fig. 5.47. Microstructural and morphological evolution at various stages of coating life in a Pt-modified aluminide/EB-PVD YSZ thermal barrier coating [120]. (a) After 20 cycles, corresponding to 8% of cyclic life; (b) 80 cycles, corresponding to 34% of life; (c) 180 cycles, corresponding to 76% of life. Note that imperfections and cracks are present after only 34% of cyclic life.",
+        "image_type": "photograph",
+        "content": {
+          "description": "Three cross-sectional micrographs, (a), (b), and (c), showing the evolution of a TBC system at different life stages. Each image shows the substrate, bond coat, oxide film (TGO), and TBC layer. (a) After 20 cycles, the interface is relatively flat. (b) After 80 cycles, the oxide film has thickened, and crack nucleation is visible at the bond coat/oxide interface. (c) After 180 cycles, the oxide film is thicker and more undulated, and crack extension along the interface is clearly visible."
+        }
+      },
+      {
+        "block_id": "page_24_block_2",
+        "type": "text_block",
+        "content": "(1) Since the ceramic top coat is unable to prevent ingress of oxygen, a ‘thermally grown oxide' (TGO) forms during thermal cycling due to oxidation at its interface with the underlying bond coat; see Figure 5.47 [120]. The thickness of the TGO layer increases parabolically with time (see Figure 5.48) [121]; this is strong evidence that its formation is diffusion-controlled. A TGO is already present after deposition of the ceramic; by",
+        "references": [
+          "page_24_block_1",
+          "page_25_block_1"
+        ]
+      }
+    ]
+  },
+  {
+    "page_number": 25,
+    "content_blocks": [
+      {
+        "block_id": "page_25_block_1",
+        "type": "image",
+        "caption": "Fig. 5.48. Growth kinetics of thermally grown oxide (TGO) in a number of EB-PVD NiCoCrAlY/YSZ TBC systems [121].",
+        "image_type": "chart",
+        "content": {
+          "title": "Growth kinetics of thermally grown oxide (TGO)",
+          "x_axis_label": "Cycles",
+          "y_axis_label": "TGO thickness (μm)",
+          "legend": [
+            "IN100",
+            "Rene 142",
+            "MAR M002",
+            "PAWA1483",
+            "CMSX-4",
+            "IN617/1050 °C",
+            "Parabolic"
+          ],
+          "trend_description": "The chart plots the thickness of the thermally grown oxide (TGO) as a function of thermal cycles for several TBC systems on different superalloy substrates. For all systems, the TGO thickness increases with the number of cycles. The growth follows a trend that is reasonably well described by a parabolic curve, indicating a diffusion-controlled growth mechanism."
+        }
+      },
+      {
+        "block_id": "page_25_block_2",
+        "type": "text_block",
+        "content": "the time that the thickness reaches 10 µm, TBC failure has usually occurred [122]. Thus there is a correlation between the thickness of the TGO and the TBC life which has been consumed.\n(2) The bond coat becomes depleted of aluminium over time; this is due to (i) formation of the TGO, which has been shown to be predominantly a-alumina [123] and (ii) interdiffusion with the substrate, which causes the B-phase to dissolve and the formation of y' to be promoted [12,124]. Interdiffusion with the substrate provides an opportunity for elements not present in the coating to reach the bond coat/TGO interface, and to influence TBC life [121].\n(3) Due to the thermal stresses arising from a mismatch in thermal expansion coefficients and growth stresses due to the mechanism of its formation, the TGO layer forms with a significant biaxial in-plane compressive stress in it; photo-luminescence studies indicate that these can approach 4 GPa, with the strain increasing with thickness [125]. The action of thermal cycling reduces the average compressive stress measured in the TGO; see Figure 5.49 [110].\n(4) As TBC life is consumed during cycling, imperfections at or near the TGO (due to processing-related variations in thickness, the mechanism of formation of the a-alumina, the formation of y' and/or further chemical reactions which produce further phases such as spinels and garnets) become amplified [120,126,127]. Particularly for TBCs processed by EB-PVD, the TGO is initially smooth but develops undulations over time as it thickens [120]; see Figure 5.47. However, when PS is used, the TGO inherits considerable roughness from the processing step and does not roughen further to any appreciable extent before failure; see Figure 5.50 [128].\n(5) Incipient cracks in the form of separations nucleate at the imperfections – these grow and coalesce to reduce the elastic strain energy in the system [129]. Final failure occurs once the cracks have grown to a size to support buckle propagation (see Figure 5.51),",
+        "references": [
+          "page_26_block_1",
+          "page_24_block_1",
+          "page_27_block_1",
+          "page_28_block_1"
+        ]
+      }
+    ]
+  },
+  {
+    "page_number": 26,
+    "content_blocks": [
+      {
+        "block_id": "page_26_block_1",
+        "type": "image",
+        "caption": "Fig. 5.49. Frequency shift of Cr³+ luminescence and equivalent biaxial compression in Al2O3 scales during cyclic oxidation at 1150 °C (1 h cycles) [110]. (1) Average stress underneath 60 µm TBC; local stress values for the (2) visually intact and (3) separated regions on the same sample; (4) stress in fractured or spalled fragments of the TGO; (5) average stress on similar samples without the TBC; and (b) with 130 µm TBC and fully intact TBC–TGO interface.",
+        "image_type": "chart",
+        "content": {
+          "title": "Frequency shift and biaxial compression in Al2O3 scales",
+          "x_axis_label": "Time at 1150 °C (h)",
+          "y_axis_label": "Frequency shift (1/cm) / Equivalent biaxial compression (GPa)",
+          "legend": [
+            "(1) Average stress under 60 µm TBC",
+            "(2) Visually intact regions",
+            "(3) Separated regions",
+            "(4) Fractured/spalled fragments",
+            "(5) Average stress without TBC",
+            "(6) 130 µm TBC (label b in original text)"
+          ],
+          "trend_description": "The chart shows the evolution of compressive stress in the Al2O3 scale (TGO) over time during cyclic oxidation. The stress, measured by luminescence frequency shift, generally decreases over time for all conditions, indicating stress relaxation. The stress is highest in intact regions under a TBC (2, 6) and lowest in fractured fragments (4). The presence of a TBC (1, 6) helps maintain higher compressive stress compared to a sample without a TBC (5)."
+        }
+      },
+      {
+        "block_id": "page_26_block_2",
+        "type": "text_block",
+        "content": "usually upon cooling when the ceramic layer gets placed in compression [130]; however, delaminations of the TBC in the form of incipient buckles are present before final failure, implying that they can grow in a stable fashion [131].\n(6) The lifetimes of different combinations of substrate, bond coat and top coat vary considerably [121]; the processing method used for the deposition of the ceramic top coat (for example, EB-PVD, plasma spraying) is also found to be influential. TBCs with ceramic top coats produced by EB-PVD are generally found to perform better than those produced by plasma spraying (see Figure 5.52) [132], on account of their superior 'strain tolerance' arising from the microcracks inherited from the coating process. The best method for producing the bond coat (for example, aluminide by CVD, MCrAlY by EB-PVD or an alternative) is not yet apparent.\n(7) Various other complicating factors can arise during engine operation. For example, TBCs can be subject to 'foreign object damage' (FOD) arising from the impact of airborne matter ingested by the engine [133]. Alternatively, calcia, magnesia, alumina and silica (CMAS) can deposit upon the surface of the TBC, causing partial dissolution of the TBC and exacerbating failure [134] since its strain tolerance is reduced and the stiffness increased. Vanadium impurities are found in kerosene, and these can leach Y out of the YSZ coating over time. Differences in substrate geometry, changes in its local radius of curvature and the testing method influence TBC life [135].",
+        "references": [
+          "page_28_block_2"
+        ]
+      }
+    ]
+  },
+  {
+    "page_number": 27,
+    "content_blocks": [
+      {
+        "block_id": "page_27_block_1",
+        "type": "image",
+        "caption": "Fig. 5.50. Evolution of the ceramic/bond coat interface in an APS-sprayed YSZ/LPPS-sprayed CoNiCrAlY system: (a) as-deposited, (b) after exposure for 216 h at 1010 °C, showing the formation of a 3-um-thick TGO and (c) after exposure for 1944 h at 1010 °C, showing the presence of cracks penetrating the TGO next to imperfections in the coating [128].",
+        "image_type": "photograph",
+        "content": {
+          "description": "Three cross-sectional micrographs, (a), (b), and (c), with 20 µm scale bars, show the evolution of a plasma-sprayed TBC interface. (a) The as-deposited interface is irregular. (b) After 216 h, a thin, dark TGO layer has formed along the undulating interface. (c) After 1944 h, the TGO layer is thicker, and cracks are visible within the TGO, particularly near sharp features of the interface."
+        }
+      }
+    ]
+  },
+  {
+    "page_number": 28,
+    "content_blocks": [
+      {
+        "block_id": "page_28_block_1",
+        "type": "image",
+        "caption": "Fig. 5.51. Microstructure of a Pt-modified aluminide/EB-PVD YSZ thermal barrier coating system after 450 × 1 h cycles to 1150 °C showing separation of the ceramic/TGO interface and the onset of small-scale buckling [110].",
+        "image_type": "photograph",
+        "content": {
+          "description": "A set of cross-sectional micrographs showing a TBC system after thermal cycling. The top image (100 µm scale) shows large-scale undulations and regions of TBC-TGO separation. The bottom two images (10 µm scale) provide close-ups of an intact interface and a separated interface, highlighting the TGO layer between the bond coat and the TBC and showing the gap formed during separation, which represents the onset of buckling."
+        }
+      },
+      {
+        "block_id": "page_28_block_2",
+        "type": "image",
+        "caption": "Fig. 5.52. Spallation lives of five production TBC systems tested in a cyclic furnace-controlled thermal rig, from ambient to 1121 °C with 1 h cycles: (I) Rene N5/Pt-Al/EB-PVD YSZ; (II) IN939/MCrAlY/PS YSZ; (III) CMSX-4/MCrAlY/EB-PVD YSZ (IV) CMSX-4/MCrAlY/PS YSZ and (V) MarM509/MCrAlY/PS YSZ [132].",
+        "image_type": "chart",
+        "content": {
+          "title": "Spallation lives of five production TBC systems",
+          "x_axis_label": "Coating type",
+          "y_axis_label": "Cycles to failure",
+          "legend": [
+            "Maximum",
+            "Average",
+            "Minimum"
+          ],
+          "trend_description": "The bar chart compares the spallation lives of five different TBC systems. The height of the bars represents the average cycles to failure, with error bars for maximum and minimum. System I (Pt-Al bond coat, EB-PVD ceramic) shows the longest and most consistent life. Systems with EB-PVD ceramic processes generally show longer lives than those with plasma-sprayed (PS) ceramic processes. The numbers in parentheses indicate the number of samples tested for each system."
+        }
+      }
+    ]
+  },
+  {
+    "page_number": 29,
+    "content_blocks": [
+      {
+        "block_id": "page_29_block_1",
+        "type": "image",
+        "caption": "Fig. 5.53. Delamination modes for compressed films: (a) edge delamination and (b) buckling delamination for the straight-sided blister [137].",
+        "image_type": "schematic",
+        "content": {
+          "description": "Two schematic diagrams illustrating delamination modes in compressed films. Diagram (a) shows 'Edge delamination', where a film of width 'b' and thickness 'h' lifts off from an edge. Diagram (b) shows 'Buckle delamination', where a section of the film with width '2b' buckles upwards away from the substrate, forming a blister.",
+          "ocr_text": "h b Edge delamination Front Side h 2b Buckle delamination"
+        }
+      },
+      {
+        "block_id": "page_29_block_2",
+        "type": "text_block",
+        "content": "5.5.3 Lifetime estimation models\nExisting methods for estimating the number of cycles before a TBC spalls away from the surface of a superalloy are highly empirical; for example, use is made of cylindrical testpieces exposed to burner rigs or else experienced gained from full-scale engine ‘type' tests. Early work [136] made use of the notion of a 'critical thickness' of the TGO for TBC failure, termed δc, for TBC failure, which was then incorporated into a modified version of Miner's law – such that the ratio δ/δc (where δ is the sub-critical TGO thickness) is then a quantity that can be related (by a suitable functional form) to the life consumed. Unfortunately, this kind of approach is not fundamentally based upon the principles of fracture mechanics; for example, the driving force for interfacial crack growth and the interfacial toughness remain unaccounted for. Clearly, there is a need for physically based laws which model the failure mechanisms occurring and which, ideally, account for the microstructural effects causing the substantially different behaviour of varying combinations of substrate, bond coat and ceramic types.\nWhilst much work remains to be done, progress in this regard has been made by Evans and co-workers (for example, see ref. [129]), who have produced 'failure maps' via the mathematical analysis of the micromechanics of TBC systems. Emphasis is placed on the competition (see Figure 5.53) between (i) delamination from edges, such as the trailing edge of the turbine blade, which is resisted by the mode II interfacial fracture toughness, ΓII, and (ii) buckling of the TGO from pre-existing interfacial separations which have already nucleated. Figure 5.54 shows examples of failure maps arising from these calculations [137]; these provide insight into the factors controlling durability. The thickness of the ceramic top coat, h, is plotted against its modulus anisotropy, defined as the ratio of the Young's modulus in the in-plane and out-of-plane directions, i.e. E||/E⊥; for YSZ produced by EB-PVD, this quantity is less than unity on account of the columnar microstructure present for this processing method. In the upper right-hand corners of the maps, the thickness and in-plane modulus are high such that the residual stresses and elastic strain energy density are large – this provides the driving force for edge delamination. The extent of this region is reduced as the mode II interfacial toughness increases. In the lower left-hand corners, the low thickness and in-plane modulus are unable to resist buckling; the extent of this second region increases with the characteristic width, b. Between these two limits lies a 'fail-safe' regime where failure is predicted not to occur – implying that there is an optimum thickness and in-plane modulus for a TBC, consistent with experience. The extent of the",
+        "references": [
+          "page_29_block_1",
+          "page_30_block_1"
+        ]
+      }
+    ]
+  },
+  {
+    "page_number": 30,
+    "content_blocks": [
+      {
+        "block_id": "page_30_block_1",
+        "type": "image",
+        "caption": "Fig. 5.54. Examples of TBC failure maps identifying the top coating thickness, t, and modulus ratio such that neither buckling nor edge delamination occurs in a TBC system of typical characteristics [137]: (a) with a 1 µm-thick TGO and (b) with a 5 µm-thick TGO. The term ΓII is the mode II interfacial fracture toughness and b is the characteristic width of the delamination (see Figure 5.53).",
+        "image_type": "chart",
+        "content": {
+          "title": "TBC failure maps",
+          "x_axis_label": "E||/ E⊥",
+          "y_axis_label": "h (μm)",
+          "legend": [
+            "Buckling",
+            "Fail-safe",
+            "Edge delamination"
+          ],
+          "trend_description": "Two failure maps, (a) for a 1 µm TGO and (b) for a 5 µm TGO, plot TBC thickness (h) against the modulus ratio. The maps are divided into three regions: 'Buckling' at low thickness and modulus ratio, 'Edge delamination' at high thickness and modulus ratio, and a 'Fail-safe' region in between. The boundaries of these regions depend on parameters like delamination width (b) and interfacial fracture toughness (ΓII). Comparing (a) and (b) shows that a thicker TGO shrinks the fail-safe region, making the coating more prone to failure."
+        }
+      },
+      {
+        "block_id": "page_30_block_2",
+        "type": "text_block",
+        "content": "fail-safe region also depends upon the thickness of the TGO; compare Figures 5.54(a) and 5.54(b).\nAlthough the calculation of the failure maps requires consideration of multiple layers of the TBC system (i.e. substrate, bond coat, TGO and ceramic) the relative positions of the regimes on the failure map can be rationalised by considering a single layer film of thickness h – approximating the ceramic top coat – on a thick substrate. For the case of edge delamination, the energy release rate, Go, approaches a steady-state, becoming independent of the crack length, b, once its length exceeds several layer thicknesses; thus [138]\nGo = 1/2 (1 - ν² / E||) σ₀²h (5.1)\nwhere E and v are the Young's modulus and Poisson's ratio of the TBC, respectively, and σ₀ is the compressive, biaxial misfit stress given by\nσ₀ = E||εT/(1 − ν²) (5.2)",
+        "references": [
+          "page_30_block_1"
+        ]
+      }
+    ]
+  },
+  {
+    "page_number": 31,
+    "content_blocks": [
+      {
+        "block_id": "page_31_block_1",
+        "type": "text_block",
+        "content": "where the misfit strain, єT, is equal to Δα × ΔΤ, where ∆α is the difference in thermal expansion coefficients of TBC and substrate and AT is the cooling range of approximately 1300 °C. Inserting reasonable values for the variables, for example, E|| = 20 GPa, ν = 0.3, h = 100 µm and єT = 5 × 10−3, one finds that Go is about 25 J/m². This is substantially lower than the mode II fracture toughness, ΓⅡ, which is in the range 60 to 100 J/m² [139,140]; thus in the as-deposited state there is insufficient energy density to delaminate the TBC. However, should h be increased by a factor of about 2 – so that one moves from the fail-safe to the edge-delamination regime of Figure 5.54 – then failure is predicted to occur. Alternatively, the same effect is caused by larger misfit strains arising from temperature gradients or else sintering of the TBC, which has been shown to lead to a three-fold increase in E|| [141]. In the case of a buckle delamination (see Figure 5.53) consider the case of a straight-side blister of width 2b and coating thickness, h. If it is clamped along its straight edges, it undergoes buckling when the compressive stress, σc, in the coating attains a value\nσc = (π² / 12) * (E|| / (1 - ν²)) * (h/b)² (5.3)\nwhich is a standard result from buckling theory, for example, for the Euler column. Note that when σο is in excess of σc, buckling is expected. This occurs when h is small, b is large or for low in-plane stiffness, E||, i.e. on the bottom left-hand side of the failure map.",
+        "references": [
+          "page_30_block_1",
+          "page_29_block_1"
+        ]
+      },
+      {
+        "block_id": "page_31_block_2",
+        "type": "text_block",
+        "content": "5.5.4 The role of imperfections near the TGO\nAt the present time, the major lack of understanding concerning the durability of TBCs relates to the physical and chemical factors controlling the growth of imperfections at or near the TGO, which are the precursors to delamination. Since these are a prerequisite for spallation, it follows that any useful model for lifetime prediction requires an accurate estimate of their rate of nucleation. Currently, quantitative theory for this purpose is unavailable; this situation is hampering the development of models for TBC lifetime estimation which are physically based, such that the temporal evolution of defects is accounted for. Unfortunately, at the present time there is no strong consensus on the origin of the imperfections and the mechanism controlling their development – and it is very probable that these differ with the physical and chemical properties of the substrate/bond coat/ceramic combination and the processing methods employed.\nWhen the damage mechanisms arising in thermally cycled TBC systems are examined, the pervasive observations concern the gradual roughening of the bond coat/TGO and TGO/ceramic interfaces. Since the TBC is transparent to light, the undulations which form are detectable optically under oblique illumination (see Figure 5.45 [110]), and their amplitude has been shown to increase as cycling proceeds. Such findings are consistent with the 'rumpling' or 'scalloping' identified during the cyclic oxidation of both aluminide [142-144] and MCrAlY-type coatings [143] when the TBC is absent. Nevertheless, it remains to be proven that such roughening can be attributed solely to the oxidation process which causes TGO thickening. However, there is little doubt, as shown by the Cr³+",
+        "references": [
+          "page_22_block_1"
+        ]
+      }
+    ]
+  },
+  {
+    "page_number": 32,
+    "content_blocks": [
+      {
+        "block_id": "page_32_block_1",
+        "type": "image",
+        "caption": "Fig. 5.55. Example of edge spallation in an platinum-aluminised/EB-PVD YSZ TBC system subjected to cyclic oxidation testing consisting of 330 × 1 h cycles from ambient to 1150 °C [145]. Note that the B-grain structure is apparent on the areas which have spalled.",
+        "image_type": "photograph",
+        "content": {
+          "description": "A scanning electron micrograph with a 200 µm scale bar, showing a top-down view of a TBC failure. The image displays a clear example of edge spallation, where a section of the top ceramic layer has flaked off, revealing the underlying bond coat. The exposed surface of the bond coat exhibits a distinct grain structure, identified as the β-grain structure."
+        }
+      },
+      {
+        "block_id": "page_32_block_2",
+        "type": "text_block",
+        "content": "luminescence studies [110], that the a-Al2O3 forms with a compressive stress of several GPa due to contributions from the thermal misfit and growth stresses, the former being considered to be the larger of the two [14]; thus there is a considerable driving force for buckling of the TGO. Many observations confirm that the TGO does indeed become more serpentine such that its overall length increases with time; see Figure 5.51. The TGO's stress is almost completely relieved once debonding occurs but, even when bonding remains intact, it is reduced by the action of thermal cycling – possibly due to sub-critical cracking, creep relaxation or else its morphological evolution. Once the ceramic layer has spalled, the 'ridged' morphology characteristic of a-alumina grown on polycrystalline β–NiAl is visible (see Figure 5.55 [145]) so that the bond coat/TGO and TGO/top coat interfaces are not smooth, and thus the ridges are possible sites for damage initiation, as emphasised in ref. [138]. The TBC life has been shown to be influenced by the surface condition of the aluminised coating prior to ceramic deposition; for example, grit blasting is detrimental and the polishing away of the ridged morphology inherited from the CVD process is beneficial.\nMost observations on platinum-aluminised EB-PVD coatings indicate that imperfections in the TGO form and grow preferentially into the bond coat [120]; see Figure 5.47. This is consistent with an inward-growing scale controlled by O2+ diffusion along the grain boundaries in the a-alumina TGO; the formation of the oxide preferentially at the B-grain boundaries intersecting the TGO/bond coat interface once the oxygen partial pressure reaches a high enough value would yield a density of imperfections consistent with all observations so far, and indeed the postulate that the B-grain boundaries in the bond coat are potent sites for crack initiation [146]. This picture of the microstructural damage events occurring is consistent with recent observations [116,117] that the TGO/bond coat interface",
+        "references": [
+          "page_28_block_1",
+          "page_32_block_1",
+          "page_24_block_1"
+        ]
+      }
+    ]
+  },
+  {
+    "page_number": 33,
+    "content_blocks": [
+      {
+        "block_id": "page_33_block_1",
+        "type": "text_block",
+        "content": "moves preferentially into β rather than the y' phase forming by aluminium depletion due to oxidation and interdiffusion with the substrate – presumably because aluminium diffusion in the former is about an order of magnitude faster than in the latter phase; thus, the γ' grains gradually decorate the TGO/bond coat interface over time; see Figure 5.56 [116,117] with their aspect ratio being modified accordingly. Once again, the density of nucleation events is consistent with the coating's β-grain size since y' nucleation is found to occur on the prior β-grain boundaries. If this microstructural model of the damage evolution is correct, then it does not seem necessary to invoke the ratcheting mechanism which is founded on the principles of mechanics [111]. There are however, many complicating factors which need to be explained. It is found, for example, that other oxide phases form at or near to the a-alumina; spinels have been observed particularly when NiCrAlY-type bond coats are employed, probably because of the presence of Cr, and garnets can form in TBC systems employing aluminide coatings. Moreover, there are substantial differences between the TBC lives of systems with diffusion-based and overlay-type bond coats, and indeed which of the two bond coat systems is the better one has still not been resolved. Furthermore, when the same ceramic/bond coat combination are employed, TBC life is a function of the substrate chemistry [121]. This is particularly the case when platinum-diffused 'low-cost' bond coats are employed, which avoids the use of the aluminisation treatment [147].",
+        "references": [
+          "page_34_block_1"
+        ]
+      },
+      {
+        "block_id": "page_33_block_2",
+        "type": "text_block",
+        "content": "5.6 Summary\nDue to the extreme operating conditions of the modern gas turbine, great reliance is now placed on coating technologies for the protection of components from oxidation and corrosion. This is particularly the case for the turbine blading, nozzle guide vanes and combustor sections which reside directly in the gas stream. Processes available for this purpose include electron beam physical vapour deposition (EB-PVD), plasma spraying (PS) and the chemical vapour deposition (CVD) method and its variants; the choice of process used is critical in determining the coating performance exhibited. Overlay coatings (of composition NiCoCrAlY) fabricated by PS and diffusion-type coatings (for example, the aluminides and platinum-aluminides) produced by CVD are very common. Thermal barrier coatings (TBCs) – in which a combination of a ceramic top coat produced by EB-PVD is deposited on either a CVD diffusion-type aluminide or alternatively an overlay coating – are an increasingly critical technology for gas turbine applications due to the thermal insulation they provide. Unfortunately, they are prone to failure by spallation during thermal cycling. A challenge for the future is the optimisation of TBC systems – by which which one means the ceramic top coat, the bond coat and superalloy substrate – so that coating life is maximised. Further research is needed to clarify the mechanisms of failure of TBC systems, which depend upon the combination of processes and coating materials used. Methods for TBC lifetime estimation are still immature, and these need to be developed further if full advantage is to be taken of the extra temperature capability conferred by the use of these coatings.",
+        "references": []
+      }
+    ]
+  },
+  {
+    "page_number": 34,
+    "content_blocks": [
+      {
+        "block_id": "page_34_block_1",
+        "type": "image",
+        "caption": "Fig. 5.56. Optical micrographs of furnace-cycled TBC-coated Rene N5/Pt-Al testpieces, at (a) 8%, (b) 34% and (c) 76% of TBC life [116,117]. Note that decomposition of the β phase to y', which then decorates the bond coat/TGO interface at the later stages. The testpieces are the same as those in Figure 5.46 [120] – the etchant used here draws out contrast from the β and y' phases more adequately.",
+        "image_type": "photograph",
+        "content": {
+          "description": "Three optical micrographs, labeled (a), (b), and (c), each with a 20 µm scale bar, show the evolution of a TBC-coated testpiece at different stages of its life. The images show the decomposition of the β phase (darker regions) into γ' phase (lighter regions) at the bond coat/TGO interface. This transformation becomes more pronounced as the TBC life progresses from (a) 8% life, to (b) 34% life, to (c) 76% life, where the γ' phase increasingly decorates the interface."
+        }
+      }
+    ]
+  },
+  {
+    "page_number": 35,
+    "content_blocks": [
+      {
+        "block_id": "page_35_block_1",
+        "type": "text_block",
+        "content": "Questions\n5.1 The components of a thermal barrier coating system include (i) the bond coat and (ii) the ceramic top coat. When designing a thermal barrier coating system, what are the requirements of these two layers?\n5.2 What are the characteristics of an air plasma-sprayed (APS) thermal barrier coating which make it unsuitable in some ways for application on a turbine aerofoil? Why might APS be used in place of EB-PVD in some instances?\n5.3 Thermal barrier coatings are fabricated from ceramic materials; they are required to prevent the build up of heat in components such as turbine blading and combustor sections. What physical properties must the ceramic material possess for this application? By conducting a survey of the properties of the available ceramic materials, choose a suitable one for this application.\n5.4 After the engine testing of a thermal barrier coating on the high-pressure (HP) turbine blading, spallation is observed on the leading edge of the blade. Draw a cross section of the blading, identifying the leading and trailing edges. Which positions are likely to experience the hottest temperatures during operation? What could be done to the geometry of the blade in order to prevent spallation of the TBC at these locations? Hence rationalise Rolls-Royce's experience with the HP turbine blade of the Trent 500 engine, which necessitated increasing the radius of curvature at the leading edge to ensure TBC adherence.\n5.5 The high-pressure turbine blading in an aeroengine is working in a gas stream of temperature 1500 °C. The metal temperatures at the outer and inner (cooled) surfaces are 1000 °C and 800 °C, respectively; the wall thickness is 5 mm. If the single-crystal superalloy from which the blading is cast has a thermal conductivity of 100 W/(mK), estimate (i) the steady-state heat flux entering the blading and (ii) the heat transfer coefficient at the blade/gas interface. It is proposed to add a 1.2 mm-thick thermal barrier coating (TBC) to the blading, of thermal conductivity 1 W/(m K). Assuming that the heat transfer coefficient at the outer surface remains unaltered, estimate (i) the new value of the steady-state flux and (ii) the reduction in the mean metal temperature which the TBC confers. Over time, the TBC is expected to sinter, causing its thermal conductivity to increase by 50%. What influence will this have?\n5.6 The deposition of an aluminide coating on a superalloy by pack cementation can be carried out with either a high or low activity of aluminium in the pack. In which of these does one expect to see the 8-Ni2Al3 phase at the outer surface of the coating? Given that aluminium is the main diffusing element in 8 and hyperstoichiometric β-NiAl of greater than 51 at%Al, rationalise the observation that, in this case, the coating grows inwards. Why in the case of a low-activity pack is there a possibility that pack particles become embedded in the outer surface of the coating?\n5.7 The resistance of a coated superalloy to cyclic oxidation is usually much inferior to its performance in an isothermal test; for example, spallation is much less likely in an isothermal 1000h test at 1150 °C than it is in 1000 cycles consisting of heat-",
+        "references": []
+      }
+    ]
+  },
+  {
+    "page_number": 36,
+    "content_blocks": [
+      {
+        "block_id": "page_36_block_1",
+        "type": "text_block",
+        "content": "ing/cooling between ambient and 1150 °C with a 1 h hold at that temperature. Why is this?\n5.8 List the advantages and disadvantages of the electron beam physical vapour deposition (EB-PVD) process for the deposition of ceramic coatings.\n5.9 Coatings produced by pack aluminisation offer satisfactory performance for many aviation, industrial and marine engine applications. However, under severe hot corrosion conditions, or at temperatures above 1050 °C, only limited protection is afforded. Which coatings are then more appropriate, and how might these be deposited?\n5.10 The thermal conductivity of yttria-stabilised zirconia is strongly influenced by the presence of point defects. An estimate of the point defect spacing can be made by noting that an oxygen vacancy is introduced into the zirconia lattice for every two Y³+ that substitute for each pair of Zr²+ ions. For partially stabilised zirconia containing 7 wt% of yttria, estimate the average distance between oxygen vacancies. How is the mean free path for phonon dispersion, on which the thermal conductivity depends, likely to be altered by this effect?\n5.11 Overlay coatings are often based on the NiCrAlY system, but many compositional variants are available. For example, proprietary coatings can contain significant proportions of Si, Re, Hf, or combinations of these. Make a literature review summarising the research which has been carried out to identify these 'modified' overlay coatings, and critique the advantages which are claimed in each case. For what type of turbine applications might these coatings be best employed?\n5.12 During the oxidation of the Ni-rich, Group I-type Ni-Cr-Al alloys, an external scale of NiO forms. However, the internal scale consists of chromia and alumina, with the latter being found at greater depths than the former. Rationalise these observations.\n5.13 Explain why the optimum level of a reactive element (such as Y) in the raw coating powder to be used for the plasma spraying of an NiCrAlY-type overlay coating depends upon whether the processing is to be carried out in air or under vacuum.\n5.14 Examine the cracks in the overlay coating in Figure 5.36. One can see that the cracks are more or less uniformily spaced. Give a physical explanation for this.\n5.15 Depletion of aluminium from the bond coat is a crucial precursor to the failure of a thermal barrier coating. This occurs due to (i) formation of a thermally grown oxide (TGO) of a-alumina and (ii) interdiffusion with the superalloy substrate. Which is the more important of these in practice? It is claimed in ref. [117] that it is the former, but in another, [148], that it is the latter. Perform an analysis, using data from the literature where necessary, to decide.\n5.16 Prove that the biaxial compressive in-plane stress, σ₀, which develops in a thin coating on a stiff substrate during cooling through a temperature, AT, is given by\nσο = (ΕοΔα₀ΔΤ) / (1 − ν₀)\nwhere Δα₀ is the difference between the thermal expansion coefficients of the substrate and coating, and E₀ and ν₀ are the Young's modulus and Poisson's ratio of the coating, respectively.",
+        "references": [
+          "page_14_block_1"
+        ]
+      }
+    ]
+  },
+  {
+    "page_number": 37,
+    "content_blocks": [
+      {
+        "block_id": "page_37_block_1",
+        "type": "text_block",
+        "content": "Hence estimate the stress forming in the TGO of a TBC system. What effects might occur that would lead your simple estimate to be in error? (The thermal expansion coefficients for bond coat and alumina TGO are in the ranges 13–16 and 8–9 ppm/K, respectively. The Young's modulus and Poisson's ratio of the TGO are 200 GPa and 0.33, respectively.)\n5.17 Estimate the transformation ‘growth' stresses associated with the formation of a TGO on a β-NiAl substrate, given that the densities of a-Al2O3, β-NiAl and y-Ni3Al are 3.9, 5.6 and 7.5 g/cm³, respectively.\n5.18 Is the failure of a TBC nucleation- or propagation-controlled? Discuss.\n5.19 Watanabe et al. [149] have used the wafer curvature method for the determination of the residual stress level in a Pt-aluminide bond coat deposited on the Rene N5 single-crystal superalloy. The bond coat was found to have a residual stress level of about 140 MPa (tensile) – varying only slightly with thickness. Rationalise this observation by considering the microstructure of the bond coat and the thermal expansion coefficients of the various phases present.\n5.20 Piezospectroscopy, i.e. the strain-induced shift of luminescence and Raman spectra, can be used for the non-destructive evaluation of the TGO formed in a TBC system [114]. When illuminated with a laser of appropriate wavelength, luminescence from the Al2O3 formed by the oxidation of the bond coat can be detected through the thickness of the TBC. What are the prerequisites which make this possible?\n5.21 The sintering resistance of ceramic materials scales with the melting temperature. Carry out a data-mining exercise to estimate the melting temperatures of candidate TBC materials, and thus show that a proposal for a hafnia-based TBC is sensible.\n5.22 Evans and co-workers made concerted efforts in the late 1990s to model the failure mechanisms relevant to thermal barrier coatings; see, for example, ref. [111]. A ratcheting mechanism was emphasised strongly. Critique these early papers, in the light of later observations (for example, ref. [117]), which emphasise that diffusional reactions occur at and beneath the TGO. Is it likely that a ratcheting mechanism is operative?\n5.23 The concentrations of slow-diffusing elements such as Re, W and Mo near the surface of an aluminised coating is expected to depend upon whether a high- or low-activity pack is used. Why? How would one expect the (i) mechanical and (ii) environmental properties of the two types of coating to differ?\n5.24 The presence of a ridged surface morphology of an as-processed diffusion coating influences the life of a TBC system. Explain. Why does the ridged morphology form?\n5.25 A NiCrAlY-type overlay coating will interdiffuse with a single-crystal superalloy substrate during service, such that microstructural changes occurring at the interface will depend upon the remanent life of the component. Describe the microstructural evolution which is expected under typical circumstances.\n5.26 Walston and colleagues have measured the increase in thickness of the secondary reaction zone (SRZ) with time in a aluminide-coated third-generation single-crystal superalloy at 1090 °C; growth was found to be parabolic with time, with an effective diffusion constant equal to 6.7 × 10−11 cm²/s. Is this finding consistent with the diffusion data of Figure 2.34? What element is rate-controlling?",
+        "references": []
+      }
+    ]
+  },
+  {
+    "page_number": 38,
+    "content_blocks": [
+      {
+        "block_id": "page_38_block_1",
+        "type": "text_block",
+        "content": "5.27 The reasons why the addition of Pt to an aluminide coating, as in the so-called platinum-aluminide coating, are beneficial are still not completely understood. List some postulates which might be the cause and then critique them for their validity by appealing to observations in the literature. Which mechanism is best supported by the available experimental data?\n5.28 Will the rate of TGO formation on an aluminised single-crystal superalloy during isothermal oxidation be altered by the addition of a ceramic YSZ layer? If so, why?\n5.29 The root-mean-square roughness of a turbine blade aerofoil is important since it influences aerodynamic performance. The roughness of an uncoated blade is close to 1 µm; how will this figure be altered by the addition of a (i) plasma-sprayed coating and (ii) an EB-PVD coating?\n5.30 An estimate for the TGO thickness, h, at which decohesion occurs by edge spallation can be made by equating its strain energy per unit area to the adhesion energy per unit area (i.e. the interfacial fracture toughness) which is designated Γi. Hence demonstrate that\nh = (EΓi) / (σ₀²(1 − ν²))\nwhere E and v are the Young's modulus and Poisson's ratio of the TGO, respectively. The property Γi has been found to lie in the range 5 to 20 J/m². Hence, using typical property values, demonstrate that the value for h at decohesion determined in this way is appreciably smaller than 1 µm. What is the significance of your result in the light of experimentally observed thicknesses of the TGO at failure?\n5.31 A turbine blade aerofoil is to be cooled during service via the addition of drilled holes which connect the outer surface to the internal cooling channels. Thereafter, a thermal barrier coating is to be applied.\nWhat manufacturing methods are available for the production of the holes? What are the advantages and disadvantages of the available processing methods? Which coating method is the more suitable, if blocking of the holes is to be avoided? Justify your answer by appealing to the physical principles involved.",
+        "references": []
+      },
+      {
+        "block_id": "page_38_block_2",
+        "type": "text_block",
+        "content": "References\n[1] Y. Tamarin, Protective Coatings for Turbine Blades (Materials Park, OH: ASM International, 2002).\n[2] J. H. Wood and E. Goldman, Protective coatings, in C. T. Sims, N. S. Stoloff and W. C. Hagel, eds, Superalloys II (New York: John Wiley and Sons, 1987), pp. 359–384.\n[3] J. R. Nicholls, Advances in coating design for high performance gas turbines, MRS Bulletin, 28 (2003), 659–670.\n[4] G. W. Goward and D. H. Boone, Mechanisms of formation of diffusion aluminide coatings on nickel-base superalloys, Oxidation of Metals, 3 (1971), 475–495.\n[5] H. W. Tawancy, N. M. Abbas and T. N. Rhys-Jones, The role of platinum in aluminide coatings, Surface Coatings Technology, 49 (1991), 1–7.",
+        "references": []
+      }
+    ]
+  },
+  {
+    "page_number": 39,
+    "content_blocks": [
+      {
+        "block_id": "page_39_block_1",
+        "type": "text_block",
+        "content": "[6] J. R. Davis, ed., Handbook of Thermal Spray Technology (Materials Park, OH: The ASM Thermal Spray Society, 2004).\n[7] D. H. Boone, Physical vapour deposition processes, Materials Science and Technology, 2 (1986), 220–224.\n[8] A. R. Nicholl, H. Gruner, G. Wuest and S. Keller, Future developments in plasma spray coating, Materials Science and Technology, 2 (1986), 214–219.\n[9] A. R. Nicholl and G. Wahl, Oxidation and high temperature corrosion behaviour of modified MCrAlY cast materials, in R. H. Bricknell, W. B. Kent, M. Gell, C. S. Kortovich and J. F. Radavich, eds, Superalloys 1984 (Warrendale, PA: The Metallurgical Society of AIME, 1984), pp. 805–814.\n[10] N. P. Padture, M. Gell and E. H. Jordan, Thermal barrier coatings for gas-turbine applications, Science, 296 (2002), 280–284.\n[11] D. R. Clarke, Materials selection guidelines for low thermal conductivity thermal barrier coatings, Surface and Coatings Technology, 163–164 (2003), 67–74.\n[12] B. A. Pint, I. G. Wright, W. Y. Lee, Y. Zhang, K. Prussner and K. B. Alexander, Substrate and bond coat compositions: factors affecting alumina scale adhesion, Materials Science and Engineering, A245 (1998), 201–211.\n[13] J. S. Wang and A. G. Evans, Effects of strain cycling on buckling, cracking and spalling of a thermally grown alumina on a nickel-based bond coat, Acta Materialia, 47 (1999), 699–710.\n[14] A. G. Evans, D. R. Mumm, J. W. Hutchinson, G. H. Meier and F. S. Pettit, Mechanisms controlling the durability of thermal barrier coatings, Progress in Materials Science, 46 (2001), 505–553.\n[15] D. E. Wolfe, J. Singh, R. A. Miller, J. I. Eldridge and D. M. Zhu, Tailored microstructure of EB-PVD 8YSZ thermal barrier coatings with low thermal conductivity and high thermal reflectivity for turbine applications, Surface and Coatings Technology, 190 (2004), 132–149.\n[16] K. Wada, N. Yamaguchi and H. Matsubara, Crystallographic texture evolution in ZrO2-Y2O3 layers produced by electron beam physical vapour deposition, Surface and Coatings Technology, 184 (2004), 55–62.\n[17] D. H. Boone, T. E. Strangman and L. W. Wilson, Some effects of structure and composition on the properties of electron beam vapor deposited coatings for gas turbine applications, Journal of Vacuum Science and Technology, 11 (1974), 641-646.\n[18] C. C. Berndt and H. Herman, Failure during thermal cycling of plasma-sprayed thermal barrier coatings, Thin Solid Films, 108 (1983), 427–437.\n[19] C. C. Berndt and R. A. Miller, Failure analysis of plasma-sprayed thermal barrier coatings, Thin Solid Films, 119 (1984), 173–184.\n[20] B. J. Gill and R. C. Tucker, Plasma spray coating processes, Materials Science and Technology, 2 (1986), 207–213.\n[21] H. Gruner, Vacuum plasma spray quality control, Thin Solid Films, 118 (1984), 409-420.\n[22] National Materials Advisory Board, Coatings for High-Temperature Structural Materials: Trends and Opportunities (Washington D. C.: Academy Press, 1996).",
+        "references": []
+      }
+    ]
+  },
+  {
+    "page_number": 40,
+    "content_blocks": [
+      {
+        "block_id": "page_40_block_1",
+        "type": "text_block",
+        "content": "[23] H. B. Guo, R. Vassen and D. Stover, Atmospheric plasma sprayed thick thermal barrier coatings with high segmentation crack density, Surface and Coatings Technology, 186 (2004), 353-363.\n[24] H. B. Guo, H. Murakami and S. Kuroda, Effects of heat treatment on microstructures and physical properties of segmented thermal barrier coatings, Materials Transactions, 46 (2005), 1775–1778.\n[25] R. Mevrel, C. Duret and R. Pichoir, Pack cementation processes, Materials Science and Technology, 2 (1986), 201–206.\n[26] R. Bianco, R. A. Rapp and N. S. Jacobson, Volatile species in halide-activated diffusion coating packs, Oxidation of Metals, 38 (1992), 33–43.\n[27] R. Bianco and R. A. Rapp, Pack cementation aluminide coatings on superalloys: codeposition of Cr and reactive elements, Journal of the Electrochemical Society, 140 (1993), 1181–1190.\n[28] S. C. Kung and R. A. Rapp, Analyses of the gaseous species in halide-activated cementation coating packs, Oxidation of Metals, 32 (1989), 89–109.\n[29] G. Fisher, P. K. Data, J. S. Burnell-Gray, W. Y. Chan and R. Wing, An investigation of the oxidation resistance of platinum aluminide coatings produced by either high or low activity processes, in J. Nicholls and D. Rickerby, eds, High Temperature Surface Engineering (London: The Institute of Materials, 2000), pp. 1-12.\n[30] K. Bungardt, G. Lehnert and H. W. Meinhardt, Protective diffusion layer on nickel and/or cobalt-based alloys, United States Patent 3819338 (1974).\n[31] R. G. Wing and I. R. McGill, The protection of gas turbine blades: a platinum aluminide diffusion coating, Platinum Metals Review, 25 (1981), 94–105.\n[32] M. R. Jackson and J. R. Rairden, The aluminisation of platinum and platinum-coated IN-738, Metallurgical Transactions, 8A (1977), 1697–1707.\n[33] A. L. Purvis and B. W. Warnes, The effects of platinum concentration on the oxidation resistance of superalloys coated with single-phase platinum aluminide, Surface and Coatings Technology, 146–147 (2001), 1–6.\n[34] G. R. Krishna, D. K. Das, V. Singh and S. V. Joshi, The role of Pt content in the microstructural development and oxidation performance of Pt-aluminide coatings produced using a high activity aluminizing process, Materials Science and Engineering, 251A (1998), 40–47.\n[35] Y. Zhang, J. A. Haynes, W. Y. Lee et al., Effect of Pt incorporation on the isothermal oxidation behaviour of chemical vapour deposition aluminide coatings, Metallurgical Transactions, 32A (2001), 1727–1741.\n[36] A. Squillace, R. Bonetti, N. J. Archer and J. A. Yeatman, The control of the composition and structure of aluminide layers formed by vapour aluminising, Surface and Coatings Technology, 120–121 (1999), 118–123.\n[37] A. B. Smith, A. Kempster and J. Smith, Vapour aluminide coating of internal cooling channels in turbine blades and vanes, Surface and Coatings Technology, 120–121 (1999), 112–117.\n[38] B. M. Warnes and D. C. Punola, Clean diffusion coatings by chemical vapour deposition, Surface Coatings Technology, 94–95 (1997), 1–6.",
+        "references": []
+      }
+    ]
+  }
+]

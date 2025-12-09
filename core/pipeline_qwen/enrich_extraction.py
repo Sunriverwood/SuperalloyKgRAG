@@ -75,28 +75,28 @@ class GraphType:
     """定义四种图谱类型及其对应的文件名和提取函数"""
 
     TEXT = {
-        'name': '纯文本图谱',
+        'name': 'text',
         'filename': 'extracted_graph.jsonl',
         'extract_func': 'extract_text_graph',
         'config_key': 'extraction'
     }
 
     ABSTRACT = {
-        'name': '摘要图谱',
+        'name': 'abstract',
         'filename': 'extracted_abstract_graph.jsonl',
         'extract_func': 'extract_abstract_graph',
         'config_key': 'abstract_extraction'
     }
 
     IMAGE = {
-        'name': '图片图谱',
+        'name': 'image',
         'filename': 'extracted_image_graph.jsonl',
         'extract_func': 'extract_image_graph',
         'config_key': 'image_extraction'
     }
 
     TABLE = {
-        'name': '表格图谱',
+        'name': 'table',
         'filename': 'extracted_table_graph.jsonl',
         'extract_func': 'extract_table_graph',
         'config_key': 'table_extraction'

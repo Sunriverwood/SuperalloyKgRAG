@@ -1,0 +1,1939 @@
+[
+  {
+    "page_number": 223,
+    "content_blocks": [
+      {
+        "block_id": "page_1_block_1",
+        "type": "text_block",
+        "content": "4.1 Processing of the turbine disc alloys",
+        "references": []
+      },
+      {
+        "block_id": "page_1_block_2",
+        "type": "image",
+        "caption": "Fig. 4.6. (a) Industrial-scale vacuum arc remelting (VAR) furnace (courtesy of Jai Narayan, Consarc Corporation), (b) Schematic illustration of the VAR furnace. (c) Close-up of the details in the vicinity of the molten pool.",
+        "image_type": "schematic",
+        "content": {
+          "description": "Composite image. Part (a) is a photograph of an industrial-scale vacuum arc remelting (VAR) furnace. Part (b) is a schematic cross-section of the VAR furnace, labeled with components including Ram, Electrode, and Copper crucible. Part (c) is a magnified schematic of the molten pool area, detailing the arc gap, mushy zone, and dendritic growth.",
+          "ocr_text": "Ram, DC power supply, Vacuum, Stinger, Water out, Water guide, Water jacket, Water in, Electrode, Copper crucible, Electrode arc gap, Molten pool, Solid ingot, Copper stool, Crucible wall, Annulus, Electrode, Metal drips, Torus, Arc gap, Liquid + solid (mushy) zone, Shelf on ingot surface, Primary dendrites, Interdendritic liquid and secondary dendrites, Ingot, Liquid pool, Electromagnetic Currents, Thermal currents, Splash BBs, Vapor deposits and crown, Ingot shrinkage gap"
+        }
+      }
+    ]
+  },
+  {
+    "page_number": 224,
+    "content_blocks": [
+      {
+        "block_id": "page_2_block_1",
+        "type": "table",
+        "caption": "Table 4.1. Chemical analysis of the bulk and the defect area in wt%",
+        "data": [
+          [
+            "Element",
+            "Alloy",
+            "White spot"
+          ],
+          [
+            "Al",
+            "0.49",
+            "0.41"
+          ],
+          [
+            "Si",
+            "0.20",
+            "0.19"
+          ],
+          [
+            "Ti",
+            "0.81",
+            "0.62"
+          ],
+          [
+            "Cr",
+            "17.50",
+            "17.71"
+          ],
+          [
+            "Fe",
+            "17.75",
+            "19.21"
+          ],
+          [
+            "Ni",
+            "54.97",
+            "55.70"
+          ],
+          [
+            "Nb",
+            "5.10",
+            "2.96"
+          ],
+          [
+            "Mo",
+            "3.18",
+            "3.20"
+          ],
+          [
+            "Tsolidus",
+            "1242 °C",
+            "1309 °C"
+          ],
+          [
+            "Tliquidus",
+            "1348 °C",
+            "1373 °C"
+          ]
+        ],
+        "summary": "This table compares the chemical composition in weight percent (wt%) of a bulk superalloy ('Alloy') versus a 'white spot' defect area. The defect is depleted in Al, Ti, and Nb, and enriched in Fe and Ni. The solidus and liquidus temperatures of the white spot are higher than the bulk alloy."
+      },
+      {
+        "block_id": "page_2_block_2",
+        "type": "text_block",
+        "content": "Courtesy of Laurence Jackman",
+        "references": []
+      },
+      {
+        "block_id": "page_2_block_3",
+        "type": "text_block",
+        "content": "been developed to enable computerised control of the melt rate, which is typically in the range 2-6 kg/min. As the electrode is melted, a liquid pool is produced which resides on the already solidified material; the size and shape of the molten zone remains approximately constant during processing, apart from brief transients associated with start-up and finishing, i.e. a steady-state is achieved. For a given electrode diameter, the depth of the pool increases with the power input, the product of the current and the applied voltage; modelling work [6] indicates that the efficiency of this process is in the range 50–75%, and that the current enters the ingot at the meniscus and at the stool at the bottom of the copper crucible on which the solidified material sits. The molten pool is subjected to complex flow patterns, which are due to a combination of the buoyancy forces, electromagnetic stirring and the Marangoni effect arising from the temperature dependence of the surface tension. The velocity of the molten material on the surface can reach 0.01 m/s; the flow pattern is radial, consistent with the symmetry of the situation, and outward from the centre of the pool; see Figure 4.7.",
+        "references": [
+          "page_3_block_1"
+        ]
+      },
+      {
+        "block_id": "page_2_block_4",
+        "type": "text_block",
+        "content": "The resulting ingot has a structure and chemistry far superior to the electrode being melted. It will have reduced amounts of tramp elements, such as lead and bismuth, which have substantial vapour pressures and are therefore volatilised. Degassing of oxygen and nitrogen also occurs through the vacuum system, although it is difficult to remove them completely when nitride-forming elements such as titanium and niobium are present. Oxides are removed by flotation and thermal dissociation; the former is generally more effective, with surface tension and Marangoni forces playing a part in agglomerating the oxide debris. On account of the enhanced cleanliness produced, VAR remains the most important and widely used of the remelting practices for the superalloys.",
+        "references": []
+      },
+      {
+        "block_id": "page_2_block_5",
+        "type": "text_block",
+        "content": "Case study. Melt-related ‘white spot' defects",
+        "references": []
+      },
+      {
+        "block_id": "page_2_block_6",
+        "type": "text_block",
+        "content": "Defects known as white spots are solute-lean regions which lack the hardening phases γ' and y\" and the associated hardening elements such as Al, Ti and Nb [7,8]. The terminology comes from the metallographical etching techniques which provide preferential attack, leaving the solute-lean regions bright or white; see Figure 4.8 and Table 4.1. Experiments have shown that mechanical properties, such as the yield stress and ultimate tensile strength",
+        "references": [
+          "page_4_block_1",
+          "page_2_block_1"
+        ]
+      }
+    ]
+  },
+  {
+    "page_number": 225,
+    "content_blocks": [
+      {
+        "block_id": "page_3_block_1",
+        "type": "image",
+        "caption": "Fig. 4.7. Results from the modelling of the VAR processing of a 0.5 m diameter ingot of IN718 superalloy: (a) comparison between predicted and measured pool profile; (b) computed temperature distribution in the ingot and the flow in the molten pool [6].",
+        "image_type": "chart",
+        "content": {
+          "title": "Modelling of VAR processing of a 0.5 m diameter ingot of IN718 superalloy",
+          "x_axis_label": "Radius (m)",
+          "y_axis_label": "Height (m)",
+          "legend": [],
+          "trend_description": "The figure shows two plots from modelling VAR processing. Part (a) displays the molten pool profile, showing height versus radius. Part (b) is a contour plot of temperature distribution within the ingot, ranging from 500 up to 1623. Arrows indicate fluid flow in the molten pool is radial and outward from the center, with a surface velocity of 0.01 m/s.",
+          "extracted_data": []
+        }
+      },
+      {
+        "block_id": "page_3_block_2",
+        "type": "text_block",
+        "content": "(UTS), are reduced when white spots are present, and this is obviously a cause for concern. The VAR process is very much more prone to white spot than the ESR process, described below. It should be noted that there is no known method for assuring the complete absence of white spot from superalloy ingots for which VAR is the final remelting process. However, careful attention to process control for both VIM electrode production and VAR processing reduces the probability of its occurrence.",
+        "references": []
+      },
+      {
+        "block_id": "page_3_block_3",
+        "type": "text_block",
+        "content": "Various mechanisms have been proposed for the formation of white spot, and it seems probable that each occurs to some degree. However, a common feature is the falling of material into the molten pool, such that its differing chemistry allows it to be incorporated",
+        "references": []
+      }
+    ]
+  },
+  {
+    "page_number": 226,
+    "content_blocks": [
+      {
+        "block_id": "page_4_block_1",
+        "type": "image",
+        "caption": "Fig. 4.8. White-spot defect in the IN718 superalloy: (a) its appearance on a cross-section of a macroetched billet; (b) optical micrograph. (Courtesy of Laurence Jackman.)",
+        "image_type": "photograph",
+        "content": {
+          "description": "Two images illustrating a white-spot defect in IN718 superalloy. Image (a) is a macro view of a billet cross-section with a ruler for scale, where the defect is visible as a light-colored area. Image (b) is a close-up optical micrograph of the defect, with a 1000 µm scale bar, revealing its microstructure."
+        }
+      },
+      {
+        "block_id": "page_4_block_2",
+        "type": "text_block",
+        "content": "into the solidifying structure without it becoming remelted. This eventuality is more likely for (i) solute-lean material with a melting temperature that is significantly larger than for the bulk composition, (ii) larger particles which do not dissolve as readily as smaller ones and (iii) larger local solidification times. Hence the frequency of white-spot occurrence is dependent upon the resistance of the process to instabilities in the process.",
+        "references": []
+      },
+      {
+        "block_id": "page_4_block_3",
+        "type": "text_block",
+        "content": "Where does this material originate from? Studies have shown that one source is the crown and shelf region, which occurs in the VAR process at the pool/crucible interface. During processing, small changes in current distribution cause the centre of the pool to shift, such that the remelting of some fraction of the crown is promoted; this is then under-cut and material is free to drop into the molten pool. A second possibility is fragmented dendritic material from the electrode itself: obviously the interdendritic regions will melt preferentially because of their lower melting point; this emphasises the importance of the mechanical integrity of the electrode. Modelling studies [9] indicate that particles falling from the electrode are likely to melt completely before entrapment in the mushy zone,",
+        "references": []
+      }
+    ]
+  },
+  {
+    "page_number": 227,
+    "content_blocks": [
+      {
+        "block_id": "page_5_block_1",
+        "type": "image",
+        "caption": "Fig. 4.9. (a) Schematic illustration of the apparatus used for the electro-slag remelting of superalloys. (b) Close-up of the details in the vicinity of the molten pool.",
+        "image_type": "schematic",
+        "content": {
+          "description": "A two-part schematic of an electro-slag remelting (ESR) apparatus. Part (a) shows the overall system with components such as the fume exhaust, ram, electrode, and water-cooled stool. Part (b) provides a detailed view of the melting zone, illustrating the molten slag, metal drops, and the solidifying ingot within the crucible wall.",
+          "ocr_text": "Fume exhaust, Ram, AC power supply, Stinger, Water out, Electrode, Copper crucible, Water jacket, Molten slag, Molten pool, Solid ingot, Water in, Striker plate, Water-cooled stool, Annulus, Solid slag, Molten slag, Molten metal drops, Solid slag, Liquid metal head, Liquid plus solid metal (mushy) zone, Ingot, Interdendritic liquid and secondary dendrites, Primary dendrites, Slag skin, Shrinkage gap, Crucible wall"
+        }
+      },
+      {
+        "block_id": "page_5_block_2",
+        "type": "text_block",
+        "content": "provided that their diameter is greater than 6 mm; crown fall-in was considered to be a more likely source of white spot, since the maximum safe diameter of material falling into the pool was found to be in the range 2 to 3 mm.",
+        "references": []
+      },
+      {
+        "block_id": "page_5_block_3",
+        "type": "text_block",
+        "content": "B Electro-slag remelting",
+        "references": []
+      },
+      {
+        "block_id": "page_5_block_4",
+        "type": "text_block",
+        "content": "Electro-slag remelting (ESR) is used widely as a secondary melting process for the production of the material for turbine discs; see Figure 4.9. It has similarities to the VAR process in that a consumable electrode is remelted, but here a molten slag pool sits between the electrode and the solidifying ingot – hence processing can be carried out in air. A major significant advantage over VAR processing then arises: molten droplets from the electrode pass through the slag, allowing them to react with it such that impurities such as oxides and sulphur are removed. However, unlike the VAR process, an alternating current (AC) is applied; the electrode immersion plus the slag cap must be regarded as the major resistance in the circuit; consequently, the majority of the heat generation occurs in this region. Changing the weight of slag in the system alters the resistance of the circuit and thus the current and voltage required to maintain a given power input/melt rate.",
+        "references": [
+          "page_5_block_1"
+        ]
+      },
+      {
+        "block_id": "page_5_block_5",
+        "type": "text_block",
+        "content": "A number of processing controls are used which aid in the production of ingots of high quality and consistency. First, a constant immersion of the electrode in the slag is maintained, via control of the electrode voltage. Second, one monitors the rate at which the electrode melts by measuring the loss of electrode weight during processing, and adjusts the current accordingly. During solidification, slag may be added or removed as processing proceeds",
+        "references": []
+      }
+    ]
+  },
+  {
+    "page_number": 228,
+    "content_blocks": [
+      {
+        "block_id": "page_6_block_1",
+        "type": "image",
+        "caption": "Fig. 4.10. Sections of ESR-melted superalloy billet, showing extensive evidence of the freckle defect. (Courtesy of Laurence Blackman.)",
+        "image_type": "photograph",
+        "content": {
+          "description": "A photograph showing two cross-sections of an ESR-melted superalloy billet. The surfaces exhibit numerous dark spot-like imperfections, identified as the 'freckle defect'. Both sections are marked with the number 4."
+        }
+      },
+      {
+        "block_id": "page_6_block_2",
+        "type": "text_block",
+        "content": "to maintain a uniform head over the pool. The choice of slag is critical, since it determines the reactivity with the molten droplets via different melting temperatures and viscosities. The slags are normally based upon fluorite CaF2 with additions of CaO, MgO and Al2O3. Impurities of SiO2 can cause problems, since Ti reduces it to metallic Si which will be incorporated into the ingot. This is managed by recycling the slag, which then approaches an equilibrium with Ti and Si pickup, thus minimising elemental exchange. In practice, minor changes in alloy chemistry are caused in this way; ESR is much more prone to this effect than VAR.",
+        "references": []
+      },
+      {
+        "block_id": "page_6_block_3",
+        "type": "text_block",
+        "content": "One disadvantage of the molten slag is that it acts as a heat reservoir at the top of the ingot/pool boundary and this makes the fusion profile obtained from the ESR process different from that obtained from VAR; generally with steeper sides, larger mushy zones and decreased cooling rates for comparable power input. These factors promote levels of chemical heterogeneity that are greater in ESR than in VAR processing; hence where triple melting is employed, ESR will always precede VAR. Additionally, the maximum ingot diameter which can be melted by ESR is dependent upon alloy composition. This is because large diameters promote a greater mushy zone and enhanced local solidification times, due to the increased distances. For this reason the processing of higher-strength alloys such as U720Li is limited to diameters of about 500 mm or 20 inches. Attempts have been made [10] to use ESR processing for the production of very large 890 mm (35 inch) IN718 ingots of weight approaching 14 tonnes, each of which is sufficient for just two turbine discs for a large land-based turbine. It was reported that no conditions could be found which yielded ingots that were free of extensive freckling; the heavy freckle channels were found to be rich in elements such as Nb, Mo and Ti, which are known to partition to the liquid phase. Subsequent VAR processing was used to produce sound triple-melted (VAR + ESR +",
+        "references": []
+      }
+    ]
+  },
+  {
+    "page_number": 229,
+    "content_blocks": [
+      {
+        "block_id": "page_7_block_1",
+        "type": "text_block",
+        "content": "VAR) 760 mm (30 inch) product for this application. Figure 4.10 illustrates the formation of freckle defects in ESR-processed ingots of IN718; their occurrence seems to be most likely at the mid-radius position, where the permeability of the mushy zone is greater than at the centre of the ingot and is deep enough to support the interdendritic fluid flow required for their formation [11].",
+        "references": [
+          "page_6_block_1"
+        ]
+      },
+      {
+        "block_id": "page_7_block_2",
+        "type": "text_block",
+        "content": "C Ingot-to-billet conversion: the cogging process",
+        "references": []
+      },
+      {
+        "block_id": "page_7_block_3",
+        "type": "text_block",
+        "content": "The ingots produced by the remelting processes are unsuitable for mechanical applications: they must undergo thermal-mechanical working in order to break down the as-cast structure and to reduce the grain size to acceptable levels, i.e. from a few tens of millimetres to a few tens of microns. This is known as ingot conversion and it is usually achieved by a process known as cogging, during which the diameter of the cylindrical ingot is reduced in size by a factor of approximately 2, so that its length increases four-fold, see Figure 4.11. The conversion is achieved in a series of stages, or heats. The ingot is placed in a furnace and allowed to reach an appropriate temperature for forging. Upon removal, it is manipulated between two horizontal dies which are driven hydraulically. These squeeze (or bite) the material, causing it to deform both in and out of the plane of the dies. Typically the ingot is deformed 20 to 30 times at various points along its length, with the pattern repeated with the ingot rotated through 90°, 45° and one final turn of 90°. At the end of this procedure, the ingot is returned to the furnace now with a characteristic octagonal cross-section. The deformation applied to the ingot causes substantial recrystallisation to a finer grain structure. After reheating the whole process is repeated.",
+        "references": [
+          "page_8_block_1"
+        ]
+      },
+      {
+        "block_id": "page_7_block_4",
+        "type": "text_block",
+        "content": "To reduce a 60 cm diameter ingot down to the required 30 cm or so as many as seven heats may be required. In the later heats a temperature below the relevant solvus (for example, 1040 °C for the y' in Waspaloy, 1010 °C for the 8 in IN718) is employed to ensure that grain growth following deformation is inhibited. Usually, a final rounding operation is performed prior to slicing the billet for the subsequent forging operations. Typically the starting grain size is around ASTM000 (1 mm+), but, by the start of the third heat, the grain size has been reduced to around ASTM0 (0.35 mm). At the end of the process the grain size is ASTM5 or 6 (40–60 µm). Other ingot-to-billet conversion processes are possible, for example, gyratory forging machine (GFM) or radial forging, the principal difference being the strain profile imparted during processing.",
+        "references": []
+      },
+      {
+        "block_id": "page_7_block_5",
+        "type": "text_block",
+        "content": "D Open- and closed-die forging",
+        "references": []
+      },
+      {
+        "block_id": "page_7_block_6",
+        "type": "text_block",
+        "content": "Having achieved a fine-grained uniform structure through the conversion process, the objective of the forgemaster is to turn the cylinder of metal into a shape close to that of the turbine disc. The principal concern at this stage is not to promote excessive grain growth. Again the production of the disc is usually a three-stage process, typically comprising (i) upsetting by open-die forging, to produce an axisymmetric ingot of reduced thickness and greater cross-sectional area, (ii) blocking by closed-die forging, to place thicker and thinner sections in the appropriate place, and (iii) finishing, again by closed-die forging, to produce the desired disc shape. In these three operations the temperature is typically kept",
+        "references": []
+      }
+    ]
+  },
+  {
+    "page_number": 230,
+    "content_blocks": [
+      {
+        "block_id": "page_8_block_1",
+        "type": "image",
+        "caption": "Fig. 4.11. (a) Cogging operation for the thermal-mechanical working of a superalloy billet. (b) Cross-sections of the worked billet after various stages of working – with the unworked billet at left. (Courtesy of Mark Roberts.)",
+        "image_type": "photograph",
+        "content": {
+          "description": "Two photographs illustrating the cogging operation. Part (a) shows an industrial forging press working on a glowing hot superalloy billet. Part (b) displays four circular cross-sections of a billet, showing the grain structure refinement from the unworked state (left) through various stages of working."
+        }
+      },
+      {
+        "block_id": "page_8_block_2",
+        "type": "text_block",
+        "content": "very close to the appropriate solvus of the alloy being forged, thereby ensuring that any recrystallisation that does occur results in a finer grain structure than that achieved in the conversion stage. At the end of processing the forged discs are either quenched into a bath of oil or water, or else left to cool on the shop floor.",
+        "references": []
+      },
+      {
+        "block_id": "page_8_block_3",
+        "type": "text_block",
+        "content": "A heat treatment is then applied to encourage the appropriate strengthening phases (for example, y') to precipitate in sufficient quantities to give the necessary high-temperature properties. A quenching operation, typically into oil, is employed following the heat treatment to ‘freeze in' the precipitation structure. Next, the discs are machined to a pre-specified geometry which is known as the 'condition of supply'; this is usually rectilinear to allow",
+        "references": []
+      }
+    ]
+  },
+  {
+    "page_number": 231,
+    "content_blocks": [
+      {
+        "block_id": "page_9_block_1",
+        "type": "text_block",
+        "content": "non-destructive evaluation (NDE) of the forging via ultrasonic testing. Finally, the rectilinear forging is machined to the final shape required for the turbine disc. These steps are obviously such that the mass of material in the final machined disc is only a small fraction of that in the turbine disc forging from which it is made. Consider, for example, an HP turbine disc for Rolls-Royce Corporation's AE3007 engine which powers the Cessna Citation X business jet. The final disc weighs about 8 kg, but it is machined from a disc of mass 45 kg.",
+        "references": []
+      },
+      {
+        "block_id": "page_9_block_2",
+        "type": "text_block",
+        "content": "Case study. Process modelling of forging operations",
+        "references": []
+      },
+      {
+        "block_id": "page_9_block_3",
+        "type": "text_block",
+        "content": "Although superalloys have been used for the turbine discs in jet engines for about 50 years, the processing is not without some challenges. The manufacturing stream is quite lengthy, involving a number of material suppliers, melters and forgemasters; at each stage there is a risk that defects will be introduced. Whilst these are usually detected by quality control procedures such as ultrasonic inspection, they nonetheless contribute to material wastage and hence to extra cost. Possible defects include (i) inadequate control of grain size and (ii) forging defects such as laps or inadequate filling of the dies.",
+        "references": []
+      },
+      {
+        "block_id": "page_9_block_4",
+        "type": "text_block",
+        "content": "Process modelling is one way of responding to this situation. Here, one builds mathematical models of the phenomena occurring during the manufacturing route. This should include continuum phenomena such as heat flow as well as the stresses and strains which are developed during deformation. However, it is becoming increasingly possible to simulate microstructure evolution such as recrystallisation, grain growth and texture. The emphasis is always on including as much as possible of the underlying theory, without making the simulations unwieldy, intractable or lengthy. It is important to have accurate thermophysical properties of the material, and a good estimate of the stress-strain behaviour at elevated temperatures.",
+        "references": []
+      },
+      {
+        "block_id": "page_9_block_5",
+        "type": "text_block",
+        "content": "There are many advantages of building a process model for the forging processes, as follows. A model, if sufficiently accurate, will have considerable predictive capability; see Figure 4.12. Models can be used to study the effect of changing process variables (such as die geometry, bite size, quenching rate) without resorting to experimental trials. They can therefore be used to optimise the processing in order to eliminate or reduce manufacturing waste. Furthermore, they generally help to reduce the number of design/make iterations required during component prototyping – this leads to savings in both time and money.",
+        "references": [
+          "page_10_block_1"
+        ]
+      },
+      {
+        "block_id": "page_9_block_6",
+        "type": "text_block",
+        "content": "4.1.2 Processing by the powder route",
+        "references": []
+      },
+      {
+        "block_id": "page_9_block_7",
+        "type": "text_block",
+        "content": "The need for powder metallurgy (P/M) [12] for the production of superalloy turbine discs became apparent in the 1970s due to the development of alloys such as Rene 95, Astroloy and MERL 76 (with strength levels higher than earlier alloys such IN718 and Waspaloy), which were found to be unamenable to processing into the cast-and-wrought form. Initially, the use of P/M product was limited to gas turbines for military purposes, for example, the Pratt & Whitney F100 engine for the F-15 Eagle fighter, which entered service in 1974 [13], but commercial applications such as General Electric's CF6-80 engine for the Boeing 747-400 and the GE90 for the Boeing 777 have emerged as experience has been accumulated.",
+        "references": []
+      }
+    ]
+  },
+  {
+    "page_number": 232,
+    "content_blocks": [
+      {
+        "block_id": "page_10_block_1",
+        "type": "image",
+        "caption": "Fig. 4.12. (a) Photomicrograph of a closed-die forging in the IN718 superalloy; (b) computer simulation of the recrystallised regions in the forging, with the dead zones at top and bottom. (Courtesy of Rob Guest.)",
+        "image_type": "schematic",
+        "content": {
+          "description": "A side-by-side comparison of a physical forging and a computer simulation. Part (a) is a photomicrograph showing the grain flow and a region of unrecrystallised material in a closed-die IN718 forging. Part (b) is the corresponding simulation, mapping the extent of recrystallisation from 0% to 100% and identifying 'dead zones' with low deformation at the top and bottom.",
+          "ocr_text": "Unrecrystallised material, 100%, 0%"
+        }
+      },
+      {
+        "block_id": "page_10_block_2",
+        "type": "text_block",
+        "content": "Advantages of powder-processing include improved property uniformity due to the elimination of macrosegregation and the development of a fine grain size. The disadvantages are the extra cost associated with the production of the powder (this is offset somewhat by the number of processing steps being fewer) and, arguably, the extra complexity of the probabilistic lifing method required; see Section 4.3.",
+        "references": []
+      },
+      {
+        "block_id": "page_10_block_3",
+        "type": "text_block",
+        "content": "The first step in the production of P/M product is inert gas atomisation from master melts produced by VIM processing; clearly, the cleanliness of these is important since any contamination will be inherited by the powder. A typical arrangement is shown in Figure 4.13. Molten metal is poured into a tundish, which contains a carefully designed ceramic nozzle surrounded by one or more inert gas jets; usually argon is preferred. A continuous stream of gas at high pressure is delivered to the stream of molten metal arriving at the nozzle, the action of which causes its disintegration into spherical particles of diameter 30 to 300 µm. The atomisation chamber is designed to be long enough to allow solidification of the particles before they reach the outlet of the chamber. Cooling rates are typically in excess of 100°C/s, being greater for finer particles. Figure 4.14 shows a SEM micrograph of powder produced in this way. A number of variants of the process have been developed with varying degrees of success, for example, soluble-gas atomisation in which atomisation is induced by inserting a ceramic tube into the melt, the open end of which is connected to a vacuum chamber; the dissolution of a soluble gas (usually hydrogen) over the molten metal aids the atomisation process.",
+        "references": [
+          "page_11_block_1",
+          "page_12_block_1"
+        ]
+      }
+    ]
+  },
+  {
+    "page_number": 233,
+    "content_blocks": [
+      {
+        "block_id": "page_11_block_1",
+        "type": "image",
+        "caption": "Fig. 4.13. Typical arrangement for the Ar atomisation used for the production of superalloys by powder metallurgy. (Courtesy of Tim Howson.)",
+        "image_type": "schematic",
+        "content": {
+          "description": "A schematic diagram illustrating the argon (Ar) atomization process for producing superalloy powders. The diagram shows the flow from the melt furnace, through a tundish and nozzle, into a vacuum chamber where gas jets atomize the molten metal. The resulting powder is collected in an atomisation chamber and separated by cyclone and primary/secondary collectors.",
+          "ocr_text": "Melt furnace, Tundish, Nozzle, Vacuum, Vacuum chamber, Gas jets, Exhaust, Atomisation chamber, Cyclone separator, Double valves, Secondary collector, Primary collector"
+        }
+      },
+      {
+        "block_id": "page_11_block_2",
+        "type": "text_block",
+        "content": "Consolidation of the powder involves processing by extrusion. The fundamental challenge is to obtain good metallurgical bonding across the prior particle boundaries; to ensure bonding across oxide films which are inevitably present, the particles must be brought into contact at temperature and subjected to pressure and mechanical deformation. The powder is first packed into a carefully cleaned steel container. This is evacuated to encourage out-gassing, sealed and then compacted either by hot isostatic pressing (HIP) or occasionally using closed-die forging. A very high-tonnage press with specialised tooling is then used to extrude the material to the high reduction ratios necessary for fine-grained billet; this step has been shown to disperse any non-metallic inclusions still present, thus improving the defect tolerance of the material. Some attempts have been made to eliminate the extrusion step, replacing it, for example, with a sub-solidus, hot isostatic pressing (SSHIP) process [14]; this is followed by conventional ingot-to-billet conversion of the type employed for",
+        "references": []
+      }
+    ]
+  },
+  {
+    "page_number": 234,
+    "content_blocks": [
+      {
+        "block_id": "page_12_block_1",
+        "type": "image",
+        "caption": "Fig. 4.14. Scanning electron micrograph of gas atomised IN718 powder.",
+        "image_type": "photograph",
+        "content": {
+          "description": "A scanning electron micrograph (SEM) showing spherical particles of gas atomised IN718 superalloy powder. The particles vary in size. A scale bar indicates 100 µm."
+        }
+      },
+      {
+        "block_id": "page_12_block_2",
+        "type": "text_block",
+        "content": "superalloys produced by ingot metallurgy, involving thermal-mechanical working by cogging and closed-die forging.",
+        "references": []
+      },
+      {
+        "block_id": "page_12_block_3",
+        "type": "text_block",
+        "content": "Isothermal forging – in which the billet is deformed at the same temperature as the dies, both being held in a well-instrumented furnace – is the preferred route by which P/M superalloy product is shaped after powder consolidation. Superplastic behaviour is observed on account of the small grain size and because the deformation rates are relatively low (in the range 0.002 to 0.03/s) and stresses are high (50 to 100 MPa at 1200 °C). Several advantages then arise. Recrystallisation and grain growth can be controlled; for example, the considerable variations in microstructure arising from cold-die forging, due to excessive grain growth and die-chill, are avoided. Second, significant savings in material can be made since forgings can be produced of a geometry very close to the ‘sonic shape' required by ultrasonic testing. Figure 4.15 illustrates possible processing sequences for the compressor discs of the GE F-101 engine, which was one of the first applications of the Rene 95 P/M superalloy [13].",
+        "references": [
+          "page_13_block_1"
+        ]
+      },
+      {
+        "block_id": "page_12_block_4",
+        "type": "text_block",
+        "content": "When P/M processing was first applied to the production of turbine discs, the material was susceptible to the presence of defects – this was problematical in view of the need for fatigue resistance. Although the situation has improved very markedly, it is imperative to guard against the possibility of their presence. Consequently, the highest standards of handling are required, processing steps need to be strictly adhered to and quality assurance procedures must be enforced. For example, residual voids, pores and prior particle boundaries (PPBs) will be present if the steps taken to consolidate the powder are inadequate. Contamination by metallic inclusions remains a possibility, for example, by cross-contamination with a foreign alloy powder; this eventuality can be minimised by cleaning the chamber using washing runs. Of greatest concern is the possible presence of ceramic inclusions in the material,",
+        "references": []
+      }
+    ]
+  },
+  {
+    "page_number": 235,
+    "content_blocks": [
+      {
+        "block_id": "page_13_block_1",
+        "type": "image",
+        "caption": "Fig. 4.15. Processing sequences for the production of F-101 compressor discs [13].",
+        "image_type": "schematic",
+        "content": {
+          "description": "A flowchart comparing three different processing sequences for producing F-101 compressor discs, showing the reduction in material weight at each stage. The sequences are: (1) Conventional processing (vacuum melting and cold forging), starting with a 95 kg ingot. (2) Hot isostatic pressing plus hot forging, starting with a 33 kg P/M preform. (3) Direct hot isostatic pressing, starting with an 18 kg near-net shape part. All routes result in a 5 kg finished part.",
+          "ocr_text": "Conventional processing: vacuum melting and cold forging, Hot isostatic pressing plus hot forging, Direct hot isostatic pressing, Ingot 95 kg (210 lb), P/M preform 33 kg (72 lb), Near-net shape part 18 kg (40 lb), Pancake forge 93 kg (205 lb), Blocker forge 91 kg (200 lb), Finish forge 77 kg (170 lb), Machined for heat treating 75 kg (165 lb), 33 kg (72 lb), 20 kg (45 lb), 18 kg (40 lb), Sonic, Machined sonic envelope 32 kg (165 lb), 5 kg (11 lb) Finished part"
+        }
+      },
+      {
+        "block_id": "page_13_block_2",
+        "type": "text_block",
+        "content": "due to erosion of the melt crucible, tundish or nozzle. This is the major reason for the use of screening, which involves the passing of powder through filters of different mesh sizes; this removes the oversized particles, into which category the most damaging non-metallic inclusions fall. For most applications, the allowable size of powder is less than 230 mesh (63 µm), but, for the most stringent applications, it can be as low as 325 mesh (45 µm); obviously at such fine sizes the efficiency of the process is necessarily compromised. Blending of different powder sizes is commonplace.",
+        "references": []
+      },
+      {
+        "block_id": "page_13_block_3",
+        "type": "text_block",
+        "content": "The benefits of powder-processing over ingot metallurgy which produces cast-and-wrought product are now well established. For example, the low-cycle-fatigue (LCF) properties of Rene 95 at 650 °C have been compared [15] in the HIP, HIP + isothermally forged, extruded + isothermally forged and cast-and-wrought conditions; see Figure 4.16. The",
+        "references": [
+          "page_14_block_1"
+        ]
+      }
+    ]
+  },
+  {
+    "page_number": 236,
+    "content_blocks": [
+      {
+        "block_id": "page_14_block_1",
+        "type": "image",
+        "caption": "Fig. 4.16. Comparison of low-cycle-fatigue data for the Rene 95 superalloy at 650°C, in the powder and cast-and-wrought (C&W) forms [15]; EX+F refers to extrusion and isothermal forging, and HIP is hot isostatic pressing.",
+        "image_type": "chart",
+        "content": {
+          "title": "Low-cycle-fatigue data for Rene 95 superalloy at 650°C",
+          "x_axis_label": "Nf (cycles)",
+          "y_axis_label": "Δετ (%)",
+          "legend": [
+            "EX+F",
+            "HIP",
+            "C&W",
+            "Sub-surface failure",
+            "Test stopped"
+          ],
+          "trend_description": "The chart plots total strain range (Δετ) versus cycles to failure (Nf) on a log-log scale for Rene 95 processed by different methods. The extruded and forged (EX+F) material shows the longest fatigue life, followed by hot isostatic pressed (HIP), and finally conventional cast-and-wrought (C&W) material, which has the shortest life. At any given strain range, EX+F lasts for more cycles than the other two forms.",
+          "extracted_data": []
+        }
+      },
+      {
+        "block_id": "page_14_block_2",
+        "type": "text_block",
+        "content": "best properties were displayed by extruded-and-forged material and the worst by the conventional cast-and-wrought processing, with the behaviour of the HIP material between the two; the differences were most pronounced at low total strain ranges. It was noted that, in all cases, the LCF lives were limited by the presence of ceramic inclusions – it was recommended that much further effort be expended to reduce or eliminate these defects.",
+        "references": []
+      },
+      {
+        "block_id": "page_14_block_3",
+        "type": "text_block",
+        "content": "4.2 Composition, microstructure and properties of turbine disc alloys",
+        "references": []
+      },
+      {
+        "block_id": "page_14_block_4",
+        "type": "text_block",
+        "content": "Our considerations indicate that the operating temperatures for turbine discs are considerably lower than for turbine blading, but that the stresses experienced are much greater. Under these circumstances, the properties required of a turbine disc alloy can be summarised as follows: (i) high yield stress and tensile strength to prevent yield and fracture, (ii) ductility and fracture toughness, to impart tolerance to defects, (iii) resistance to the initiation of fatigue cracking and (iv) fatigue crack propagation rates that are as low as possible. Creep resistance is also important, but traditionally it has been given less emphasis due to the lower operating temperatures and because a stress relaxation capability around notches and features of stress concentration is desirable.",
+        "references": []
+      },
+      {
+        "block_id": "page_14_block_5",
+        "type": "text_block",
+        "content": "What factors must be accounted for when designing a turbine disc alloy, or else when choosing one from the list of those available? Table 4.2 provides the compositions of some turbine disc alloys which are used in gas turbine engines [16]. Unsurprisingly, the chemical composition is found to be of crucial importance; however, just as importantly, if the best properties are to be attained then the microstructure must be conditioned in an optimum way. An added complexity, which does not apply to the case of the single-crystal superalloys considered in the previous chapter, is the presence of grain boundaries – these must be carefully engineered. Thus a strong appreciation of the relationship between alloy chemistry",
+        "references": [
+          "page_15_block_1"
+        ]
+      }
+    ]
+  },
+  {
+    "page_number": 237,
+    "content_blocks": [
+      {
+        "block_id": "page_15_block_1",
+        "type": "table",
+        "caption": "Table 4.2. The chemical composition of some common turbine disc alloys, in wt% [16].",
+        "data": [
+          [
+            "Alloy",
+            "Cr",
+            "Co",
+            "Mo",
+            "W",
+            "Nb",
+            "Al",
+            "Ti",
+            "Ta",
+            "Fe",
+            "Hf",
+            "C",
+            "B",
+            "Zr",
+            "Ni"
+          ],
+          [
+            "Alloy 10",
+            "11.5",
+            "15",
+            "2.3",
+            "5.9",
+            "1.7",
+            "3.8",
+            "3.9",
+            "0.75",
+            "—",
+            "—",
+            "0.030",
+            "0.020",
+            "0.05",
+            "Bal"
+          ],
+          [
+            "Astroloy",
+            "15.0",
+            "17.0",
+            "5.3",
+            "—",
+            "—",
+            "4.0",
+            "3.5",
+            "—",
+            "—",
+            "—",
+            "0.06",
+            "0.030",
+            "—",
+            "Bal"
+          ],
+          [
+            "Inconel 706",
+            "16.0",
+            "—",
+            "—",
+            "—",
+            "2.9",
+            "0.2",
+            "1.8",
+            "—",
+            "40.0",
+            "—",
+            "0.03",
+            "—",
+            "—",
+            "Bal"
+          ],
+          [
+            "Inconel 718",
+            "19.0",
+            "—",
+            "3.0",
+            "—",
+            "5.1",
+            "0.5",
+            "0.9",
+            "—",
+            "18.5",
+            "—",
+            "0.04",
+            "—",
+            "—",
+            "Bal"
+          ],
+          [
+            "ME3",
+            "13.1",
+            "18.2",
+            "3.8",
+            "1.9",
+            "1.4",
+            "3.5",
+            "3.5",
+            "2.7",
+            "—",
+            "—",
+            "0.030",
+            "0.030",
+            "0.050",
+            "Bal"
+          ],
+          [
+            "MERL-76",
+            "12.4",
+            "18.6",
+            "3.3",
+            "—",
+            "1.4",
+            "0.2",
+            "4.3",
+            "—",
+            "—",
+            "0.35",
+            "0.050",
+            "0.03",
+            "0.06",
+            "Bal"
+          ],
+          [
+            "N18",
+            "11.5",
+            "15.7",
+            "6.5",
+            "0.6",
+            "—",
+            "4.35",
+            "4.35",
+            "—",
+            "—",
+            "0.45",
+            "0.015",
+            "0.015",
+            "0.03",
+            "Bal"
+          ],
+          [
+            "Rene 88DT",
+            "16.0",
+            "13.0",
+            "4.0",
+            "4.0",
+            "0.7",
+            "2.1",
+            "3.7",
+            "—",
+            "—",
+            "—",
+            "0.03",
+            "0.015",
+            "0.03",
+            "Bal"
+          ],
+          [
+            "Rene 95",
+            "14.0",
+            "8.0",
+            "3.5",
+            "3.5",
+            "3.5",
+            "3.5",
+            "2.5",
+            "—",
+            "—",
+            "—",
+            "0.15",
+            "0.010",
+            "0.05",
+            "Bal"
+          ],
+          [
+            "Rene 104",
+            "13.1",
+            "18.2",
+            "3.8",
+            "1.9",
+            "1.4",
+            "3.5",
+            "3.5",
+            "2.7",
+            "—",
+            "—",
+            "0.030",
+            "0.030",
+            "0.050",
+            "Bal"
+          ],
+          [
+            "RR1000",
+            "15.0",
+            "18.5",
+            "5.0",
+            "—",
+            "1.1",
+            "3.0",
+            "3.6",
+            "2.0",
+            "—",
+            "0.5",
+            "0.027",
+            "0.015",
+            "0.06",
+            "Bal"
+          ],
+          [
+            "Udimet 500",
+            "18.0",
+            "18.5",
+            "4.0",
+            "—",
+            "—",
+            "2.9",
+            "2.9",
+            "—",
+            "—",
+            "—",
+            "0.08",
+            "0.006",
+            "0.05",
+            "Bal"
+          ],
+          [
+            "Udimet 520",
+            "19.0",
+            "12.0",
+            "6.0",
+            "1.0",
+            "—",
+            "2.0",
+            "3.0",
+            "—",
+            "—",
+            "—",
+            "0.05",
+            "0.005",
+            "—",
+            "Bal"
+          ],
+          [
+            "Udimet 700",
+            "15.0",
+            "17.0",
+            "5.0",
+            "—",
+            "—",
+            "4.0",
+            "3.5",
+            "—",
+            "—",
+            "—",
+            "0.06",
+            "0.030",
+            "—",
+            "Bal"
+          ],
+          [
+            "Udimet 710",
+            "18.0",
+            "15.0",
+            "3.0",
+            "1.5",
+            "—",
+            "2.5",
+            "5.0",
+            "—",
+            "—",
+            "—",
+            "0.07",
+            "0.020",
+            "—",
+            "Bal"
+          ],
+          [
+            "Udimet 720",
+            "17.9",
+            "14.7",
+            "3.0",
+            "1.25",
+            "—",
+            "2.5",
+            "5.0",
+            "—",
+            "—",
+            "—",
+            "0.035",
+            "0.033",
+            "0.03",
+            "Bal"
+          ],
+          [
+            "Udimet 720LI",
+            "16.0",
+            "15.0",
+            "3.0",
+            "1.25",
+            "—",
+            "2.5",
+            "5.0",
+            "—",
+            "—",
+            "—",
+            "0.025",
+            "0.018",
+            "0.05",
+            "Bal"
+          ],
+          [
+            "Waspaloy",
+            "19.5",
+            "13.5",
+            "4.3",
+            "—",
+            "—",
+            "1.3",
+            "3.0",
+            "—",
+            "—",
+            "—",
+            "0.08",
+            "0.006",
+            "—",
+            "Bal"
+          ]
+        ],
+        "summary": "The table lists the chemical compositions in weight percent (wt%) of various common nickel-based superalloys used for turbine discs. It details the concentrations of elements such as Cr, Co, Mo, Al, Ti, with Ni being the balance ('Bal')."
+      }
+    ]
+  },
+  {
+    "page_number": 238,
+    "content_blocks": [
+      {
+        "block_id": "page_16_block_1",
+        "type": "image",
+        "caption": "Fig. 4.17. Variation of the yield stress at 650°C with the total fraction of the y' and y\" strengthening phases, for a number of common turbine disc alloys.",
+        "image_type": "chart",
+        "content": {
+          "title": "Yield stress at 650°C vs. fraction of strengthening phases",
+          "x_axis_label": "Fraction of strengthening phases (γ' + γ\")",
+          "y_axis_label": "Yield stress at 650 °C (MPa)",
+          "legend": [],
+          "trend_description": "This scatter plot shows a strong positive correlation between the yield stress at 650°C and the total fraction of γ' and γ\" strengthening phases for various turbine disc alloys. As the fraction of these phases increases from 0 to about 0.7, the yield stress increases from under 200 MPa to over 1200 MPa. Alloys like Rene 95, N18, and MERL76 are at the high end, while alloys like Nimonic 75 are at the low end.",
+          "extracted_data": []
+        }
+      },
+      {
+        "block_id": "page_16_block_2",
+        "type": "text_block",
+        "content": "and microstructure is required if an optimum combination of properties is to be achieved. The experience gained so far indicates that the following three guidelines should be adhered to.",
+        "references": []
+      },
+      {
+        "block_id": "page_16_block_3",
+        "type": "text_block",
+        "content": "4.2.1 Guideline 1",
+        "references": []
+      },
+      {
+        "block_id": "page_16_block_4",
+        "type": "text_block",
+        "content": "To impart strength and fatigue resistance, the fraction of the y' phase should be optimised by appropriate choice of the y'-forming elements (Al, Ti and Ta) – placing it in the range 40% to 55% – and heat treatments chosen to promote a uniform distribution of γ' particles.",
+        "references": []
+      },
+      {
+        "block_id": "page_16_block_5",
+        "type": "text_block",
+        "content": "The yield stresses of the turbine disc alloys correlate very strongly with the proportions of the strengthening phases γ' and y\", and thus a first overriding concern when designing a turbine disc alloy is the choice of the concentration of elements which promote these phases, such that the desired strength levels are achieved. One can see this by using thermodynamic software such as Thermo-Calc to estimate the fractions of y' and y\" present in the alloys given in Table 4.1, and comparing the predictions with mechanical property data. The results, see Figure 4.17, confirm that the yield stress at 650 °C correlates very strongly with the sum of the fractions of the strengthening phases; the yield stress at ambient temperature behaves in the same way. The creep performance, for example the stress for 1000 h life at",
+        "references": [
+          "page_2_block_1",
+          "page_16_block_1"
+        ]
+      }
+    ]
+  },
+  {
+    "page_number": 239,
+    "content_blocks": [
+      {
+        "block_id": "page_17_block_1",
+        "type": "image",
+        "caption": "Fig. 4.18. Variation of the 1000 h creep rupture strength at 700 °C with the total fraction of the y' and y\" strengthening phases, for a number of common turbine disc alloys.",
+        "image_type": "chart",
+        "content": {
+          "title": "1000h creep rupture strength at 700°C vs fraction of strengthening phases",
+          "x_axis_label": "Fraction of strengthening phases (γ' + γ\")",
+          "y_axis_label": "1000 h rupture strength at 700 °C (MPa)",
+          "legend": [],
+          "trend_description": "The scatter plot shows a positive correlation between the 1000-hour creep rupture strength at 700°C and the fraction of strengthening phases (γ' + γ\"). As the fraction increases, the rupture strength generally increases, from about 100 MPa for Hastelloy X (low fraction) to over 600 MPa for alloys like N18 and Udimet 710 (high fraction).",
+          "extracted_data": []
+        }
+      },
+      {
+        "block_id": "page_17_block_2",
+        "type": "image",
+        "caption": "Fig. 4.19. The relative ‘significance' of the elemental concentrations and temperature for a neural network analysis of the yield and ultimate tensile strength (UTS) of turbine disc superalloys [17].",
+        "image_type": "chart",
+        "content": {
+          "title": "Relative 'significance' of elements on yield strength and UTS",
+          "x_axis_label": "Element / Temperature",
+          "y_axis_label": "'Significance' (arbitrary units)",
+          "legend": [
+            "Yield strength",
+            "UTS"
+          ],
+          "trend_description": "This bar chart illustrates the relative importance ('significance') of different elements and temperature on the yield strength and ultimate tensile strength (UTS) of superalloys, based on a neural network analysis. The elements Al and Ti have the highest significance, followed by Nb, Ta, Mo, and W. Temperature also has a significant negative effect. Elements like Fe, Mn, Si, C, B, and Zr have very low significance.",
+          "extracted_data": []
+        }
+      },
+      {
+        "block_id": "page_17_block_3",
+        "type": "text_block",
+        "content": "700°C, shows a similar correlation; see Figure 4.18. These findings have been confirmed by a neural network analysis [17] on a dataset containing information on the compositions and strength levels of over 200 polycrystalline superalloys; this has confirmed that the concentrations of Al, Ti and Nb are the most influential in improving the yield properties; see Figure 4.19. Interestingly, when the neural network was interrogated after being trained, it predicted that higher Ti/Al ratios are important in conferring strength (see Figure 4.20); this is consistent with the hardening theories of Chapter 2, which emphasise the importance of the APB energy, which increases as the Ti/Al ratio is raised [18]. Cobalt was found to",
+        "references": [
+          "page_17_block_1",
+          "page_17_block_2",
+          "page_18_block_1"
+        ]
+      }
+    ]
+  },
+  {
+    "page_number": 240,
+    "content_blocks": [
+      {
+        "block_id": "page_18_block_1",
+        "type": "image",
+        "caption": "Fig. 4.20. Predicted sensitivity of the room temperature yield and tensile (UTS) strength to variations in the Ti/Al ratio, using a neural network analysis [17].",
+        "image_type": "chart",
+        "content": {
+          "title": "Predicted strength sensitivity to Ti/Al ratio",
+          "x_axis_label": "Titanium/aluminium ratio",
+          "y_axis_label": "Strength (MPa)",
+          "legend": [
+            "Tensile",
+            "Yield"
+          ],
+          "trend_description": "The chart shows the predicted room temperature tensile and yield strengths as a function of the titanium/aluminium ratio, based on a neural network analysis. Both tensile and yield strengths increase as the Ti/Al ratio increases from 0.0 to 1.2. The increase is steep initially and then plateaus at higher ratios, especially for tensile strength. The dashed lines indicate the uncertainty bounds of the prediction.",
+          "extracted_data": []
+        }
+      },
+      {
+        "block_id": "page_18_block_2",
+        "type": "text_block",
+        "content": "have negligible effect on the yield properties, but increasing proportions of molybdenum were predicted to be beneficial – using Astroloy as a baseline, an increase in concentration from zero to 20 wt%Mo was predicted to improve the yield stress by about 500 MPa. This information about the beneficial effect of Mo was used to help optimise the composition of the RR1000 superalloy; see Table 4.1. The importance of a high Ti/Al ratio in conferring strength can be further demonstrated by considering the data; if one plots the yield stress against the root of the sum of the strengthening phases, a reasonably straight line is found, consistent with the hardening theories of Chapter 2 one can then determine the extent to which any one alloy lies above or below this ‘mean', or expected, behaviour. The results are given in Figure 4.21. One can see that the alloys with high Ti/Al ratio are the ones which possess the highest strength, consistent with the neural network analysis of [17].",
+        "references": [
+          "page_2_block_1",
+          "page_19_block_1"
+        ]
+      },
+      {
+        "block_id": "page_18_block_3",
+        "type": "text_block",
+        "content": "In practice, the yield stress of a turbine disc alloy has been found to depend critically on the heat treatment applied to it – particularly the solutioning treatment, which is carried out in the vicinity of the y' solvus. This is because, as indicated by the theoretical analysis given in Chapter 2, the size of the y' particles is as crucial as their volume fraction in determining the resistance to dislocation motion. For most turbine disc alloys, the y' solvus lies between 1050°C and 1200°C, the exact value being dependent upon the chemical composition. If the solutioning heat-treatment temperature is sub-solvus, the undissolved, or primary, γ' precipitates have a grain-pinning effect which restricts y-grain growth; see Figure 4.22. Super-solvus heat treatment eliminates the primary y' and the y grains are correspondingly coarser. It follows that the y' phase distribution is, in practice, rather complex; see Figure 4.23, which is a schematic illustration of the microstructure of a turbine disc alloy [19]. In addition to the primary y', intragranular secondary and tertiary y' particles are present within the y grains, typically at particle diameters of ~100nm and ~50 nm, respectively. This bimodal distribution occurs because of the interplay between the kinetics of y' particle nucleation, growth and coarsening, which occurs during isothermal solutioning and ageing heat treatments; the cooling rate is also important since the equilibrium fraction of y' is rarely attained during these, so that further y' nucleation and growth occurs during cooling. During the ageing heat treatment, which is typically carried out at around 700 °C for several hours, an age-hardening response is observed, as in many precipitation-hardened",
+        "references": [
+          "page_20_block_1",
+          "page_21_block_1"
+        ]
+      }
+    ]
+  },
+  {
+    "page_number": 241,
+    "content_blocks": [
+      {
+        "block_id": "page_19_block_1",
+        "type": "image",
+        "caption": "Fig. 4.21. Variation of the Ti/Al ratio in a number of polycrystalline superalloys, ranked in order of strength consistent with a deviation away from a perfect correlation of yield stress and the square root of the fraction of strengthening phases.",
+        "image_type": "chart",
+        "content": {
+          "title": "Ti/Al ratio in polycrystalline superalloys",
+          "x_axis_label": "Superalloy",
+          "y_axis_label": "Ti/Al ratio",
+          "legend": [
+            "Above average strength",
+            "Below average strength"
+          ],
+          "trend_description": "This bar chart displays the Ti/Al ratio for various polycrystalline superalloys, ranked by strength deviation. Alloys with a high Ti/Al ratio, such as Inconel 706 and Nimonic 942, are shown to have 'above average strength' (indicated by black bars), while many alloys with lower Ti/Al ratios have 'below average strength' (white bars).",
+          "extracted_data": []
+        }
+      },
+      {
+        "block_id": "page_19_block_2",
+        "type": "text_block",
+        "content": "systems. The data in Figure 4.24 for the yield stress and UTS of the Udimet 720Li superalloy illustrate this; in this case, the length of the heat treatment is optimal at about 30 h [19]. When the y' particle distributions giving rise to this behaviour are examined, one finds that the size of the secondary γ' particles is unaltered by the heat treatment; see Figure 4.25. On the other hand, the tertiary γ' coarsens considerably, and this proves unambiguously that it controls the strength level achieved. Clearly, the heat treatment must be chosen carefully if optimum properties are to be attained. On the basis of these observations, one can argue that, for absolute static strength, higher solutioning temperatures are to be preferred, since the proportion of primary y' is then reduced, so that a greater proportion of the available y' is then placed in the range 50nm to 100 nm where it has the greatest effect.",
+        "references": [
+          "page_21_block_2",
+          "page_22_block_1"
+        ]
+      },
+      {
+        "block_id": "page_19_block_3",
+        "type": "text_block",
+        "content": "The situation, however, is complicated because the fatigue properties must also be considered. The distribution of the y' precipitates has been found to have a significant influence on the dwell-time fatigue crack propagation (FCP) rate; for example, an improvement in FCP rate in the Paris regime of about an order of magnitude has been reported in ref. [20] when heat treatment was super-solvus rather than sub-solvus, this microstructural effect being more potent than minor changes in chemistry involving Nb/Ta ratio and Co content",
+        "references": []
+      }
+    ]
+  },
+  {
+    "page_number": 242,
+    "content_blocks": [
+      {
+        "block_id": "page_20_block_1",
+        "type": "image",
+        "caption": "Fig. 4.22. Optical micrographs of RR1000 superalloy: (a) sub-solvus heat-treated for 4 h at 1130°C; (b) super-solvus heat-treated for 4 h at 1170 °C. The solvus temperature in this alloy is about 1150 °C. Note the grain-pinning effect, which occurs when the heat-treatment temperature is sub-solvus. (Courtesy of Rob Mitchell.)",
+        "image_type": "photograph",
+        "content": {
+          "description": "Two optical micrographs of RR1000 superalloy showing the effect of heat treatment temperature. (a) Sub-solvus treatment at 1130°C results in a fine-grained structure with primary gamma-prime particles pinning the grain boundaries (scale bar 20µm). (b) Super-solvus treatment at 1170°C results in a much coarser grain structure as the pinning particles have dissolved (scale bar 200µm)."
+        }
+      }
+    ]
+  },
+  {
+    "page_number": 243,
+    "content_blocks": [
+      {
+        "block_id": "page_21_block_1",
+        "type": "image",
+        "caption": "Fig. 4.23. Schematic illustration of the distribution of the y' phase in a turbine disc alloy [19].",
+        "image_type": "schematic",
+        "content": {
+          "description": "A schematic diagram illustrating the microstructure of a turbine disc alloy, showing multiple gamma grains. Within each grain, there is a multi-modal distribution of gamma-prime (γ') precipitate phase: large primary γ' (1-10 µm) which are not solutioned; secondary γ' (70-120 nm) formed on cooling; and fine tertiary γ' (5-50 nm) precipitated at low temperatures. The gamma grains themselves are limited in size (5-22 µm) by Zener pinning from the primary γ' particles.",
+          "ocr_text": "Primary y' (y' not solutioned during heat treatment) 1-10 µm, Tertiary y' (y' precipitated at low temperatures on cooling from the solution treatment) 5-10 nm after quenching 15-50 nm after ageing, Secondary y' (y' formed at high temperatures on cooling from the solution heat treatment) 70-120 nm, y-grains (limited in size by Zener pinning by primary y' during solutioning) 5-22 µm (ASTM 8-12)"
+        }
+      },
+      {
+        "block_id": "page_21_block_2",
+        "type": "image",
+        "caption": "Fig. 4.24. Hardening response of the Udimet 720Li superalloy due to heat treatment at 700 °C [19]. (a) Room temperature, UTS; (b) room temperature, 0.2% proof stress; (c) UTS at 600 °C; (d) 0.2% proof stress at 600°C.",
+        "image_type": "chart",
+        "content": {
+          "title": "Hardening response of Udimet 720Li at 700°C",
+          "x_axis_label": "Ageing time at 700 °C (h)",
+          "y_axis_label": "Stress (MPa)",
+          "legend": [
+            "(a) Room temp, UTS",
+            "(b) Room temp, 0.2% proof stress",
+            "(c) UTS at 600°C",
+            "(d) 0.2% proof stress at 600°C"
+          ],
+          "trend_description": "The chart shows the age-hardening response of Udimet 720Li. It plots Ultimate Tensile Strength (UTS) and 0.2% proof stress at both room temperature and 600°C as a function of ageing time at 700°C. All four properties show an initial increase, reaching a peak strength around 24-32 hours of ageing, followed by a slight decrease (over-ageing). The room temperature properties (a, b) show higher stress values than the 600°C properties (c, d).",
+          "extracted_data": []
+        }
+      }
+    ]
+  },
+  {
+    "page_number": 244,
+    "content_blocks": [
+      {
+        "block_id": "page_22_block_1",
+        "type": "image",
+        "caption": "Fig. 4.25. Characterisation of the bimodal distribution of y' in the Udimet 720Li superalloy and its response to ageing at 700 °C [19].",
+        "image_type": "chart",
+        "content": {
+          "title": "Bimodal distribution of γ' in Udimet 720Li",
+          "x_axis_label": "γ' size (nm)",
+          "y_axis_label": "Frequency",
+          "legend": [
+            "16 h",
+            "24 h",
+            "42 h"
+          ],
+          "trend_description": "This line chart shows the frequency distribution of gamma-prime (γ') particle sizes in Udimet 720Li after different ageing times (16, 24, and 42 hours) at 700°C. The distribution is bimodal. The first peak, representing smaller particles, shifts to larger sizes and broadens as ageing time increases from 16h to 42h. The second peak, representing larger particles around 120 nm, remains relatively stable in position but changes in height, indicating coarsening of the smaller precipitates while the larger ones are more stable.",
+          "extracted_data": []
+        }
+      },
+      {
+        "block_id": "page_22_block_2",
+        "type": "image",
+        "caption": "Fig. 4.26. Dwell fatigue crack propagation data for seven P/M superalloys at 704 °C and a 90 s hold, with R = 0.1 [20]. The base composition was Ni–11Cr–2.6Mo-3.8 Ti-3.9A1-5.7W, with 0.04, 0.03 and 0.1 of the trace elements C, B and Zr; Nb, Ta and Co were varied between 0 and 1, 1 and 2 and 15 and 19, respectively. All figures in wt%. Super-solvus processing clearly has a greater influence than modifications in the composition of the alloy.",
+        "image_type": "chart",
+        "content": {
+          "title": "Dwell fatigue crack propagation in P/M superalloys at 704 °C",
+          "x_axis_label": "Maximum stress intensity (MPa m¹/²)",
+          "y_axis_label": "da/dt (mm/s)",
+          "legend": [
+            "Sub-solvus",
+            "Super-solvus"
+          ],
+          "trend_description": "This log-log plot shows dwell fatigue crack propagation rate (da/dt) versus maximum stress intensity for seven P/M superalloys. The data is grouped into two bands based on processing: sub-solvus and super-solvus. The super-solvus processed alloys consistently show a significantly lower crack propagation rate (by about an order of magnitude) compared to the sub-solvus processed alloys across the range of stress intensities tested. This indicates that super-solvus processing provides better resistance to dwell fatigue crack growth.",
+          "extracted_data": []
+        }
+      },
+      {
+        "block_id": "page_22_block_3",
+        "type": "text_block",
+        "content": "(see Figure 4.26). When super-solvus processing was employed, the cooling rate was also found to be important at constant y-grain size; the FCP rate increased by about a factor of 4 at a Kmax of 25 MPa m1/2 when air cooling rather than furnace cooling was employed – because the y' particle size decreased from 250 nm to 170 nm; see Figure 4.27. Combinations of the original super-solvus heat treatment followed by subsequent sub-solvus heat treatment were shown to be very detrimental, with a further increase in FCP rate of at least 3 this can be attributed to the dissolution of the larger γ' particles and the reprecipitation of smaller ones upon cooling. From these observations it seems that the γ' particle size",
+        "references": [
+          "page_22_block_2",
+          "page_23_block_1"
+        ]
+      }
+    ]
+  },
+  {
+    "page_number": 245,
+    "content_blocks": [
+      {
+        "block_id": "page_23_block_1",
+        "type": "image",
+        "caption": "Fig. 4.27. Dwell fatigue crack propagation data at 704 °C (90 s hold and R = 0.1) for an experimental P/M superalloy, heat-treated to give different γ' sizes [20]: super-solvus solutioning, followed by (a) furnace cooling, no resolutioning (b) air cooling, no resolutioning and (c) air cooling, sub-solvus resolutioning at 1171 °C.",
+        "image_type": "chart",
+        "content": {
+          "title": "Dwell fatigue crack propagation data for an experimental P/M superalloy",
+          "x_axis_label": "Maximum stress intensity (MPa m¹/²)",
+          "y_axis_label": "da/dt (mm/s)",
+          "legend": [
+            "(a) furnace cooling",
+            "(b) air cooling",
+            "(c) air cooling, sub-solvus resolutioning"
+          ],
+          "trend_description": "A composite figure showing dwell fatigue crack propagation data and corresponding microstructures. The log-log plot shows that furnace cooling (a) results in the lowest crack propagation rates. Air cooling (b) leads to higher rates, and subsequent sub-solvus resolutioning (c) results in the highest, and thus worst, crack propagation rates. The accompanying micrographs (a, b, c) show the corresponding γ' precipitate structures, indicating that the larger precipitates from slower cooling (furnace cooling) are beneficial for crack propagation resistance. All micrographs have a 5 µm scale bar.",
+          "extracted_data": []
+        }
+      },
+      {
+        "block_id": "page_23_block_2",
+        "type": "text_block",
+        "content": "distribution for optimum FCP resistance is different from that required for optimum static strength. From a practical standpoint, however, it is not usually possible to manipulate the y' particle distribution independently of the size of the y grains, and this represents a dilemma when designing the heat treatment for a turbine disc superalloy. Tensile strength and low-cycle-fatigue (LCF) life (controlled largely by fatigue initiation) are best when the grain size is small, but the creep properties and fatigue crack propagation rates are not optimum; these are better at large grain sizes. This is illustrated in Figure 4.28, which is adapted from ref. [21]. For a balanced portfolio of properties, a compromise needs to be struck between the need for absolute static strength and resistance to cyclic fatigue crack propagation. This challenge is discussed further in the following section.",
+        "references": [
+          "page_24_block_1"
+        ]
+      }
+    ]
+  },
+  {
+    "page_number": 246,
+    "content_blocks": [
+      {
+        "block_id": "page_24_block_1",
+        "type": "image",
+        "caption": "Fig. 4.28. Schematic illustration of the important properties of turbine disc alloys and their dependence upon grain size. After ref. [21].",
+        "image_type": "chart",
+        "content": {
+          "title": "Property dependence on grain size in turbine disc alloys",
+          "x_axis_label": "Grain size (µm)",
+          "y_axis_label": "Normalised life or strength",
+          "legend": [],
+          "trend_description": "This schematic chart illustrates the trade-off in mechanical properties as a function of grain size. Tensile strength and LCF (low-cycle fatigue) life decrease as grain size increases. Conversely, creep strength and resistance to dwell crack growth increase with increasing grain size. This highlights the need for a compromise in selecting an optimal grain size for turbine disc applications.",
+          "extracted_data": []
+        }
+      },
+      {
+        "block_id": "page_24_block_2",
+        "type": "text_block",
+        "content": "4.2.2 Guideline 2",
+        "references": []
+      },
+      {
+        "block_id": "page_24_block_3",
+        "type": "text_block",
+        "content": "The grain size should be chosen for the desired combination of yield strength, resistance to fatigue crack initiation (both of which scale inversely with grain size), creep strength and resistance to fatigue crack growth (which scale directly with it). A size in the range 30 µm to 50 µm is commonly chosen.",
+        "references": []
+      },
+      {
+        "block_id": "page_24_block_4",
+        "type": "text_block",
+        "content": "The necessity to control the grain size has been demonstrated by a number of researchers, but a consideration of the careful work of Bain et al. [22] is warranted because all of the important properties – yield, fatigue and creep were measured and reported. The Udimet 720 superalloy, processed using VIM/VAR and then combinations of hot-die or isothermal forging and sub- or super-solvus heat treatments, was considered. Identical double ageing treatments of 760°C/8 h/air cool and 650°C/24 h/air cool were performed in all cases. In this way, uniform grain sizes of 19 µm, 90 µm, 127 µm and 360 µm (corresponding to ASTM grain sizes of 8.5, 4, 3 and 0, respectively) were produced; unfortunately, one cannot rule out possible differences in the distributions of secondary and tertiary γ', although the micrographs presented [22] indicate that no primary γ' was present other than in the 19 µm material. The testing of tensile specimens indicated that the finest-grained material exhibited a room temperature yield stress (YS) of about 1200 MPa, approximately 200 MPa greater than the coarsest-grained material a figure which is approximately equal to the difference in the YS reported for Udimet 720Li in the peak-aged and over-aged conditions; see Figure 4.29 (note that the Udimet 720 and 720Li superalloys have marginally differing chemistries (see Table 4.1)). The improvement reported in the ultimate tensile strength (UTS) was of a similar magnitude. Strain-controlled LCF tests were also carried out on smooth, polished testpieces with R = 0 and a frequency of 0.33 Hz at a total strain range of 0.80%. The LCF results reflect the improvements in YS won by grain refinement; the LCF life was approximately one order of magnitude worse at the largest grain size of 360 µm than at 19 µm. These considerations indicate that for polycrystalline superalloys, for the best static yield and LCF properties, fine grain sizes are to be preferred. This grain size dependence of the LCF performance must be added to the intrinsic LCF strength due the",
+        "references": [
+          "page_25_block_1",
+          "page_15_block_1"
+        ]
+      }
+    ]
+  },
+  {
+    "page_number": 247,
+    "content_blocks": [
+      {
+        "block_id": "page_25_block_1",
+        "type": "image",
+        "caption": "Fig. 4.29. Data for the mechanical properties of the Udimet 720 superalloy, as a function of the grain size developed by varying combinations of hot-die or isothermal forging and sub- or super-solvus heat treatments: (a) yield stress (YS) and ultimate tensile strength (UTS), (b) creep rupture life at 700 °C/690 MPa and low-cycle-fatigue (LCF) life at 650 °C at a total strain range of 0.8% with R = 0. Data from ref. [22].",
+        "image_type": "chart",
+        "content": {
+          "title": "Mechanical properties of Udimet 720 superalloy vs. grain size",
+          "x_axis_label": "Grain size (µm)",
+          "y_axis_label": "Stress (MPa) / LCF life (h) / Creep rupture life (h)",
+          "legend": [
+            "UTS",
+            "YS",
+            "Creep rupture life",
+            "LCF"
+          ],
+          "trend_description": "This figure contains two charts showing the effect of grain size on mechanical properties of Udimet 720. Chart (a) shows that both Ultimate Tensile Strength (UTS) and Yield Stress (YS) decrease as grain size increases from approximately 20 µm to 400 µm. Chart (b) shows that Low-Cycle Fatigue (LCF) life decreases significantly with increasing grain size, while Creep Rupture Life increases with increasing grain size, illustrating the property trade-off.",
+          "extracted_data": []
+        }
+      },
+      {
+        "block_id": "page_25_block_2",
+        "type": "text_block",
+        "content": "alloy composition [23,24], which correlates strongly with the y' fraction and thus also the yield stress; see Figure 4.30.",
+        "references": [
+          "page_26_block_1"
+        ]
+      },
+      {
+        "block_id": "page_25_block_3",
+        "type": "text_block",
+        "content": "The influence of the grain size is very different when one considers the rates of fatigue crack growth and the creep rupture performance. Bain et al. [22] performed constant load creep tests at 700°C and 690 MPa; for the largest grain size of 360 µm, the rupture life approached 600 h under these conditions, but at 19 µm it decreased to about 200 h. Similar observations have been made [25] in the NR3 superalloy heat treated at super- and sub-solvus temperatures to give coarse- and fine-grain structures, respectively (see Figure 4.31);",
+        "references": [
+          "page_27_block_1"
+        ]
+      }
+    ]
+  },
+  {
+    "page_number": 248,
+    "content_blocks": [
+      {
+        "block_id": "page_26_block_1",
+        "type": "image",
+        "caption": "Fig. 4.30. Strain-controlled low-cycle-fatigue data (R = -1, 0.33 Hz) at 650 °C for various turbine disc alloys: (a) plot of total strain range vs. number of cycles to failure [23], and (b) stabilised cyclic stress-strain curves, on which the cyclic stress is plotted against the inelastic (plastic) strain range [24]. Note the poorer performance of alloys such as Waspaloy, which have a lower y' fraction and therefore a smaller yield stress.",
+        "image_type": "chart",
+        "content": {
+          "title": "Low-cycle-fatigue data for various turbine disc alloys at 650°C",
+          "x_axis_label": "Cycles to failure / Δεin/2",
+          "y_axis_label": "Δε (%) / Δσ/2 (MPa)",
+          "legend": [
+            "H+F Rene 95",
+            "HIP Merl 76",
+            "NASA IIB-7",
+            "IN 100",
+            "H+F Astroloy",
+            "HIP Astroloy",
+            "Waspaloy"
+          ],
+          "trend_description": "Two charts presenting low-cycle fatigue (LCF) data for several turbine disc alloys. Chart (a) is a strain-life (ε-N) plot, showing total strain range vs. cycles to failure. Alloys like Rene 95 and Merl 76 show superior fatigue life compared to Waspaloy. Chart (b) shows cyclic stress-strain curves, plotting cyclic stress amplitude against inelastic strain amplitude. Higher strength alloys like NASA IIB-7 and Merl 76 sustain higher stresses for a given inelastic strain compared to lower strength alloys like Waspaloy.",
+          "extracted_data": []
+        }
+      },
+      {
+        "block_id": "page_26_block_2",
+        "type": "text_block",
+        "content": "the minimum creep rate differed by about an order of magnitude with grain size when testing was carried out at 750 °C and 300 MPa, being better for the coarse-grain size, although the influence was less pronounced at lower temperatures and higher stresses. Thus larger grain sizes are beneficial for creep performance. The same is found to be true of the fatigue crack propagation rate; this is important if the damage-tolerant method for life assessment is being used (see Section 4.3) since its magnitude controls the fatigue life which can be declared. Fatigue cyclic crack growth rates were measured by Bain et al. [22] in air at 650°C at an R ratio of 0.05, at a frequency of 3.3 Hz and with a 5 min dwell at the maximum load. A second set of tests was carried out at 425°C without the dwell, but under otherwise identical conditions. Particularly at the higher temperature, the dependence of crack growth rate on grain size was considerable (see Figure 4.32), being about two orders of magnitude smaller for the larger grain size; consistent with the promotion of a tortuous crack path, this was attributed to rougher fracture surfaces which were largely intergranular in nature. At 425 °C, the dependence on grain size was less pronounced, but the",
+        "references": [
+          "page_28_block_1"
+        ]
+      }
+    ]
+  },
+  {
+    "page_number": 249,
+    "content_blocks": [
+      {
+        "block_id": "page_27_block_1",
+        "type": "image",
+        "caption": "Fig. 4.31. Constant load creep data for the NR3 P/M superalloy, at temperatures of 700 °C and 750 °C in both the fine- and coarse-grained conditions [25].",
+        "image_type": "chart",
+        "content": {
+          "title": "Constant load creep data for NR3 P/M superalloy",
+          "x_axis_label": "Stress (MPa)",
+          "y_axis_label": "Minimum creep rate (1/s)",
+          "legend": [
+            "Fine grain (700 °C)",
+            "Coarse grain (700 °C)",
+            "Fine grain (750 °C)",
+            "Coarse grain (750 °C)"
+          ],
+          "trend_description": "This log-log plot shows the minimum creep rate as a function of applied stress for NR3 P/M superalloy at 700°C and 750°C, for both fine-grained and coarse-grained material. At both temperatures, the coarse-grained material exhibits a lower minimum creep rate (better creep resistance) than the fine-grained material. The creep rate increases with both increasing stress and increasing temperature.",
+          "extracted_data": []
+        }
+      },
+      {
+        "block_id": "page_27_block_2",
+        "type": "text_block",
+        "content": "smaller grain size was again found to perform better, particularly in the threshold regime at low AK; the fracture surfaces were transgranular and faceted. However, at both temperatures, the Paris exponents in stage II growth were not heavily influenced by grain size. These observations are consistent with the mechanisms of fatigue crack growth which are agreed upon [23,26]: at low temperatures, high strain rates and low AK, there is a strong tendency for crystallographic cracking on {111} planes due to the 'planar slip', which is then prevalent due to the limited number of slip systems that are activated. At higher temperatures and larger AK, which increases the size of the reversible plastic zone, slip is more homogeneous and 'wavy'. Li, Ashbaugh and Rosenberger [27] have characterised these effects by examining the fracture surfaces of IN100 under LCF conditions using high-resolution SEM microscopy; see Figure 4.33. At low temperatures, fatigue crack growth is found to occur parallel to slip band traces and thus along {111} planes (see Figure 4.33(c)); but, as the temperature increases, {001} facets become increasingly common, as evidenced by the cuboidal morphology of the y' precipitates on the fracture surface. Related work on IN100 [28] has demonstrated a considerable influence of environment on the fatigue crack growth rate – at 620 °C with R = 0.15 and a 30 s dwell at the peak load, a decrease in the vacuum from 1 to 10-8 atm produced an order of magnitude decrease in the crack growth rate. When incipient fatigue cracks – after the initiation period – have dimensions on the scale of the grain size, their crack growth rates are several orders of magnitude larger than predicted from the linear elastic fracture mechanics, Paris Law regime [29–31]; see Figure 4.34. Such 'short-crack' growth, which can occur below the fatigue crack threshold for long cracks, is of importance for turbine disc applications; this is because of the necessity for an adequate lifing policy – for example, the life-to-first-crack method described in Section 4.3 – which considers a turbine disc to have ‘failed' before the crack reaches a length consistent with the K1c criterion. These effects are not accounted for in the traditional damage-tolerant approach.",
+        "references": [
+          "page_29_block_1",
+          "page_30_block_1"
+        ]
+      }
+    ]
+  },
+  {
+    "page_number": 250,
+    "content_blocks": [
+      {
+        "block_id": "page_28_block_1",
+        "type": "image",
+        "caption": "Fig. 4.32. Dwell fatigue crack propagation data for the Udimet 720 superalloy, as a function of the grain size developed by varying combinations of hot-die or isothermal forging and sub- or super-solvus heat treatments [22]: (a) 650 °C, with a 5 min dwell at peak load and (b) 425 °C. In both cases, R = 0.05.",
+        "image_type": "chart",
+        "content": {
+          "title": "Dwell fatigue crack propagation data for Udimet 720 superalloy",
+          "x_axis_label": "Cyclic stress intensity factor, ΔK (MPa m¹/²)",
+          "y_axis_label": "Crack growth rate, da/dN (m/cycle)",
+          "legend": [
+            "ASTM 0",
+            "ASTM 3",
+            "ASTM 4",
+            "ASTM 8.5"
+          ],
+          "trend_description": "Two log-log plots show fatigue crack growth rate (da/dN) vs. cyclic stress intensity factor (ΔK) for Udimet 720 with different grain sizes (ASTM 0 is coarsest, 8.5 is finest). (a) At 650°C with a 5 min dwell, the crack growth rate is highly dependent on grain size; the coarsest grain size (ASTM 0) shows significantly lower growth rates than finer grain sizes. (b) At 425°C without a dwell, the effect of grain size is much less pronounced, though finer grains (ASTM 8.5) show slightly better performance at low ΔK.",
+          "extracted_data": []
+        }
+      }
+    ]
+  },
+  {
+    "page_number": 251,
+    "content_blocks": [
+      {
+        "block_id": "page_29_block_1",
+        "type": "image",
+        "caption": "Fig. 4.33. Fracture surfaces for the IN100 P/M superalloy tested in low-cycle fatigue at 0.5 Hz with R = 0.05 [27]. (a), (b) SEM images of the {001} fracture surfaces typical of failure at 538°C, showing the presence of cuboidal facets belonging to the y' phase. (c) {111} fracture surface typical of fatigue crack growth at room temperature – note that the fracture path is parallel to the traces of the slip lines in the top right of the image.",
+        "image_type": "photograph",
+        "content": {
+          "description": "Three SEM micrographs of fracture surfaces in IN100 P/M superalloy. Images (a) and (b) show {001} fracture surfaces from a 538°C test, characterized by cuboidal facets of the γ' phase (scale bars 10µm and 6µm respectively). Image (c) shows a {111} fracture surface from a room temperature test, with a crack path that is parallel to slip line traces (scale bar 20µm)."
+        }
+      }
+    ]
+  },
+  {
+    "page_number": 252,
+    "content_blocks": [
+      {
+        "block_id": "page_30_block_1",
+        "type": "image",
+        "caption": "Fig. 4.34. Room-temperature fatigue crack propagation data for Astroloy at R = 0.1 and 40 Hz [29], for both long and short cracks; FG and CG refer to fine-grained and coarse-grained material, respectively. Note that the fatigue crack growth occurs more rapidly for short than for long cracks; also, when cracks are short, the effect of grain size is much reduced.",
+        "image_type": "chart",
+        "content": {
+          "title": "Room-temperature fatigue crack propagation data for Astroloy",
+          "x_axis_label": "ΔK (MPa m¹/²)",
+          "y_axis_label": "da/dN (mm/cycle)",
+          "legend": [
+            "FG Long",
+            "FG Short",
+            "CG Long",
+            "CG Short"
+          ],
+          "trend_description": "This log-log plot shows fatigue crack propagation rate (da/dN) versus stress intensity factor range (ΔK) for Astroloy, comparing short and long cracks in fine-grained (FG) and coarse-grained (CG) material. Short cracks propagate faster than long cracks at the same ΔK. For long cracks, coarse grains show slightly slower propagation rates. For short cracks, the effect of grain size is minimal, and propagation occurs below the threshold ΔK for long cracks.",
+          "extracted_data": []
+        }
+      },
+      {
+        "block_id": "page_30_block_2",
+        "type": "text_block",
+        "content": "Because of the need for a fine grain size in the bore regions and a coarser one at the rim, so-called 'dual heat treatment' processes have been developed (for example, see ref. [32]). Here, a conventional furnace is first used to heat-treat the disc to a grain size appropriate for the properties required for the bore – at a temperature which is usually sub-solvus. Then, a second more sophisticated furnace is employed in which a sharp temperature gradient exists between the bore and the rim, the latter experiencing temperatures which are super-solvus; see Figure 4.35. For this purpose, cooling gas is directed at the bore regions throughout the heat treatment step, and insulating materials are placed in the furnace to promote the required temperature gradients. The use of thermocoupling and controller systems has been shown to be necessary to achieve the levels of temperature control which are required. Although this technology has yet to be used in production, trials have been carried out on the Rene 104 powder superalloy [32]; the ASTM grain size was shown to vary from 6 at the rim to about 11 at the bore, over a transition zone of about 50 mm. This approach is considered by the inventors to be advantageous for the processing of turbine discs for military applications.",
+        "references": [
+          "page_31_block_1"
+        ]
+      },
+      {
+        "block_id": "page_30_block_3",
+        "type": "text_block",
+        "content": "4.2.3 Guideline 3",
+        "references": []
+      },
+      {
+        "block_id": "page_30_block_4",
+        "type": "text_block",
+        "content": "When added in small quantities, grain-boundary elements such as boron and carbon are beneficial, particularly to the creep and low-cycle-fatigue resistances.",
+        "references": []
+      },
+      {
+        "block_id": "page_30_block_5",
+        "type": "text_block",
+        "content": "Grain-boundary elements such as boron and carbon are beneficial when added in small quantities, since they segregate to the γ/y interfaces and increase the work of cohesion. Improvements in the creep rupture strength, creep ductility and low-cycle-fatigue behaviour then result. However, when added in excessive quantities, the precipitation of borides and carbides is promoted; it seems likely that at these levels any further additions of the",
+        "references": []
+      }
+    ]
+  },
+  {
+    "page_number": 253,
+    "content_blocks": [
+      {
+        "block_id": "page_31_block_1",
+        "type": "image",
+        "caption": "Fig. 4.35. Illustration of the arrangement for the dual heat-treatment process [32], in which a turbine disc forging is subjected to a temperature field which is deliberately engineered such that it varies from the bore to rim regions.",
+        "image_type": "schematic",
+        "content": {
+          "description": "A two-part schematic illustrating a dual heat-treatment process. Part (a) shows a cross-section of a turbine disc forging placed within a furnace arrangement designed to create a temperature gradient. Part (b) is a graph plotting temperature versus radial distance, showing a lower temperature at the central bore and higher temperatures at the two rims, creating a dual microstructure.",
+          "ocr_text": "Temperature, Bore, Rim, Radial distance"
+        }
+      },
+      {
+        "block_id": "page_31_block_2",
+        "type": "text_block",
+        "content": "grain-boundary elements are ineffective. The optimum concentrations are approximately 0.03 wt%B and 0.025 wt%C; see Table 4.1. At these levels, it can be demonstrated that the y-grain boundaries are covered with just a few monolayers of these grain-boundary elements. Other elements are often quoted as being effective at strengthening the grain boundaries. For instance, there is some evidence that zirconium, as a grain-boundary segregant, plays a role as a 'getter' of deleterious 'tramp' elements such as sulphur and phosphorus. However, it should be emphasised at this stage that the precise role played by the grain-boundary elements is controversial; more research is required.",
+        "references": [
+          "page_2_block_1"
+        ]
+      },
+      {
+        "block_id": "page_31_block_3",
+        "type": "text_block",
+        "content": "To support these statements, consider the results reported by Garosshen et al. [33], who studied the mechanical properties of an experimental P/M alloy of base composition Ni–19Co-12.5Cr-5Al–4.4Ti–3.3Mo (wt%). When doped with 0.02 wt%B, 0.05 wt%Zr and 0.003 wt%C, the creep rupture life at 732 °C and 655 MPa improved remarkably from less than 0.1 h to 69h; however, further additions of carbon to 0.06 wt% were ineffective, and additions of boron beyond 0.02 wt% reduced the rupture life, albeit only by a few hours. Boron additions over the solubility limit were shown to result in the intergranular precipitation of the M3B2 compound and caused no further improvement in mechanical properties, so it can be concluded that the strengthening effect of boron is not due to the formation of borides; furthermore, the additions of carbon, boron and zirconium had no effect on",
+        "references": []
+      }
+    ]
+  },
+  {
+    "page_number": 254,
+    "content_blocks": [
+      {
+        "block_id": "page_32_block_1",
+        "type": "table",
+        "caption": "Table 4.3. Alloy compositions",
+        "data": [
+          [
+            "",
+            "Target alloy compositions (wt%)"
+          ],
+          [
+            "Alloy",
+            "C",
+            "Cr",
+            "Co",
+            "Mo",
+            "Tl",
+            "Al",
+            "W",
+            "Zr",
+            "B",
+            "Hf",
+            "NI"
+          ],
+          [
+            "Alloy 1 (baseline Udimet 720)",
+            "0.025",
+            "16.0",
+            "14.75",
+            "3.0",
+            "5.0",
+            "2.5",
+            "1.25",
+            "0.035",
+            "0.02",
+            "—",
+            "Bal"
+          ],
+          [
+            "Alloy 2",
+            "0.025",
+            "16.0",
+            "14.75",
+            "3.0",
+            "5.0",
+            "2.5",
+            "1.25",
+            "0.035",
+            "0.02",
+            "—",
+            "Bal"
+          ],
+          [
+            "Alloy 3",
+            "0.025",
+            "16.0",
+            "14.75",
+            "3.0",
+            "5.0",
+            "2.5",
+            "1.25",
+            "0.035",
+            "0.03",
+            "0.75",
+            "Bal"
+          ],
+          [
+            "Alloy 4",
+            "0.025",
+            "16.0",
+            "14.75",
+            "3.0",
+            "5.0",
+            "2.5",
+            "1.25",
+            "0.070",
+            "0.03",
+            "—",
+            "Bal"
+          ],
+          [
+            "Alloy 5",
+            "0.025",
+            "16.0",
+            "14.75",
+            "3.0",
+            "5.0",
+            "2.5",
+            "1.25",
+            "0.035",
+            "0.04",
+            "—",
+            "Bal"
+          ]
+        ],
+        "summary": "This table lists the target chemical compositions in weight percent (wt%) for five experimental alloys based on Udimet 720. The alloys have variations in their Boron (B), Zirconium (Zr), and Hafnium (Hf) content to study the effect of these grain-boundary elements."
+      },
+      {
+        "block_id": "page_32_block_2",
+        "type": "image",
+        "caption": "Fig. 4.36. Fatigue crack propagation paths in the IN718 superalloy doped with (a) 12 ppm B and (b) 29 ppm B [34]. Testing at room temperature in air, with R = 0.05.",
+        "image_type": "photograph",
+        "content": {
+          "description": "Two micrographs showing fatigue crack paths in IN718 superalloy with different boron levels. Image (a) with 12 ppm Boron shows a relatively straight crack path. Image (b) with 29 ppm Boron shows a much more tortuous and deflected crack path. A scale bar indicates 60µm."
+        }
+      },
+      {
+        "block_id": "page_32_block_3",
+        "type": "text_block",
+        "content": "the morphology of the y' phase. Moreover, the fatigue crack progagation rates at 649 °C were improved marginally, but by a factor of no greater than 2; this finding is consistent with recent work on boron-doped IN718, which has demonstrated that the tortuosity of the fatigue crack path was greatly increased as the level of boron doping was increased from 12 ppm to 29 ppm; see Figure 4.36 [34]. The effect on fatigue initiation as manifested in the low-cycle-fatigue (LCF) life is very much more significant. Jain et al. [35] have doped Udimet 720Li in P/M form with varying concentrations of boron to 0.04 wt%, at a constant concentration of 0.025 wt%C; the effects of increasing the Zr concentration from 0.035 to 0.070 wt% and Hf from zero to 0.75 wt% were also studied. Testing was carried out at both 425 °C and 650 °C, at two grain sizes corresponding to ASTM 11 and ASTM 9, which were generated by sub- and super-solvus heat treatment, respectively. Un-doped Udimet 720Li in the cast-and-wrought condition was used as a control. The results are given in Figure 4.37 and Table 4.3. The results demonstrate that additions of the grain-boundary elements are beneficial to LCF life; improvements of at least 50% were noted for most conditions considered. Interestingly, the fatigue life for the fine-grained material (ASTM 11) was improved more substantially at 425 °C, whereas that for the coarse-grained material improved at 650 °C; no explanation of this finding was offered. In this study, no substantial",
+        "references": [
+          "page_32_block_2",
+          "page_33_block_1",
+          "page_32_block_1"
+        ]
+      }
+    ]
+  },
+  {
+    "page_number": 255,
+    "content_blocks": [
+      {
+        "block_id": "page_33_block_1",
+        "type": "image",
+        "caption": "Fig. 4.37. Data showing the influence of small amounts of B, Zr and Hf on the LCF performance of the P/M U720Li turbine disc alloy [35]. LCF data at (a) 425 °C, ∆c₁ = 0.9%, R = 0.0, air; (b) 650 °C, Acr = 0.8%, R = 0.0, air. Note that CW U720 refers to cast-and-wrought material. For alloy compositions see Table 4.3.",
+        "image_type": "chart",
+        "content": {
+          "title": "Influence of B, Zr and Hf on LCF performance of P/M U720Li",
+          "x_axis_label": "Alloy Condition",
+          "y_axis_label": "Cycles to fatigue crack initiation",
+          "legend": [
+            "Grain size: ASTM 9",
+            "Grain size: ASTM 11"
+          ],
+          "trend_description": "Two bar charts showing cycles to fatigue crack initiation for U720Li alloys with different additions of B, Zr, and Hf, tested at two grain sizes (ASTM 9 and 11). Chart (a) is for tests at 425°C and chart (b) is for 650°C. In general, the addition of these elements improves LCF life compared to the standard alloy (Alloy 1) and the cast-and-wrought (CW) version. The effect varies with temperature and grain size; for example, at 425°C, fine-grained material (ASTM 11, black bars) shows significant improvement with additions, particularly in Alloy 4.",
+          "extracted_data": []
+        }
+      }
+    ]
+  },
+  {
+    "page_number": 256,
+    "content_blocks": [
+      {
+        "block_id": "page_34_block_1",
+        "type": "text_block",
+        "content": "improvements in tensile properties were caused by the additions of the grain-boundary strengtheners.",
+        "references": []
+      },
+      {
+        "block_id": "page_34_block_2",
+        "type": "text_block",
+        "content": "Blavette and co-workers have begun to unravel the scientific principles which govern the effects conferred by the grain-boundary elements [36]. Using a combination of field-ion microscopy and atom probe tomography, the characterisation of B, C and Zr grain-boundary chemistry in the P/M alloy N18 has been successfully attempted; see Figure 4.38. In this alloy, the bulk compositions of B, C and Zr are 0.083 at%, 0.075 at% and 0.018 at%, respectively, but substantial segregation of B and Mo was demonstrated at the y/y grain boundaries, where the local concentrations were enhanced ten-fold compared to the bulk – equal to about 0.5 equivalent atomic monolayers. Incoherent γ/γ' boundaries were found to be similarly affected. Interestingly, no segregation of C was identified; it is probable that in this alloy it resides primarily in chromium-rich M23C6 carbides. No segregation of Zr was found. Similar results were found in earlier work on Astroloy [37].",
+        "references": [
+          "page_35_block_1"
+        ]
+      },
+      {
+        "block_id": "page_34_block_3",
+        "type": "text_block",
+        "content": "Case study. The design of turbine disc alloys",
+        "references": []
+      },
+      {
+        "block_id": "page_34_block_4",
+        "type": "text_block",
+        "content": "Most of the alloy development work for turbine disc superalloys has been carried out by the engine manufacturers such as GE Aircraft Engines, Pratt & Whitney, SNECMA and Rolls-Royce. The number of alloys which have been designed is relatively small, and due to its proprietary nature it is unlikely that all details of the work have been revealed in the open literature; nevertheless, some information has emerged. When designing the powder disc superalloy N18 in the mid-1980s, SNECMA placed considerable emphasis [38] on promoting damage tolerance so that alloys with low-dwell fatigue crack propagation (FCP) rates were preferred. It was noted that for many of the P/M alloys developed to that point, such as Rene 95, IN100, MERL 76 and Astroloy, crack growth rates scaled with the yield stress (see Figure 4.39); N18 was designed to fall away from this correlation, an order of magnitude improvement in FCP rates being desired. For this alloy, an Ti/Al ratio of unity, trace levels of B, C and Zr at 0.15, 0.15 and 0.30 wt%, respectively and a relatively high concentration of Mo (6.5 wt%) were chosen [38]; it was claimed that Mo was more favourable than W because of its greater γ/γ' partitioning ratio and because it reduced notch sensitivity during creep at 650°C. The lack of damage tolerance displayed by Rene 95 was acknowledged by GE in designing their Rene 88DT superalloy (note ‘DT' refers to damage tolerant); significant improvements in these properties were made, with the ultimate tensile strength (UTS) of Rene 88DT being kept within 90% of that of Rene 95 [39]. Dwell fatigue crack propagation rates at 650°C were improved by increasing the γ' fraction and size, increasing the Ti/Al ratio and Ta substitution for W; however a trade-off was identified which saw the high-volume-fraction y' alloys exhibiting very good dwell FCP rates at 650°C but poorer performance at 400°C in the absence of a dwell period. Compared with Rene 95, the Rene 88DT composition was chosen to yield a smaller γ' fraction (40% rather than 50%), a higher Ti/Al ratio (1.8 rather than 0.7 on a wt% basis) and higher Cr and Co contents (16 wt% rather than 13 wt%, and 13 wt% rather than 8 wt%, respectively) – this last change being made despite substitutions of Co and Cr providing no effect on dwell-time fatigue crack growth rate. The significant effect of Ta in reducing",
+        "references": [
+          "page_36_block_1"
+        ]
+      }
+    ]
+  },
+  {
+    "page_number": 257,
+    "content_blocks": [
+      {
+        "block_id": "page_35_block_1",
+        "type": "image",
+        "caption": "Fig. 4.38. Analysis using atom probe tomography of a y/y grain boundary in N18 [36]: (a), (b), (c) and (d) correspond to maps of Al, Cr, Mo and B; (e) and (f) are concentration profiles normal to the boundary and (g) is a field-ion image (FIM) of the grain boundary.",
+        "image_type": "other",
+        "content": {
+          "description": "A composite figure from an atom probe tomography analysis of a grain boundary in N18 alloy. It includes elemental maps for (a) Al, (b) Cr, (c) Mo, and (d) B, showing elemental segregation at the boundary. Concentration profiles for (e) Cr and (f) Mo and B across the boundary quantify this segregation. (g) is a field-ion microscope (FIM) image of the analyzed area, showing the grain boundary as a dark line."
+        }
+      }
+    ]
+  },
+  {
+    "page_number": 258,
+    "content_blocks": [
+      {
+        "block_id": "page_36_block_1",
+        "type": "image",
+        "caption": "Fig. 4.39. Variation of the yield stress with dwell fatigue crack growth rate for a number of P/M superalloys [38].",
+        "image_type": "chart",
+        "content": {
+          "title": "Yield stress vs. dwell fatigue crack growth rate",
+          "x_axis_label": "da/dN (mm/cycle)",
+          "y_axis_label": "0.2% yield stress (MPa)",
+          "legend": [],
+          "trend_description": "The chart plots 0.2% yield stress versus dwell fatigue crack growth rate (da/dN) for several P/M superalloys at 650°C. There is a general trend that alloys with higher yield stress, like Rene 95, also have higher crack growth rates. Alloys like Astroloy and MERL 76 fall along this trend. The alloy N18 is highlighted in a target region, indicating it was designed to have a high yield stress but a lower crack growth rate, deviating from the general trend.",
+          "extracted_data": []
+        }
+      },
+      {
+        "block_id": "page_36_block_2",
+        "type": "text_block",
+        "content": "dwell FCP rates has been noted in collaborative work by Pratt & Whitney, GE and NASA, which was aimed at developing an alloy for the High Speed Civil Transport (HSCT) aeroplane [40]; this gave rise to the alloy ME3, which has a significant Co concentration to lower the y' solvus temperature so that the risk of thermally induced porosity (TIP) is minimised, with the heat treatment window being widened to enable super-solvus heat treatment and dual microstructure heat treatments; see Table 4.1. Alloy ME3 is similar to Rene 104, which will find use in the General Electric's GEnx engine for the Boeing 787 Dreamliner. An addition of Ta to Rolls-Royce's RR1000 powder disc superalloy was made for similar reasons as for ME3 [41], although the concentration was limited to 2.15 wt% since the FCP rates increased for higher concentrations of this element. Chromium was found to reduce the rate of FCP at elevated temperature, but its concentration was limited to 15 wt% because it promotes the precipitation of the o phase, particularly above 700°C. The importance of restricting the Cr concentration was learned by Special Metals Corporation during the Udimet 720 development programme [16] – the original compositional variant contained 18 wt%Cr, but in developing the second variant, Udimet 720Li, this was reduced to 16 wt%Cr, which has been shown to improve the susceptibility to σ formation [42]; moreover, the boron and carbon levels were reduced (Li refers to ‘low interstitial') to about 0.025 wt% and 0.018 wt%, respectively, concentrations which appear to have been agreed upon by the superalloy community in at least an approximate sense; see Table 4.1. More recently, NASA has developed a hybrid disc alloy, LSHR, which combines the low solvus temperature of Rene 104 with the higher refractory content of Alloy 10, the latter being designed by Honeywell Engines and Systems to produce superior tensile and creep capability in small engines for auxiliary power unit (APU) applications; this was achieved by using a high refractory element content, most notably of tungsten.",
+        "references": [
+          "page_15_block_1"
+        ]
+      }
+    ]
+  },
+  {
+    "page_number": 259,
+    "content_blocks": [
+      {
+        "block_id": "page_37_block_1",
+        "type": "text_block",
+        "content": "4.3 Service life estimation",
+        "references": []
+      },
+      {
+        "block_id": "page_37_block_2",
+        "type": "image",
+        "caption": "Fig. 4.40. Illustration of the stress field (solid lines) in a uniform disc of outer radius b, with a hole of radius α; σε and σε denote the hoop and radial stress, respectively. Also shown (dashed lines) is the behaviour of σε and σε for the case when a = 0, i.e. when no hole exists.",
+        "image_type": "chart",
+        "content": {
+          "title": "Stress field in a uniform rotating disc",
+          "x_axis_label": "Distance",
+          "y_axis_label": "Stress",
+          "legend": [],
+          "trend_description": "A schematic graph illustrating the radial (σr) and hoop (σθ) stress distribution in a rotating disc. The solid lines represent a disc with a central hole of radius 'a'. The hoop stress (σθ) is maximum at the inner radius 'a' and decreases towards the outer radius 'b'. The radial stress (σr) is zero at both the inner and outer radii and peaks somewhere in between. The dashed lines show the stress distribution for a solid disc (a=0), where both stresses are maximum at the center.",
+          "extracted_data": []
+        }
+      },
+      {
+        "block_id": "page_37_block_3",
+        "type": "text_block",
+        "content": "4.3.1 Stress analysis of a turbine disc of simplified geometry",
+        "references": []
+      },
+      {
+        "block_id": "page_37_block_4",
+        "type": "text_block",
+        "content": "A geometry of a typical turbine disc is complicated by the requirement for fixturing to accommodate the turbine blading, the drive arms necessary to transmit loads to the shaft, cover plates to manage the flow of cooling air and flanges with holes for the bolting together of neighbouring discs. Moreover, the shape of the disc is generally tapered to restrict the stress field at the bore to manageable levels. However, to gain a first appreciation of the very large stresses to which the material is subjected, one can consider a cylindrical component of outer diameter b containing a hole of inner radius a, rotating at an angular velocity ω. The density is p. Clearly the stress field will depend upon whether the component is thin (such that it approximates a disc) or thick (in which case it is a cylinder). Considering the situation for a disc under plane stress conditions – and given the simplifying assumptions – the radial and hoop components of the stress field, denoted or and σθ, respectively, are given by [43,44]",
+        "references": []
+      },
+      {
+        "block_id": "page_37_block_5",
+        "type": "text_block",
+        "content": "στ = (3 + ν/8)ρω²(b² + a² - a²b²/r² - r²)",
+        "references": []
+      },
+      {
+        "block_id": "page_37_block_6",
+        "type": "text_block",
+        "content": "and",
+        "references": []
+      },
+      {
+        "block_id": "page_37_block_7",
+        "type": "text_block",
+        "content": "σθ = (3 + ν/8)ρω²(b² + a² + a²b²/r² - [1 + 3ν/3 + ν]r²)",
+        "references": []
+      },
+      {
+        "block_id": "page_37_block_8",
+        "type": "text_block",
+        "content": "where the distance r is measured outwards from the axis of symmetry in a radial direction. It is instructive to consider the stress field implied by these equations; see Figure 4.40. The hoop stress, σѳ, is a maximum at the bore where r = a, where it takes a value of",
+        "references": [
+          "page_37_block_2"
+        ]
+      },
+      {
+        "block_id": "page_37_block_9",
+        "type": "text_block",
+        "content": "(σε)max = [(3 + ν)/4]ρω²b² + [(1 - ν)/4]ρω²a²",
+        "references": []
+      }
+    ]
+  },
+  {
+    "page_number": 260,
+    "content_blocks": [
+      {
+        "block_id": "page_38_block_1",
+        "type": "text_block",
+        "content": "Furthermore, σε increases monotonically with decreasing r, due to the mass of material between r = a and r = b which requires support. The radial stress, στ, falls to zero at the free surfaces corresponding to the bore and rim, where r = a and r = b, respectively, but rises to a maximum value between the two. That the hole provides a considerable stress concentration factor can be seen by setting a = 0 in Equations (4.2) and (4.3). Then, σε and στ are equivalent at r = 0, when σ₁ = σθ = (3 + ν)ρω²b²/8. A comparison with Equation (4.4) indicates that the stress concentration factor introduced by the hole is at least 2, and greater than this value if the second term in Equation (4.4) is significant.",
+        "references": []
+      },
+      {
+        "block_id": "page_38_block_2",
+        "type": "text_block",
+        "content": "Values for στ and σε can be estimated. With b = 33 cm, a = 7.5 cm, w = 10000 rev/min, p = 8900 kg/m³ and v = 0.3, the hoop stress, σο, has a maximum value of about 885 MPa at the bore wherer = a. The stresses are very much greater for larger discs – Equation (4.4) indicates that for constant aspect ratio b/a, the bore stress scales as the square of the linear dimensions; consequently, larger engines must spin at a proportionately smaller rate. For example, if the linear dimensions are doubled at constant b/a, then w must be halved for an equivalent stress field. These considerations confirm that materials with high-yield stresses are required for turbine-disc applications, and that the geometry needs to be chosen carefully such that the stress levels are restricted to tolerable levels. However, the level of conservatism in component design cannot be too great, otherwise excessive parasitic weight will be introduced.",
+        "references": []
+      },
+      {
+        "block_id": "page_38_block_3",
+        "type": "text_block",
+        "content": "4.3.2 Methods for lifing a turbine disc",
+        "references": []
+      },
+      {
+        "block_id": "page_38_block_4",
+        "type": "text_block",
+        "content": "A The life-to-first-crack approach",
+        "references": []
+      },
+      {
+        "block_id": "page_38_block_5",
+        "type": "text_block",
+        "content": "In the life-to-first-crack approach, which is used in the United Kingdom, current requirements stipulate that fracture critical components such as an HP turbine disc are treated according to a safe-life policy in which component ‘failure' is defined as the occurrence of an engineering crack of surface length 0.75 mm [45,46]. This figure is below the length required for fast catastrophic fracture, and is chosen because it is about the limit of common non-destructive inspection (NDI) methods. Reliance is placed on the testing of real discs in spin rigs, under stress and temperature conditions comparable to those experienced in service. Each test can cost between $250000 and $500000; consequently, the number of tests is small – it is rare for this to exceed five.",
+        "references": []
+      },
+      {
+        "block_id": "page_38_block_6",
+        "type": "text_block",
+        "content": "For the purposes of declaring a safe service life, it is assumed that (i) the number of cycles to failure is distributed according to a log-normal density function, and (ii) to a 95% confidence level, not more than 1 in 750 discs are expected to contain a crack of surface length greater than 0.75 mm [47,48]; thus one is working at the 1/750 quantile (-3σ) such that the ratio of the fatigue lives at the +3σ and −3σ points is 6; see Figure 4.41. Given this assumed scatter factor, the life corresponding to the lower 1/750 quartile is located at a factor of √6 below the geometric mean obtained from the spin testing. This lower",
+        "references": [
+          "page_39_block_1"
+        ]
+      }
+    ]
+  },
+  {
+    "page_number": 261,
+    "content_blocks": [
+      {
+        "block_id": "page_39_block_1",
+        "type": "image",
+        "caption": "Fig. 4.41. Distribution of fatigue failure events superimposed on a o -N plot with the mean, +3σ and -3σ values identified [47].",
+        "image_type": "chart",
+        "content": {
+          "title": "Distribution of fatigue failure events on a σ-N plot",
+          "x_axis_label": "Number of cycles, N",
+          "y_axis_label": "Stress, σ",
+          "legend": [],
+          "trend_description": "A schematic graph illustrating the statistical approach to safe-life design. It shows a typical S-N (Stress vs. Number of cycles) curve with mean, +3σ, and -3σ curves. A normal distribution of failure events is shown for a given stress level, indicating the scatter in fatigue life. The 'Predicted safe cycle life, Ar' is determined from the -3σ curve to ensure a low probability of failure. The 'Assumed location of test component' is shown within the upper 5% of the component distribution.",
+          "extracted_data": []
+        }
+      },
+      {
+        "block_id": "page_39_block_2",
+        "type": "text_block",
+        "content": "confidence bound translates to a factor of",
+        "references": []
+      },
+      {
+        "block_id": "page_39_block_3",
+        "type": "text_block",
+        "content": "6^(1.645/6√n)",
+        "references": []
+      },
+      {
+        "block_id": "page_39_block_4",
+        "type": "text_block",
+        "content": "where the 95% confidence limit corresponds to 1.645 standard deviations. This procedure allows a so-called 'safe life' to be calculated from the expression",
+        "references": []
+      },
+      {
+        "block_id": "page_39_block_5",
+        "type": "text_block",
+        "content": "safe life = (Π(i=1 to n) Ni)^(1/n) / (2.449 x 6^((1.645)/(6√n)))",
+        "references": []
+      },
+      {
+        "block_id": "page_39_block_6",
+        "type": "text_block",
+        "content": "The denominator in the above equation, i.e. the factor by which the 'safe life' is lower than the geometric mean of the results from spin testing, is 4.00 when n = 1, falling to 3.25 when n = 3 and 2.90 when n = 8-thus, a safety factor is present, the magnitude dependent upon the number of components tested.",
+        "references": []
+      },
+      {
+        "block_id": "page_39_block_7",
+        "type": "text_block",
+        "content": "Note that the use of the ‘first crack' as the basis for the calculation will be conservative, since the length of a surface crack which will burst the disc is usually likely to be in excess of 0.75 mm. This provides a further built-in margin of safety.",
+        "references": []
+      },
+      {
+        "block_id": "page_39_block_8",
+        "type": "text_block",
+        "content": "B Damage-tolerant lifing",
+        "references": []
+      },
+      {
+        "block_id": "page_39_block_9",
+        "type": "text_block",
+        "content": "In practice, the ‘extra' safety factor arising from the choice of a 0.75 mm long crack as constituting failure creates a dilemma. Precisely how large is it? If it is too large the procedure will be wildly conservative. It could, however, be very small or non-existent. Thus, in some ways the life-to-first-crack approach is unsatisfactory.\nThe 'damage-tolerant' approach to disc lifing (known alternatively as the 'retirement for cause' method) represents an alternative strategy [47,48]. One starts by estimating the length of crack required for 'burst', i.e. for fast catastrophic fracture, by using a fracture mechanics approach. Next, the number of cycles is estimated for the fatigue crack to grow",
+        "references": []
+      }
+    ]
+  },
+  {
+    "page_number": 262,
+    "content_blocks": [
+      {
+        "block_id": "page_40_block_1",
+        "type": "table",
+        "caption": "Table 4.4. Crack length data [48] relating to fast fracture and fatigue crack propagation in turbine disc alloys, with the stress range, Δσ, assumed equal to the proof strength",
+        "data": [
+          [
+            "Stress range Δσ /MPa (assumed = 0.2% proof strength)",
+            "aNDI/mm",
+            "a(3300)/mm",
+            "a(6700)/mm",
+            "acrit(10000)/mm"
+          ],
+          [
+            "800",
+            "0.30",
+            "0.50",
+            "1.20",
+            "11.1"
+          ],
+          [
+            "850",
+            "0.23",
+            "0.40",
+            "0.97",
+            "9.8"
+          ],
+          [
+            "950",
+            "0.13",
+            "0.23",
+            "0.58",
+            "7.9"
+          ],
+          [
+            "1000",
+            "0.10",
+            "0.18",
+            "0.46",
+            "7.1"
+          ],
+          [
+            "1200",
+            "0.04",
+            "0.08",
+            "0.20",
+            "4.9"
+          ]
+        ],
+        "summary": "This table shows calculated crack lengths at different stages of fatigue life for turbine disc alloys under various stress ranges. It lists the required non-destructive inspection limit (aNDI), crack lengths at one-third (3300 cycles) and two-thirds (6700 cycles) of life, and the critical crack length for fast fracture (acrit) at 10,000 cycles."
+      },
+      {
+        "block_id": "page_40_block_2",
+        "type": "text_block",
+        "content": "Note: In the last column, the crack length, acrit, at fast fracture is given, assuming Y = 0.67 and K1c equal to 100 MPam¹/² and a stress equal to the proof strength. In the other columns are given the crack lengths at initiation (which is equivalent to the required non-destructive inspection limit aNDI), one-third and two-thirds dysfunction, assuming that failure occurs at 10 000 cycles.",
+        "references": []
+      },
+      {
+        "block_id": "page_40_block_3",
+        "type": "text_block",
+        "content": "from the limit of the non-destructive inspection techniques, aNDI, to the size required for burst, acrit. Fatigue-crack propagation data in the form of da/dN data are required for this purpose, and this usually conforms to the usual Paris law expression",
+        "references": []
+      },
+      {
+        "block_id": "page_40_block_4",
+        "type": "text_block",
+        "content": "da/dN = AΔK^m",
+        "references": []
+      },
+      {
+        "block_id": "page_40_block_5",
+        "type": "text_block",
+        "content": "where AK is the range of stress intensity experienced by the crack. The exponent m is usually between 3 and 4 for superalloys. Upon inserting the expression for ∆Κ = Υ∆σ√πa, and after performing the appropriate integration, one has",
+        "references": []
+      },
+      {
+        "block_id": "page_40_block_6",
+        "type": "text_block",
+        "content": "No = 1 / (A(m/2 – 1)Y^m Δσ^m π^(m/2)) * [1 / a_NDI^(m/2-1) - 1 / a_crit^(m/2-1)]",
+        "references": []
+      },
+      {
+        "block_id": "page_40_block_7",
+        "type": "text_block",
+        "content": "where No is the number of cycles for failure.",
+        "references": []
+      },
+      {
+        "block_id": "page_40_block_8",
+        "type": "text_block",
+        "content": "It is instructive to plug in some numbers, following Knott [48]. For many of the polycrystalline nickel-based superalloys used for turbine disc applications, the Paris relationship is of the form",
+        "references": []
+      },
+      {
+        "block_id": "page_40_block_9",
+        "type": "text_block",
+        "content": "da/dN = 4 × 10−12 ΔΚ^3.3",
+        "references": []
+      },
+      {
+        "block_id": "page_40_block_10",
+        "type": "text_block",
+        "content": "where AK is expressed in MPam¹/² and da/dN is the growth increment per cycle expressed in metres. Assuming a semicircular edge crack, Y = 0.67. For most nickel-based superalloys, the fracture toughness, K1c, is about 100 MPam¹/²; if we assume Ar is equal to 800 MPa, with failure occurring at the top of the cycle, one obtains acrit = 11 mm. Next, one can determine an appropriate limit for aNDI if one requires the turbine disc to last for at least 10000 cycles a figure of 0.30 mm is found. This is not very much smaller than the value assumed for the ‘first crack' in the life-to-first-crack approach. The values of a at 3300 and 6700 cycles, corresponding to one-third and two-thirds dysfunction, respectively, are 0.50 mm and 1.20 mm; see Table 4.4 [48]. Note that the majority of the fatigue crack growth occurs in the last few thousand cycles. In practice, one should note that estimates of the fatigue life made in this way are usually conservative, since no account has been taken of",
+        "references": [
+          "page_40_block_1"
+        ]
+      }
+    ]
+  }
+]

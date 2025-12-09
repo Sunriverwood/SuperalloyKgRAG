@@ -1,0 +1,420 @@
+[
+  {
+    "page_number": 183,
+    "content_blocks": [
+      {
+        "block_id": "page_1_block_1",
+        "type": "text_block",
+        "content": "3.3 Mechanical behaviour",
+        "references": []
+      },
+      {
+        "block_id": "page_1_block_2",
+        "type": "image",
+        "caption": "Fig. 3.64. Creep curves of the superalloys TMS-75, TMS-75(+Ru), TMS-75(+Mo), TMS-138 and TMS-162 tested at 1100 °C and 137 MPa [64,65].",
+        "image_type": "chart",
+        "content": {
+          "title": "Creep curves of various superalloys",
+          "x_axis_label": "Time (h)",
+          "y_axis_label": "Creep strain (%)",
+          "legend": [
+            "TMS-75(+Ru) (2%Mo, 1.6%Ru)",
+            "TMS-75 (2%Mo,0%Ru)",
+            "TMS-75(+Mo) (3%Mo,0%Ru)",
+            "TMS-138 (3%Mo,2%Ru)",
+            "TMS-162 (4%Mo,6%Ru)"
+          ],
+          "trend_description": "The chart displays creep strain versus time for five different TMS superalloys. Each curve exhibits the characteristic three stages of creep: primary, secondary (steady-state), and tertiary (accelerated creep leading to failure). The creep life and resistance vary significantly among the alloys. TMS-162 shows the longest rupture time (over 1000 hours) and lowest minimum creep rate, indicating the highest creep resistance. In contrast, TMS-75(+Ru) has the shortest creep life. The performance generally improves with increasing Mo and Ru content, as seen in the progression from TMS-75 to TMS-138 and TMS-162.",
+          "extracted_data": [
+            {
+              "x": 100,
+              "y": 10
+            },
+            {
+              "x": 150,
+              "y": 20
+            },
+            {
+              "x": 250,
+              "y": 20
+            },
+            {
+              "x": 350,
+              "y": 20
+            },
+            {
+              "x": 500,
+              "y": 20
+            },
+            {
+              "x": 1000,
+              "y": 10
+            },
+            {
+              "x": 1100,
+              "y": 20
+            }
+          ]
+        }
+      },
+      {
+        "block_id": "page_1_block_3",
+        "type": "text_block",
+        "content": "normal, slip-deposited dislocations form two perpendicular sets, for example of a/2[011] dislocations, one resulting from slip on (111) and the other on (111). These can react to form a single set with average line vector [100]. Further a/2(110) dislocations resulting from slip on the other two octahedral planes, (111) and (111), can then be knitted into the net, consistent with reactions of the type [63]",
+        "references": []
+      },
+      {
+        "block_id": "page_1_block_4",
+        "type": "text_block",
+        "content": "a/2[101] - a/2[011] → a/2[110] (3.34a)",
+        "references": []
+      },
+      {
+        "block_id": "page_1_block_5",
+        "type": "text_block",
+        "content": "and",
+        "references": []
+      },
+      {
+        "block_id": "page_1_block_6",
+        "type": "text_block",
+        "content": "a/2[101] - a/2[110] → a/2[011] (3.34b)",
+        "references": []
+      },
+      {
+        "block_id": "page_1_block_7",
+        "type": "text_block",
+        "content": "or, alternatively,",
+        "references": []
+      },
+      {
+        "block_id": "page_1_block_8",
+        "type": "text_block",
+        "content": "a/2[101] + a/2[101] → a[100] (3.34c)",
+        "references": []
+      },
+      {
+        "block_id": "page_1_block_9",
+        "type": "text_block",
+        "content": "Thus it is clear that the equilibrium network can arise only when sufficient creep dislocations have formed on all four of the {111}-type planes. Harada and co-workers have isolated a strong correlation between the dislocation density of the equilibrium network in single-crystal superalloys of varying compositions and their creep performance under loading at 1100 °C and 137 MPa (see Figures 3.64 and 3.65), with the dislocation spacing being found to be proportional to the logarithm of the minimum creep rate [64,65]. Use of this effect has been made in designing TMS-162, which is one of the strongest single-crystal superalloys",
+        "references": [
+          "page_1_block_2",
+          "page_2_block_1"
+        ]
+      }
+    ]
+  },
+  {
+    "page_number": 184,
+    "content_blocks": [
+      {
+        "block_id": "page_2_block_0",
+        "type": "text_block",
+        "content": "184 Single-crystal superalloys for blade applications",
+        "references": []
+      },
+      {
+        "block_id": "page_2_block_1",
+        "type": "image",
+        "caption": "Fig. 3.65. Measurements of the equilibrium γ/γ' dislocation spacings in (a) TMS-75(+Ru), (b) TMS-75, (c) TMS-75(+Mo), (d) TMS-138 and (e) TMS-162 tested at 1100 °C and 137 MPa [64,65]; taken with the data in Figure 3.64, a strong creep strengthening effect is confirmed when the dislocation spacing is small.",
+        "image_type": "chart",
+        "content": {
+          "title": "Measurements of the equilibrium γ/γ' dislocation spacings",
+          "x_axis_label": "Dislocation spacing (nm)",
+          "y_axis_label": "Observation frequency",
+          "legend": [
+            "(a) TMS-75(+Ru)",
+            "(b) TMS-75",
+            "(c) TMS-75(+Mo)",
+            "(d) TMS-138",
+            "(e) TMS-162"
+          ],
+          "trend_description": "The figure consists of five histograms showing the frequency distribution of dislocation spacings for the same superalloys shown in Fig. 3.64. There is a clear trend: as the creep performance of the alloy improves (from (a) to (e)), the average dislocation spacing decreases and the distribution becomes narrower. (a) TMS-75(+Ru) has the largest average spacing, centered around 55-65 nm. (e) TMS-162, the best performing alloy, has the smallest spacing, sharply peaked around 25-30 nm. This confirms the caption's statement that smaller dislocation spacing correlates with stronger creep resistance.",
+          "extracted_data": []
+        }
+      }
+    ]
+  },
+  {
+    "page_number": 185,
+    "content_blocks": [
+      {
+        "block_id": "page_3_block_1",
+        "type": "text_block",
+        "content": "3.3 Mechanical behaviour",
+        "references": []
+      },
+      {
+        "block_id": "page_3_block_2",
+        "type": "image",
+        "caption": "Fig. 3.66. SEM micrographs [62] of the CMSX-4 superalloy deformed at 950 °C. (a) γ/γ' microstructures after 280 h (0.07% strain) and 550 h (0.27% strain), with an applied stress of 185 MPa. (b) Microstructures after further heat treatment of 100, 300 and 600 h, with zero applied stress.",
+        "image_type": "photograph",
+        "content": {
+          "description": "The image displays scanning electron micrographs (SEM) of the CMSX-4 superalloy. Part (a) shows the γ/γ' microstructure after 280 hours and 550 hours of deformation, revealing the initial stages of microstructural change. Part (b) shows the evolution of the microstructure after subsequent heat treatments without stress for 100, 300, and 600 hours, illustrating the development of 'rafted' structures. Text annotations indicate time and strain for part (a), and additional heat treatment time for part (b). A scale bar indicates 2.5 µm."
+        }
+      },
+      {
+        "block_id": "page_3_block_3",
+        "type": "text_block",
+        "content": "to date (see Figure 1.17). Additions of Mo are critical to the superior creep performance displayed, since the lattice misfit is reduced as the concentration of this element increases.",
+        "references": []
+      },
+      {
+        "block_id": "page_3_block_4",
+        "type": "text_block",
+        "content": "The relaxation of interfacial misfit by the above mechanism is important since it is now recognised that rafting occurs only once this has occurred [60–62]. Consider a negatively misfitting alloy such as CMSX-4. The micromechanism of creep deformation in the tertiary creep regime involves the multiplication of dislocations in y, initially in the horizontal channels for reasons discussed earlier; the relaxation of interfacial misfit thus occurs preferentially on the γ / γ' interfaces whose normals lie parallel to the direction of loading. Rafting requires diffusion of y-partitioning elements such as Cr, Re out of the vertical channels and γ'-partitioning elements such as Al, Ta into them; the evidence indicates that such mass transport can occur only once the lattice misfit has become relaxed, probably because diffusion occurs near or within the relaxed interfaces. The possibility of pipe diffusion of solutes within the dislocation networks should not be dismissed, although no direct evidence for this has been found as yet. The role of interfacial misfit relaxation in the rafting phenomenon has been confirmed with experiments which have demonstrated that partially crept single crystals continue to raft even after the externally applied load is removed [60,62]. Moreover, the kinetics of rafting are not slowed in any way by the removal of the stress field. Figure 3.66 shows the results of experiments on CMSX-4 [62]. For deformation at 950 °C and 185 MPa, an accumulated strain of about 0.1% is sufficient to relax the interfacial misfit and, thereafter, rafting without the externally applied load continues at the same rate as with the load present.",
+        "references": [
+          "page_3_block_2"
+        ]
+      },
+      {
+        "block_id": "page_3_block_5",
+        "type": "text_block",
+        "content": "A controversial question concerns the influence of the rafting effect on the creep capability of the single-crystal superalloys. Note (see Figure 3.61) that as many as ten or more y' precipitates coalesce in the transverse direction; thus a fully developed raft is formed from 100 or more precipitates of total cross-sectional area equal to several hundreds of square",
+        "references": []
+      }
+    ]
+  },
+  {
+    "page_number": 186,
+    "content_blocks": [
+      {
+        "block_id": "page_4_block_1",
+        "type": "text_block",
+        "content": "186 Single-crystal superalloys for blade applications",
+        "references": []
+      },
+      {
+        "block_id": "page_4_block_2",
+        "type": "image",
+        "caption": "Fig. 3.67. Constant load creep data for the CMSX-4 superalloy, deformed at 1150 °C and 100 MPa.",
+        "image_type": "chart",
+        "content": {
+          "title": "Constant load creep data for the CMSX-4 superalloy",
+          "x_axis_label": "Time (h)",
+          "y_axis_label": "Strain (%)",
+          "legend": [
+            "Interrupted",
+            "Rupture"
+          ],
+          "trend_description": "The chart shows creep strain versus time for the CMSX-4 superalloy. A primary solid curve illustrates the typical three stages of creep, culminating in rupture at point D. A secondary dashed curve shows a similar initial behavior. Specific test points are marked: A, B, and F represent interrupted tests, while C, D, and E represent rupture points. The scatter in rupture points (C, D, E) highlights the variability in tertiary creep life, even though the secondary creep plateau is described as reproducible.",
+          "extracted_data": [
+            {
+              "x": 20,
+              "y": 0.5
+            },
+            {
+              "x": 110,
+              "y": 1.0
+            },
+            {
+              "x": 200,
+              "y": 2.2
+            },
+            {
+              "x": 210,
+              "y": 11.0
+            },
+            {
+              "x": 260,
+              "y": 4.5
+            },
+            {
+              "x": 280,
+              "y": 5.0
+            }
+          ]
+        }
+      },
+      {
+        "block_id": "page_4_block_3",
+        "type": "text_block",
+        "content": "micrometres, since the rafts have a thickness equal to one y' particle. Extensive rafting leads eventually to the inversion of the γ/γ' structure such that the continuous, matrix phase is y' rather than y. Under these circumstances, rafting reduces the activity of the a/2(110){111} dislocations in y. This is supported by various pieces of evidence [66]. First, extrapolation of the tertiary creep law to temperatures where rafting occurs leads to an underestimate of the creep performance, particularly at small applied stresses when creep life is long; see Figure 3.54(d). Second, in the rafting regime, fully developed rafts are found to have formed at times equivalent to the onset of, or even before, the plateau observed in the creep curves at these very high temperatures; see Figure 3.51(c). Thus rafting is at least partially responsible for the creep-hardening effect which occurs initially and the creep plateau that occurs thereafter. Third, there is considerable scatter in the creep rupture lives at these very high temperatures (see Figure 3.67); however, the creep plateau is very reproducible. Final rupture at these temperatures is associated with extensive creep cavitation at porosity introduced either during the casting process into the interdendritic regions [67], or alternatively at pores forming around TCP phases which precipitate at these elevated temperatures [66]. Cavitation is, however, restricted to those pores present in the vicinity of fracture surface (see Figure 3.68), and it is probable therefore that their formation is strain-controlled. Hot isostatic pressing has, however, been found to increase the mean value of the rupture life somewhat. However, more research is needed to clarify the reasons for the onset of the rapid acceleration in creep strain rate leading to rupture, and the micromechanical deformation modes which lead to the cutting of the rafted y' microstructure.",
+        "references": [
+          "page_4_block_2",
+          "page_5_block_1"
+        ]
+      }
+    ]
+  },
+  {
+    "page_number": 187,
+    "content_blocks": [
+      {
+        "block_id": "page_5_block_1",
+        "type": "text_block",
+        "content": "3.3 Mechanical behaviour",
+        "references": []
+      },
+      {
+        "block_id": "page_5_block_2",
+        "type": "image",
+        "caption": "Fig. 3.68. CMSX-4 creep testpiece interrupted after 2.2% strain after 200 h at 1150 °C and 100 MPa (see the creep curve marked ‘F’ in Figure 3.67). (a) Necked creep specimen at point of fracture. (b) Micrograph of creep-cavitated casting porosity in necked region. (c) Variation of fraction of pores cavitated as a function of distance along specimen, providing confirmation that cavitation is restricted to the necked region.",
+        "image_type": "other",
+        "content": {
+          "description": "This composite figure shows results from an interrupted creep test on a CMSX-4 specimen. (a) is a photograph of the testpiece, showing significant necking at the fracture point. (b) is a micrograph revealing creep-cavitated porosity within this necked region, with a 100 µm scale bar. (c) is a chart plotting the fraction of cavitated pores versus position along the gauge length, showing a distinct peak that confirms cavitation is localized to the necked area. The caption links this data to point 'F' on the creep curve in Figure 3.67."
+        }
+      },
+      {
+        "block_id": "page_5_block_3",
+        "type": "text_block",
+        "content": "3.3.2 Performance in fatigue",
+        "references": []
+      },
+      {
+        "block_id": "page_5_block_4",
+        "type": "text_block",
+        "content": "As for all metallic materials, the single-crystal superalloys are prone to fatigue failure due to oscillating loads, at stresses which are nominally elastic. This is because plastic deformation can occur in a very localised sense, typically near sites of stress concentration; this fatigue damage is most often in the form of intense, localised slip with the dislocation activity restricted to a small number of lattice planes [68]. This phenomenon is often referred to as 'cyclic slip localisation'; particularly at temperatures of around 700 °C and when stresses are high this encourages the formation of ‘persistent slip bands' (PSBs) which shear the γ' particles [69]; see Figure 3.69. Fatigue initiation can always be traced to sites of stress concentration, for example casting pores or machining marks. At higher temperatures and when stresses are low, dislocation activity is restricted to the y channels and cyclic slip localisation is less intense; thus deformation is more homogeneous, but nonetheless limited to the most highly stressed {111} planes [70]; see Figure 3.70. Under these conditions, fatigue initiation occurs at surface pits or cracks in the oxide films – and the life is improved markedly if protective coatings (for example the aluminides) are used.",
+        "references": [
+          "page_6_block_1",
+          "page_6_block_2"
+        ]
+      },
+      {
+        "block_id": "page_5_block_5",
+        "type": "text_block",
+        "content": "In practice, the environment experienced by the blading in service is very difficult to replicate exactly in the laboratory. Consequently, reliance is placed on the characterisation of",
+        "references": []
+      }
+    ]
+  },
+  {
+    "page_number": 188,
+    "content_blocks": [
+      {
+        "block_id": "page_6_block_1",
+        "type": "text_block",
+        "content": "188 Single-crystal superalloys for blade applications",
+        "references": []
+      },
+      {
+        "block_id": "page_6_block_2",
+        "type": "image",
+        "caption": "Fig. 3.69. Persistent slip bands in a (001)-oriented single-crystal superalloy cycled at 700 °C [69], in which the y' particles are sheared.",
+        "image_type": "photograph",
+        "content": {
+          "description": "A transmission electron micrograph (TEM) showing persistent slip bands (PSBs) in a single-crystal superalloy. The PSBs appear as distinct, parallel bands cutting across the ordered γ' precipitate phase. The image includes annotations for crystallographic direction 'g = (111)', direction of 'Stress', and a '2 µm' scale bar."
+        }
+      },
+      {
+        "block_id": "page_6_block_3",
+        "type": "image",
+        "caption": "Fig. 3.70. Dislocation microstructure in the AM1 single-crystal superalloy deformed at 950 °C with Δεtotal = 1.27% and with R = 0 [70]. P is the projection of the loading axis. Dislocations are localised at {001} interfaces, see arrows marked 1; {010} and {100} channels, see arrows marked 2, are free of dislocations.",
+        "image_type": "photograph",
+        "content": {
+          "description": "A TEM image of the dislocation microstructure in an AM1 superalloy. It shows dislocations concentrated at the γ/γ' interfaces (indicated by arrows '1'), while the γ channels (arrows '2') are relatively free of dislocations. Annotations include 'g=022' and a '500 nm' scale bar."
+        }
+      },
+      {
+        "block_id": "page_6_block_4",
+        "type": "text_block",
+        "content": "fatigue performance under conditions which can be easily controlled, for example isothermal tests under uniaxial load or strain control. The cyclic stress range, Ar, is defined as omax - omin, where omax and omin are the maximum and minimum stresses seen during the cycle, and the mean stress, mean, is (max + 5min). The R-ratio is defined as omin/max, so that R = -1 corresponds to fully reversed loading with omax = -5min and R = 0 corresponds",
+        "references": []
+      }
+    ]
+  },
+  {
+    "page_number": 189,
+    "content_blocks": [
+      {
+        "block_id": "page_7_block_1",
+        "type": "text_block",
+        "content": "3.3 Mechanical behaviour",
+        "references": []
+      },
+      {
+        "block_id": "page_7_block_2",
+        "type": "image",
+        "caption": "Fig. 3.71. The orientation dependence of the strain-controlled LCF life of an experimental single-crystal superalloy at 980 °C, for various values of the total strain range, ∆∈total = 0.6 [71]. Axial load: KT = 1.0; frequency = 0.33 Hz.",
+        "image_type": "chart",
+        "content": {
+          "title": "Orientation dependence of strain-controlled LCF life",
+          "x_axis_label": "Nf (cycles)",
+          "y_axis_label": "Total strain (%)",
+          "legend": [
+            "(001)",
+            "<113)",
+            "<011>",
+            "(112)",
+            "<111>"
+          ],
+          "trend_description": "This log-log plot shows total strain versus cycles to failure (Nf) for a superalloy tested along different crystallographic orientations. All orientations follow a linear trend, consistent with the Coffin-Manson relation for low-cycle fatigue (LCF). A strong anisotropy is observed: for any given strain level, the (001) orientation has the longest fatigue life, while the (111) orientation has the shortest life. The other orientations fall in between these two extremes.",
+          "extracted_data": []
+        }
+      },
+      {
+        "block_id": "page_7_block_3",
+        "type": "text_block",
+        "content": "to pure cyclic conditions with omin = 0. Two distinct forms of fatigue failure are identified. Low-cycle fatigue (LCF) arises when the stress amplitude places the nominal stresses at or beyond the elastic limit – failure occurs typically within 105 cycles, with a majority of the fatigue life being spent in the propagation (rather than initiation) stage. From a practical perspective, the driving force for LCF damage originates from abrupt changes in loading due to engine start-up and stopping. Conversely, high-cycle fatigue (HCF) arises from smaller stress amplitudes, typical of those imposed on the blading by vibrations or resonance. In this case, the nominal stresses are always in the elastic regime, and the majority of the fatigue life is spent in the initiation stage; failure occurs in excess of 105 cycles.",
+        "references": []
+      },
+      {
+        "block_id": "page_7_block_4",
+        "type": "text_block",
+        "content": "A Low-cycle fatigue",
+        "references": []
+      },
+      {
+        "block_id": "page_7_block_5",
+        "type": "text_block",
+        "content": "Under LCF testing conditions, which are often carried out under total strain control, it is found that the fatigue performance depends very strongly on the orientation of the loading axis with respect to the crystallographic orientation, i.e. considerable anisotropy is displayed. Figure 3.71 shows data due to Dalal, Thomas and Dardi [71], who measured the LCF response of smooth, polished specimens of an experimental alloy (composition in wt%: Ni-6.8Al-13.8Mo–6W) at 980 °C, under total strain control and with R = 0. The logarithm of the total strain range, Δ∈total, is found to be inversely proportional to the logarithm of the fatigue life, Nf, for any given orientation. Of the three orientations at the corners of the standard stereographic triangle, i.e. (001), (011) and (111), the (001) orientation displayed the best performance and (111) the worst; all other orientations were between these two",
+        "references": [
+          "page_7_block_2"
+        ]
+      }
+    ]
+  },
+  {
+    "page_number": 190,
+    "content_blocks": [
+      {
+        "block_id": "page_8_block_1",
+        "type": "text_block",
+        "content": "190 Single-crystal superalloys for blade applications",
+        "references": []
+      },
+      {
+        "block_id": "page_8_block_2",
+        "type": "image",
+        "caption": "Fig. 3.72. Stress-strain curves for PWA1480 single-crystal testpieces, for various orientations taken from the standard stereographic triangle [72].",
+        "image_type": "chart",
+        "content": {
+          "title": "Stress-strain curves for PWA1480 single-crystal testpieces",
+          "x_axis_label": "Strain, e",
+          "y_axis_label": "Stress, σ (MPa)",
+          "legend": [
+            "Fracture strain 0.167",
+            "Fracture strain 0.116",
+            "Fracture strain 0.165",
+            "Fracture strain 0.256",
+            "Fracture strain 0.219"
+          ],
+          "trend_description": "The chart presents a series of stress-strain curves for the PWA1480 superalloy, with each curve corresponding to a different crystallographic orientation as indicated on the inset stereographic triangle. The curves demonstrate significant mechanical anisotropy. Some orientations exhibit high yield strength and stiffness but lower ductility, while others are softer (lower yield strength) but have greater fracture strains.",
+          "extracted_data": []
+        }
+      },
+      {
+        "block_id": "page_8_block_3",
+        "type": "text_block",
+        "content": "limits. Thus the fatigue strength correlates strongly with the elastic modulus in the loading direction so that a direction such as (001), which is elastically soft, displays very much better properties than one which is stiff, such as (111). In fact, it can be shown that if one plots the product ∆etotal Ehkl rather than Aetotal against Nf, then the fatigue data collapse onto a straight line. The term Ehkl is the plane-specific elastic modulus along the loading axis.",
+        "references": []
+      },
+      {
+        "block_id": "page_8_block_4",
+        "type": "text_block",
+        "content": "These observations can be rationalised in the following way. Assuming for one moment that the yield stresses in the (001) and (111) directions are equal, the elastic strain at yield is smaller for a specimen tested along (111) on account of its greater stiffness; thus, under total strain control, the plastic strain available to drive the fatigue process is correspondingly greater, so that poorer properties are displayed. In fact, the yield stress shows a fair degree of anisotropy; see, for example, the data of ref. [72] for the PWA1480 single-crystal superalloy (Figure 3.72). Such experiments indicate that the yield stress along (001) is greater than that along (111); the increment Aoy can be in excess of 200 MPa; under total strain control, the plastic strain along (001) is reduced by a factor Δσy/E001 due to this effect, giving further justification to the superior properties along (001). Under load control, the situation is more complicated. The low modulus along (001) might at first be expected to result in large strains and poor fatigue life, but this is not observed in practice. Clearly, under load-controlled conditions one must be relying on the larger flow stress along that direction, or, alternatively, the life is limited by stress concentrations which behave in a strain-controlled manner.",
+        "references": [
+          "page_8_block_2"
+        ]
+      },
+      {
+        "block_id": "page_8_block_5",
+        "type": "text_block",
+        "content": "Under LCF conditions, the cyclic stress-strain hysteresis loops show a number of interesting characteristics. First, the width of the loops is larger when high inelastic strains are imposed, which occurs for the stiffest orientations. See, for example, Figure 3.73 [71], for the case of R = 0. Second, a considerable degree of tension-compression yield stress",
+        "references": [
+          "page_9_block_1"
+        ]
+      }
+    ]
+  }
+]

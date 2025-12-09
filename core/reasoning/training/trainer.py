@@ -21,6 +21,9 @@ from core.reasoning.models.rgat import QueryAwareRGAT
 from core.reasoning.data_loader import GraphData
 from utils.graph_reasoning_utils import PseudoQueryGenerator
 
+# --- 项目根目录定义 ---
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
+
 
 class LinkPredictionDecoder(nn.Module):
     """
@@ -455,7 +458,7 @@ class GraphReasoningTrainer:
 
     def save_checkpoint(self, name: str = 'checkpoint'):
         """Save model checkpoint"""
-        checkpoint_dir = Path(self.reasoning_config.get('training', {}).get('checkpoint_dir', 'data/reasoning/checkpoints'))
+        checkpoint_dir = PROJECT_ROOT / self.reasoning_config.get('training', {}).get('checkpoint_dir', 'data/reasoning/checkpoints')
         checkpoint_dir.mkdir(parents=True, exist_ok=True)
 
         checkpoint_path = checkpoint_dir / f'{name}.pt'
