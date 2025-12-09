@@ -101,16 +101,20 @@ graph_builder:
   community_importance_weight_alpha: 0.6 # 重要性权重的alpha值
   enable_entity_merge: True
   entity_merge_topk: 10
-  entity_merge_min_sim: 0.82
-  embedding_batch_size: 1000 # 每批次处理的实体嵌入数量，避免API配额错误
+  entity_merge_min_sim: 0.9
+  embedding_batch_size: 10000 # 每批次处理的实体嵌入数量和LLM仲裁数量，避免API配额错误
+  # 人工审核配置
+  enable_manual_review: False # 是否启用人工审核功能
+  manual_review_sample_size: 5 # 人工审核抽样数量
+  manual_review_output_dir: "data/reports/manual_review" # 人工审核输出目录
 
 embedding:
   model: "text-embedding-v4"  #"gemini-embedding-001""text-embedding-v4"
-  dimensionality: 768
+  dimensionality: 1024
   input_text_units_path: "data/chunks/text_units.jsonl"
   input_graph_path: "data/graphs/final_graph.json"
-  input_community_report_path: "data/reports/community_summaries.jsonl"
-  output_db_path: "data/embeddings/embedding.db"  #no_entities_merge
+  input_community_report_path: "data/reports/community_summaries_enriched.jsonl"
+  output_db_path: "data/embeddings/enriched.db"  #no_entities_merge
   output_db_text_path: "data/embeddings/text.db"
   output_text_table_name: "text"
   requests_path: "data/cache"

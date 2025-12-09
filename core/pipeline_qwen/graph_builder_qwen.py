@@ -6,6 +6,7 @@ import time
 from pathlib import Path
 from typing import Dict, Any, List, Tuple
 from string import Template
+from concurrent.futures import ThreadPoolExecutor, as_completed
 import numpy as np
 import networkx as nx
 import pandas as pd
@@ -196,8 +197,8 @@ def create_disambiguation_prompt(node_id: str, G: nx.DiGraph) -> str:
         ctx.append("\n关系上下文:")
         ctx.extend(rels)
     prompt = (
-        "请基于以下上下文，为实体生成一个全面、精准、消除歧义的标准化描述，像百科定义一样，不超过100字。\n"
-        f"上下文信息:\n{'\n'.join(ctx)}\n"
+        "基于以下上下文，为实体生成一个全面、精准、消除歧义的标准化描述，像百科定义一样，不超过100字。\n"
+        f"上下文:\n{'\n'.join(ctx)}\n"
         "标准化描述:"
     )
     return prompt
@@ -212,8 +213,25 @@ def create_batch_requests(
         max_report_words: str | None = None,
         max_relationships: int | None = None,
         max_entities: int | None = None,
+        batch_size: int | None = None,
 ) -> int:
-    """创建批量请求 (OpenAI 兼容格式)。"""
+    """
+    创建批量请求 (OpenAI 兼容格式)，支持分批处理
+
+    Args:
+        graph: 图对象
+        model_name: 模型名称
+        output_path: 输出路径
+        request_type: 请求类型
+        prompt_dir: prompt目录
+        max_report_words: 最大报告字数
+        max_relationships: 最大关系数
+        max_entities: 最大实体数
+        batch_size: 单次批量请求的最大数量，如果为None则不分批
+
+    Returns:
+        生成的请求数量
+    """
     logging.info(f"正在为 '{request_type}' 创建批量请求...")
     requests: List[Dict[str, Any]] = []
 
@@ -265,24 +283,58 @@ def create_batch_requests(
                 "messages": [
                     {"role": "user", "content": prompt_text}
                 ],
-                "temperature": 0.3  # 适当降低随机性
+                "temperature": 0.1  # 适当降低随机性
             }
         }
         requests.append(request_line)
 
-    output_path.parent.mkdir(exist_ok=True, parents=True)
-    with open(output_path, 'w', encoding='utf-8') as f:
-        for req in requests:
-            f.write(json.dumps(req, ensure_ascii=False) + "\n")
-    logging.info(f"已为 {len(requests)} 个 '{request_type}' 任务写入 {output_path}")
-    return len(requests)
+    # 支持分批处理
+    total_requests = len(requests)
+    if batch_size and total_requests > batch_size:
+        num_batches = (total_requests + batch_size - 1) // batch_size
+        logging.info(f"⚙️ 请求数量 {total_requests} 超过批次大小 {batch_size}，将拆分为 {num_batches} 个批次处理")
+
+        for batch_idx in range(num_batches):
+            start_idx = batch_idx * batch_size
+            end_idx = min((batch_idx + 1) * batch_size, total_requests)
+            batch_requests = requests[start_idx:end_idx]
+
+            # 为每个批次创建单独的文件
+            batch_output_path = output_path.parent / f"{output_path.stem}_batch_{batch_idx + 1}.jsonl"
+
+            with open(batch_output_path, 'w', encoding='utf-8') as f:
+                for req in batch_requests:
+                    f.write(json.dumps(req, ensure_ascii=False) + "\n")
+
+            logging.info(f"✅ 批次 {batch_idx + 1}/{num_batches} 已写入 {len(batch_requests)} 个请求: {batch_output_path}")
+
+        return total_requests
+    else:
+        # 不分批，直接处理
+        output_path.parent.mkdir(exist_ok=True, parents=True)
+        with open(output_path, 'w', encoding='utf-8') as f:
+            for req in requests:
+                f.write(json.dumps(req, ensure_ascii=False) + "\n")
+        logging.info(f"已为 {len(requests)} 个 '{request_type}' 任务写入 {output_path}")
+        return len(requests)
 
 
 def submit_and_monitor_job(client: OpenAI, input_file_path: Path, model_name: str, sleep_interval: int,
-                           job_type: str) -> Any:
+                           job_type: str, monitor: bool = True) -> Any:
     """
     提交并监控批量作业 (OpenAI SDK)。
     适用于 Chat Completion 任务 (disambiguation, community summary, merge)。
+
+    Args:
+        client: OpenAI客户端
+        input_file_path: 输入文件路径
+        model_name: 模型名称
+        sleep_interval: 轮询间隔
+        job_type: 作业类型
+        monitor: 是否立即监控，False时只提交不等待完成
+
+    Returns:
+        作业状态对象
     """
     logging.info(f"📤 [{job_type}] 正在上传请求文件: {input_file_path.name}...")
     try:
@@ -308,14 +360,36 @@ def submit_and_monitor_job(client: OpenAI, input_file_path: Path, model_name: st
         logging.error(f"❌ [{job_type}] 创建批量作业失败: {e}")
         return None
 
+    # 如果不需要立即监控，直接返回作业对象
+    if not monitor:
+        return job
+
+    # 监控作业完成
+    return _monitor_job_completion(client, job, sleep_interval, job_type)
+
+
+def _monitor_job_completion(client: OpenAI, job: Any, sleep_interval: int, job_type: str) -> Any:
+    """
+    监控批量作业完成状态
+
+    Args:
+        client: OpenAI客户端
+        job: 作业对象
+        sleep_interval: 轮询间隔
+        job_type: 作业类型
+
+    Returns:
+        完成后的作业状态
+    """
     completed = {'completed', 'failed', 'cancelled', 'expired'}
     logging.info(f"⏳ [{job_type}] 开始轮询作业 '{job.id}' 状态，每 {sleep_interval} 秒检查一次...")
     while True:
         try:
             status = client.batches.retrieve(batch_id=job.id)
             state = status.status
-            logging.info(f"  - [{job_type}] 当前状态: {state}")
+            logging.debug(f"  - [{job_type}] 当前状态: {state}")
             if state in completed:
+                logging.info(f"✅ [{job_type}] 作业完成，最终状态: {state}")
                 return status
             time.sleep(sleep_interval)
         except Exception as e:
@@ -404,9 +478,21 @@ def _create_temp_embedding_requests(entities: List[Tuple[str, str]], output_path
 
 
 def _submit_and_monitor_embedding_job(client: OpenAI, requests_path: Path, model_name: str, sleep_interval: int,
-                                      batch_index: int = 0, total_batches: int = 1):
+                                      batch_index: int = 0, total_batches: int = 1, monitor: bool = True):
     """
     提交单个批量嵌入作业并监控 (OpenAI SDK)。
+
+    Args:
+        client: OpenAI客户端
+        requests_path: 请求文件路径
+        model_name: 嵌入模型名称
+        sleep_interval: 轮询间隔
+        batch_index: 批次索引
+        total_batches: 总批次数
+        monitor: 是否立即监控，False时只提交不等待完成
+
+    Returns:
+        作业状态对象
     """
     batch_tag = f"[批次 {batch_index + 1}/{total_batches}]" if total_batches > 1 else ""
     logging.info(f"📤 [EntityEmb] {batch_tag} 上传临时嵌入请求: {requests_path.name} ...")
@@ -433,12 +519,37 @@ def _submit_and_monitor_embedding_job(client: OpenAI, requests_path: Path, model
         logging.error(f"❌ [EntityEmb] {batch_tag} 创建嵌入作业失败: {e}")
         return None
 
+    # 如果不需要立即监控，直接返回作业对象
+    if not monitor:
+        return job
+
+    # 监控作业完成
+    return _monitor_embedding_job_completion(client, job, sleep_interval, batch_index, total_batches)
+
+
+def _monitor_embedding_job_completion(client: OpenAI, job: Any, sleep_interval: int,
+                                      batch_index: int = 0, total_batches: int = 1) -> Any:
+    """
+    监控嵌入作业完成状态
+
+    Args:
+        client: OpenAI客户端
+        job: 作业对象
+        sleep_interval: 轮询间隔
+        batch_index: 批次索引
+        total_batches: 总批次数
+
+    Returns:
+        完成后的作业状态
+    """
+    batch_tag = f"[批次 {batch_index + 1}/{total_batches}]" if total_batches > 1 else ""
     done = {'completed', 'failed', 'cancelled', 'expired'}
     logging.info(f"⏳ [EntityEmb] {batch_tag} 轮询 '{job.id}' 状态，每 {sleep_interval} 秒...")
     while True:
         try:
             st = client.batches.retrieve(batch_id=job.id)
             if st.status in done:
+                logging.info(f"✅ [EntityEmb] {batch_tag} 作业完成，最终状态: {st.status}")
                 return st
             time.sleep(sleep_interval)
         except Exception as e:
@@ -513,7 +624,7 @@ def _cosine_sim_matrix(A: np.ndarray) -> np.ndarray:
     return np.clip(A @ A.T, -1.0, 1.0)
 
 
-def build_candidate_clusters(vecs: np.ndarray, ids: List[str], topk: int = 10, min_sim: float = 0.82) -> List[
+def build_candidate_clusters(vecs: np.ndarray, ids: List[str], topk: int = 10, min_sim: float = 0.9) -> List[
     List[str]]:
     n = vecs.shape[0]
     if n == 0: return []
@@ -586,27 +697,77 @@ def _build_merge_prompt_for_cluster(G: nx.DiGraph, member_ids: List[str], prompt
 
 
 def create_entity_merge_requests(G: nx.DiGraph, clusters: List[List[str]], model_name: str, prompt_dir: str,
-                                 output_path: Path) -> int:
+                                 output_path: Path, batch_size: int = None) -> int:
+    """
+    创建实体合并请求，支持分批处理
+
+    Args:
+        G: 图对象
+        clusters: 候选簇列表
+        model_name: 模型名称
+        prompt_dir: prompt目录
+        output_path: 输出路径
+        batch_size: 单次批量请求的最大数量，如果为None则不分批
+
+    Returns:
+        生成的请求数量
+    """
     # 修改：OpenAI Batch Request Format
     output_path.parent.mkdir(exist_ok=True, parents=True)
     cnt = 0
-    with open(output_path, 'w', encoding='utf-8') as f:
-        for idx, member_ids in enumerate(clusters):
-            prompt = _build_merge_prompt_for_cluster(G, member_ids, prompt_dir)
-            req = {
-                "custom_id": f"cluster_{idx}",
-                "method": "POST",
-                "url": "/v1/chat/completions",
-                "body": {
-                    "model": model_name,
-                    "messages": [{"role": "user", "content": prompt}],
-                    "temperature": 0.1,
-                    "response_format": {"type": "json_object"}  # 强制 JSON
+
+    # 如果指定了batch_size，则分批处理
+    if batch_size and len(clusters) > batch_size:
+        num_batches = (len(clusters) + batch_size - 1) // batch_size
+        logging.info(f"⚙️ 候选簇数量 {len(clusters)} 超过批次大小 {batch_size}，将拆分为 {num_batches} 个批次处理")
+
+        for batch_idx in range(num_batches):
+            start_idx = batch_idx * batch_size
+            end_idx = min((batch_idx + 1) * batch_size, len(clusters))
+            batch_clusters = clusters[start_idx:end_idx]
+
+            # 为每个批次创建单独的文件
+            batch_output_path = output_path.parent / f"{output_path.stem}_batch_{batch_idx + 1}.jsonl"
+
+            with open(batch_output_path, 'w', encoding='utf-8') as f:
+                for local_idx, member_ids in enumerate(batch_clusters):
+                    global_idx = start_idx + local_idx
+                    prompt = _build_merge_prompt_for_cluster(G, member_ids, prompt_dir)
+                    req = {
+                        "custom_id": f"cluster_{global_idx}",
+                        "method": "POST",
+                        "url": "/v1/chat/completions",
+                        "body": {
+                            "model": model_name,
+                            "messages": [{"role": "user", "content": prompt}],
+                            "temperature": 0.1,
+                            "response_format": {"type": "json_object"}  # 强制 JSON
+                        }
+                    }
+                    f.write(json.dumps(req, ensure_ascii=False) + "\n")
+                    cnt += 1
+
+            logging.info(f"✅ 批次 {batch_idx + 1}/{num_batches} 已生成 {len(batch_clusters)} 个请求: {batch_output_path}")
+    else:
+        # 不分批，直接处理
+        with open(output_path, 'w', encoding='utf-8') as f:
+            for idx, member_ids in enumerate(clusters):
+                prompt = _build_merge_prompt_for_cluster(G, member_ids, prompt_dir)
+                req = {
+                    "custom_id": f"cluster_{idx}",
+                    "method": "POST",
+                    "url": "/v1/chat/completions",
+                    "body": {
+                        "model": model_name,
+                        "messages": [{"role": "user", "content": prompt}],
+                        "temperature": 0.1,
+                        "response_format": {"type": "json_object"}  # 强制 JSON
+                    }
                 }
-            }
-            f.write(json.dumps(req, ensure_ascii=False) + "\n")
-            cnt += 1
-    logging.info(f"为 {cnt} 个候选簇生成了 LLM 仲裁请求: {output_path}")
+                f.write(json.dumps(req, ensure_ascii=False) + "\n")
+                cnt += 1
+        logging.info(f"为 {cnt} 个候选簇生成了 LLM 仲裁请求: {output_path}")
+
     return cnt
 
 
@@ -953,13 +1114,82 @@ def save_graph(graph: nx.DiGraph, output_path: Path):
 # 可复用的阶段封装 (调用端点调整)
 # =========================
 
-def run_disambiguation_stage(client: OpenAI, graph: nx.DiGraph, model_name: str, sleep_interval: int,
-                             disamb_requests_path: Path, save_path: Path = None) -> Dict[str, str]:
+def run_disambiguation_stage(client: OpenAI, graph: nx.DiGraph, config: Dict[str, Any], model_name: str,
+                             sleep_interval: int, disamb_requests_path: Path, save_path: Path = None) -> Dict[str, str]:
+    """
+    运行实体消歧阶段，支持分批处理
+
+    Args:
+        client: OpenAI客户端
+        graph: 图对象
+        config: 配置字典
+        model_name: 模型名称
+        sleep_interval: 轮询间隔
+        disamb_requests_path: 请求文件路径
+        save_path: 保存路径
+
+    Returns:
+        消歧结果字典
+    """
     logging.info("--- 阶段1: 实体消歧 ---")
+
+    # 获取batch_size配置
+    embedding_batch_size = int(config["graph_builder"].get("embedding_batch_size", 5000))
+
+    # 创建批量请求，使用batch_size控制
     create_batch_requests(graph=graph, model_name=model_name, output_path=disamb_requests_path,
-                          request_type="disambiguation")
-    job = submit_and_monitor_job(client, disamb_requests_path, model_name, sleep_interval, "Disambiguation")
-    results = process_results(job, client)
+                          request_type="disambiguation", batch_size=embedding_batch_size)
+
+    # 处理分批生成的请求文件
+    results = {}
+    num_nodes = graph.number_of_nodes()
+    if embedding_batch_size and num_nodes > embedding_batch_size:
+        num_batches = (num_nodes + embedding_batch_size - 1) // embedding_batch_size
+        logging.info(f"🚀 并行提交 {num_batches} 个消歧批次作业...")
+
+        # 并行提交所有批次
+        batch_jobs = []
+        for batch_idx in range(num_batches):
+            batch_disamb_path = disamb_requests_path.parent / f"{disamb_requests_path.stem}_batch_{batch_idx + 1}.jsonl"
+            logging.info(f"📤 提交消歧批次 {batch_idx + 1}/{num_batches}")
+            job = submit_and_monitor_job(client, batch_disamb_path, model_name, sleep_interval,
+                                        f"Disambiguation-Batch{batch_idx + 1}", monitor=False)
+            if job:
+                batch_jobs.append((batch_idx + 1, job))
+
+        # 并行监控所有批次
+        logging.info(f"⏳ 开始监控 {len(batch_jobs)} 个批次作业的完成状态...")
+        completed_jobs = []
+
+        with ThreadPoolExecutor(max_workers=min(len(batch_jobs), 10)) as executor:
+            # 提交监控任务
+            future_to_batch = {
+                executor.submit(_monitor_job_completion, client, job, sleep_interval, f"Disambiguation-Batch{batch_idx}"): (batch_idx, job)
+                for batch_idx, job in batch_jobs
+            }
+
+            # 等待所有任务完成
+            for future in as_completed(future_to_batch):
+                batch_idx, job = future_to_batch[future]
+                try:
+                    completed_job = future.result()
+                    if completed_job:
+                        completed_jobs.append((batch_idx, completed_job))
+                        logging.info(f"✅ 消歧批次 {batch_idx} 已完成")
+                except Exception as e:
+                    logging.error(f"❌ 消歧批次 {batch_idx} 处理失败: {e}")
+
+        # 处理所有批次的结果
+        for batch_idx, completed_job in sorted(completed_jobs, key=lambda x: x[0]):
+            batch_results = process_results(completed_job, client)
+            results.update(batch_results)
+            logging.info(f"📊 批次 {batch_idx} 返回 {len(batch_results)} 个结果")
+
+        logging.info(f"🎉 所有消歧批次处理完成，共获得 {len(results)} 个结果")
+    else:
+        job = submit_and_monitor_job(client, disamb_requests_path, model_name, sleep_interval, "Disambiguation")
+        results = process_results(job, client)
+
     if results:
         matched = 0
         for nid, desc in results.items():
@@ -988,10 +1218,10 @@ def run_entity_merge_stage(client: OpenAI, graph: nx.DiGraph, config: Dict[str, 
         return graph
 
     embed_model = config.get("embedding", {}).get("model", "text-embedding-v3")  # 默认改为千问模型
-    embed_dim = int(config.get("embedding", {}).get("dimensionality", 768))
+    embed_dim = int(config.get("embedding", {}).get("dimensionality", 1024))
     entity_topk = int(config["graph_builder"].get("entity_merge_topk", 10))
     entity_min_sim = float(config["graph_builder"].get("entity_merge_min_sim", 0.82))
-    embedding_batch_size = int(config["graph_builder"].get("embedding_batch_size", 1000))
+    embedding_batch_size = int(config["graph_builder"].get("embedding_batch_size", 5000))
 
     logging.info("--- 阶段2: 实体合并（聚类 + LLM 仲裁） ---")
     ent_ids: List[str] = []
@@ -1008,31 +1238,78 @@ def run_entity_merge_stage(client: OpenAI, graph: nx.DiGraph, config: Dict[str, 
 
     num_entities = len(ent_texts)
     num_batches = (num_entities + embedding_batch_size - 1) // embedding_batch_size
-    if num_batches > 1: logging.info(f"⚙️ 实体数量 {num_entities} 超过批次大小，拆分为 {num_batches} 个批次")
 
     all_embeddings = []
-    for batch_idx in range(num_batches):
-        start_idx = batch_idx * embedding_batch_size
-        end_idx = min((batch_idx + 1) * embedding_batch_size, num_entities)
-        batch_ent_texts = ent_texts[start_idx:end_idx]
-        batch_ent_ids = ent_ids[start_idx:end_idx]
+    if num_batches > 1:
+        logging.info(f"⚙️ 实体数量 {num_entities} 超过批次大小，拆分为 {num_batches} 个批次")
+        logging.info(f"🚀 并行提交 {num_batches} 个嵌入批次作业...")
 
-        if num_batches > 1:
+        # 准备所有批次的请求文件
+        batch_jobs = []
+        for batch_idx in range(num_batches):
+            start_idx = batch_idx * embedding_batch_size
+            end_idx = min((batch_idx + 1) * embedding_batch_size, num_entities)
+            batch_ent_texts = ent_texts[start_idx:end_idx]
+            batch_ent_ids = ent_ids[start_idx:end_idx]
             batch_req_path = tmp_emb_req_path.parent / f"{tmp_emb_req_path.stem}_batch_{batch_idx + 1}.jsonl"
-        else:
-            batch_req_path = tmp_emb_req_path
 
-        logging.info(f"🔄 处理批次 {batch_idx + 1}/{num_batches}：实体 {start_idx + 1}-{end_idx}")
-        _create_temp_embedding_requests(batch_ent_texts, batch_req_path, model_name=embed_model, dim=embed_dim)
-        emb_job = _submit_and_monitor_embedding_job(client, batch_req_path, embed_model, sleep_interval, batch_idx,
-                                                    num_batches)
-        batch_V = _process_embedding_results(emb_job, client, batch_ent_ids)
+            logging.info(f"📝 准备批次 {batch_idx + 1}/{num_batches}：实体 {start_idx + 1}-{end_idx}")
+            _create_temp_embedding_requests(batch_ent_texts, batch_req_path, model_name=embed_model, dim=embed_dim)
+            batch_jobs.append((batch_idx, batch_req_path, batch_ent_ids))
 
-        if batch_V.shape[0] > 0:
-            all_embeddings.append(batch_V)
-            logging.info(f"✅ 批次 {batch_idx + 1}/{num_batches} 完成，获得 {batch_V.shape[0]} 个嵌入向量")
+        # 并行提交所有嵌入作业
+        submitted_jobs = []
+        for batch_idx, batch_req_path, batch_ent_ids in batch_jobs:
+            logging.info(f"📤 提交嵌入批次 {batch_idx + 1}/{num_batches}")
+            emb_job = _submit_and_monitor_embedding_job(client, batch_req_path, embed_model, sleep_interval,
+                                                       batch_idx, num_batches, monitor=False)
+            if emb_job:
+                submitted_jobs.append((batch_idx, emb_job, batch_ent_ids))
+
+        # 并行监控所有批次
+        logging.info(f"⏳ 开始监控 {len(submitted_jobs)} 个嵌入批次作业的完成状态...")
+        completed_jobs = []
+
+        with ThreadPoolExecutor(max_workers=min(len(submitted_jobs), 10)) as executor:
+            # 提交监控任务
+            future_to_batch = {
+                executor.submit(_monitor_embedding_job_completion, client, job, sleep_interval, batch_idx, num_batches): (batch_idx, job, batch_ent_ids)
+                for batch_idx, job, batch_ent_ids in submitted_jobs
+            }
+
+            # 等待所有任务完成
+            for future in as_completed(future_to_batch):
+                batch_idx, job, batch_ent_ids = future_to_batch[future]
+                try:
+                    completed_job = future.result()
+                    if completed_job:
+                        completed_jobs.append((batch_idx, completed_job, batch_ent_ids))
+                        logging.info(f"✅ 嵌入批次 {batch_idx + 1} 已完成")
+                except Exception as e:
+                    logging.error(f"❌ 嵌入批次 {batch_idx + 1} 处理失败: {e}")
+
+        # 处理所有批次的结果
+        for batch_idx, completed_job, batch_ent_ids in sorted(completed_jobs, key=lambda x: x[0]):
+            batch_V = _process_embedding_results(completed_job, client, batch_ent_ids)
+            if batch_V.shape[0] > 0:
+                all_embeddings.append(batch_V)
+                logging.info(f"📊 批次 {batch_idx + 1} 获得 {batch_V.shape[0]} 个嵌入向量")
+            else:
+                logging.warning(f"⚠️ 批次 {batch_idx + 1} 未获得有效嵌入向量")
+
+        if all_embeddings:
+            V = np.vstack(all_embeddings)
+            logging.info(f"🎉 所有嵌入批次处理完成，共获得 {V.shape[0]} 个嵌入向量")
         else:
-            logging.warning(f"⚠️ 批次 {batch_idx + 1}/{num_batches} 未获得有效嵌入向量")
+            logging.error("❌ 所有批次均未获得有效嵌入向量")
+            V = np.zeros((0, embed_dim), dtype=float)
+    else:
+        # 单批次处理
+        batch_req_path = tmp_emb_req_path
+        logging.info(f"🔄 处理单批次：{num_entities} 个实体")
+        _create_temp_embedding_requests(ent_texts, batch_req_path, model_name=embed_model, dim=embed_dim)
+        emb_job = _submit_and_monitor_embedding_job(client, batch_req_path, embed_model, sleep_interval, 0, 1)
+        V = _process_embedding_results(emb_job, client, ent_ids)
 
     if all_embeddings:
         V = np.vstack(all_embeddings)
@@ -1047,14 +1324,85 @@ def run_entity_merge_stage(client: OpenAI, graph: nx.DiGraph, config: Dict[str, 
         logging.info("未发现候选合并簇，跳过 LLM 仲裁。")
         return graph
 
+    # 使用embedding_batch_size控制单次批量请求数量
     create_entity_merge_requests(graph, clusters, model_name=model_name, prompt_dir=prompt_dir,
-                                 output_path=merge_req_path)
-    merge_job = submit_and_monitor_job(client, merge_req_path, model_name, sleep_interval, "EntityMerge")
-    merge_texts = process_results(merge_job, client)
+                                 output_path=merge_req_path, batch_size=embedding_batch_size)
+
+    # 处理分批生成的请求文件
+    merge_texts = {}
+    if embedding_batch_size and len(clusters) > embedding_batch_size:
+        num_merge_batches = (len(clusters) + embedding_batch_size - 1) // embedding_batch_size
+        logging.info(f"🚀 并行提交 {num_merge_batches} 个LLM仲裁批次作业...")
+
+        # 并行提交所有批次
+        batch_jobs = []
+        for batch_idx in range(num_merge_batches):
+            batch_merge_path = merge_req_path.parent / f"{merge_req_path.stem}_batch_{batch_idx + 1}.jsonl"
+            logging.info(f"📤 提交LLM仲裁批次 {batch_idx + 1}/{num_merge_batches}")
+            merge_job = submit_and_monitor_job(client, batch_merge_path, model_name, sleep_interval,
+                                              f"EntityMerge-Batch{batch_idx + 1}", monitor=False)
+            if merge_job:
+                batch_jobs.append((batch_idx + 1, merge_job))
+
+        # 并行监控所有批次
+        logging.info(f"⏳ 开始监控 {len(batch_jobs)} 个LLM仲裁批次作业的完成状态...")
+        completed_jobs = []
+
+        with ThreadPoolExecutor(max_workers=min(len(batch_jobs), 10)) as executor:
+            # 提交监控任务
+            future_to_batch = {
+                executor.submit(_monitor_job_completion, client, job, sleep_interval, f"EntityMerge-Batch{batch_idx}"): (batch_idx, job)
+                for batch_idx, job in batch_jobs
+            }
+
+            # 等待所有任务完成
+            for future in as_completed(future_to_batch):
+                batch_idx, job = future_to_batch[future]
+                try:
+                    completed_job = future.result()
+                    if completed_job:
+                        completed_jobs.append((batch_idx, completed_job))
+                        logging.info(f"✅ LLM仲裁批次 {batch_idx} 已完成")
+                except Exception as e:
+                    logging.error(f"❌ LLM仲裁批次 {batch_idx} 处理失败: {e}")
+
+        # 处理所有批次的结果
+        for batch_idx, completed_job in sorted(completed_jobs, key=lambda x: x[0]):
+            batch_texts = process_results(completed_job, client)
+            merge_texts.update(batch_texts)
+            logging.info(f"📊 批次 {batch_idx} 返回 {len(batch_texts)} 个结果")
+
+        logging.info(f"🎉 所有LLM仲裁批次处理完成，共获得 {len(merge_texts)} 个结果")
+    else:
+        merge_job = submit_and_monitor_job(client, merge_req_path, model_name, sleep_interval, "EntityMerge")
+        merge_texts = process_results(merge_job, client)
+
     groups = parse_entity_merge_results(merge_texts)
     logging.info(f"LLM 确认的分组数量: {len(groups)}")
 
+    # 人工审核功能（可选）
+    enable_manual_review = config["graph_builder"].get("enable_manual_review", False)
+    if enable_manual_review:
+        try:
+            from utils.entity_merge_review import run_entity_merge_review
+            review_sample_size = config["graph_builder"].get("manual_review_sample_size", 5)
+            review_output_dir = PROJECT_ROOT / config["graph_builder"].get("manual_review_output_dir",
+                                                                           "data/reports/manual_review")
+
+            logging.info(f"🔍 启动人工审核流程，抽样数量: {review_sample_size}")
+            review_report = run_entity_merge_review(
+                graph=graph,
+                clusters=clusters,
+                llm_groups=groups,
+                sample_size=review_sample_size,
+                output_dir=review_output_dir
+            )
+            logging.info("✅ 人工审核完成")
+        except Exception as e:
+            logging.warning(f"⚠️ 人工审核过程出现异常，已跳过: {e}")
+
     alias2canon, canon_name_map = build_merge_map(graph, groups)
+
     if alias2canon:
         graph = apply_entity_merge(graph, alias2canon, canon_name_map, edge_agg='max')
         if save_path is not None:
@@ -1124,7 +1472,7 @@ def build_pipeline_from_config(config: Dict[str, Any]) -> Tuple[nx.DiGraph, Dict
     if not graph.nodes:
         raise RuntimeError("图为空，流程终止。请检查输入文件。")
 
-    run_disambiguation_stage(client, graph, model_name, sleep_interval, disamb_requests_path,
+    run_disambiguation_stage(client, graph, config, model_name, sleep_interval, disamb_requests_path,
                              save_path=disambiguation_graph_path)
     graph = run_entity_merge_stage(client, graph, config, model_name, prompt_dir, sleep_interval, tmp_emb_req_path,
                                    merge_req_path, save_path=merge_graph_path)
