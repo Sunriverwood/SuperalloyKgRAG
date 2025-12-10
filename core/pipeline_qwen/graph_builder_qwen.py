@@ -416,7 +416,7 @@ def process_results(batch_job_status: Any, client: OpenAI) -> Dict[str, str]:
         # 修改：client.files.content
         content = client.files.content(output_file_id).text
         ok, bad = 0, 0
-        for line in content.strip().split('\n'):
+        for line in str(content).strip().split('\n'):
             try:
                 obj = json.loads(line)
                 key = obj.get("custom_id")
@@ -429,7 +429,8 @@ def process_results(batch_job_status: Any, client: OpenAI) -> Dict[str, str]:
                     choices = body.get("choices", [])
                     if choices:
                         text = choices[0].get("message", {}).get("content", "")
-                        out[key] = (text or "").strip()
+                        # 确保text是字符串类型
+                        out[key] = str(text or "").strip()
                         ok += 1
                     else:
                         logging.warning(f"ID {key} 没有 choices")
@@ -577,7 +578,7 @@ def _process_embedding_results(batch_job: Any, client: OpenAI, id_order: List[st
         logging.error(f"下载 Embedding 结果失败: {e}")
         return np.zeros((0, 1), dtype=float)
 
-    lines = file_content.strip().split('\n')
+    lines = str(file_content).strip().split('\n')
 
     # 建立映射以保证顺序
     res_map = {}
@@ -783,13 +784,13 @@ def _safe_json_loads(text: str) -> Dict[str, Any] | None:
             matches = re.findall(pattern, text, re.DOTALL)
             for match in matches:
                 try:
-                    content = match.strip()
+                    content = str(match).strip()
                     if content: return json.loads(content)
                 except:
                     continue
-        parts = text.split("```")
+        parts = str(text).split("```")
         for chunk in parts:
-            chunk = chunk.strip()
+            chunk = str(chunk).strip()
             if not chunk or chunk.lower() in ['json', 'json']: continue
             try:
                 return json.loads(chunk)
@@ -812,9 +813,9 @@ def parse_entity_merge_results(raw_texts: Dict[str, str]) -> List[LLMResolutionG
             continue
         for g in obj.get("groups", []):
             try:
-                cname = (g.get("canonical_name") or '').strip()
+                cname = str(g.get("canonical_name") or '').strip()
                 mids = [str(x) for x in g.get("member_ids", []) if x]
-                rationale = (g.get("rationale") or '').strip() or None
+                rationale = str(g.get("rationale") or '').strip() or None
                 if cname and len(mids) >= 1:
                     groups.append(LLMResolutionGroup(cname, mids, rationale))
             except Exception as e:
@@ -891,21 +892,21 @@ def apply_entity_merge(G: nx.DiGraph, alias2canon: Dict[str, str], canon_name_ma
         names_in_group: List[str] = []
         for eid in members:
             nd = G.nodes[eid]
-            nm = (nd.get('name') or '').strip()
+            nm = str(nd.get('name') or '').strip()
             if nm:
                 names_in_group.append(nm)
                 aliases.add(nm)
             aliases.update(nd.get('aliases', []) or [])
-            d = (nd.get('description') or '').strip()
+            d = str(nd.get('description') or '').strip()
             if d: descs.append(d)
             pv = nd.get('provenance') or []
             if isinstance(pv, list):
                 provenance.extend(pv)
             elif isinstance(pv, dict):
                 provenance.append(pv)
-            tp = (nd.get('type') or '').strip()
+            tp = str(nd.get('type') or '').strip()
             if tp: types[tp] += 1
-        main_name = (canon_name_map.get(cid) or '').strip()
+        main_name = str(canon_name_map.get(cid) or '').strip()
         if not main_name:
             if names_in_group:
                 main_name = max(Counter(names_in_group).items(), key=lambda x: (x[1], len(x[0])))[0]
@@ -1228,7 +1229,9 @@ def run_entity_merge_stage(client: OpenAI, graph: nx.DiGraph, config: Dict[str, 
     ent_texts: List[Tuple[str, str]] = []
     for nid, nd in graph.nodes(data=True):
         if nd.get('is_disambiguated'):
-            text = f"{nd.get('name', '').strip()}\n{nd.get('description', '').strip()}".strip()
+            name_str = str(nd.get('name', '')).strip() if nd.get('name') is not None else ''
+            desc_str = str(nd.get('description', '')).strip() if nd.get('description') is not None else ''
+            text = f"{name_str}\n{desc_str}".strip()
             ent_ids.append(nid)
             ent_texts.append((nid, text or (nd.get('name') or nid)))
 
