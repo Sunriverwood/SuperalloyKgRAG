@@ -8,21 +8,26 @@ Provides a unified interface for query-aware graph reasoning.
 import json
 import logging
 import os
+import sys
 from pathlib import Path
 from typing import Dict, Any, List, Optional
 import yaml
 import torch
 import numpy as np
 from openai import OpenAI
+import torch.cuda
+
+# --- 项目根目录定义 (必须在导入 core 之前) ---
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+# 将项目根目录添加到 Python 路径，以便可以导入 core 模块
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
 
 from core.reasoning.data_loader import GraphReasoningDataLoader, GraphData
 from core.reasoning.models.rgat import QueryAwareRGAT
 from core.reasoning.training.trainer import GraphReasoningTrainer, QueryEntityMatcher
 from core.reasoning.inference.reasoner import GraphReasoner
 
-
-# --- 项目根目录定义 ---
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 
 def setup_logging(config: Dict[str, Any]):
@@ -94,9 +99,14 @@ class ReasoningQueryHandler:
         self.generation_model_name = config["query"]["generation_model"]
         self.temperature = config["query"]["temperature"]
 
-        # Device setup
+        # Device setup - CRITICAL: Load data to CPU first to avoid OOM
         self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
-        logging.info(f"Using device: {self.device}")
+        logging.info(f"Target device: {self.device}")
+
+        # MEMORY OPTIMIZATION: Always load graph data to CPU first
+        # Only move necessary parts to GPU during forward pass
+        data_device = 'cpu'
+        logging.info(f"🔧 [Memory Optimization] Loading graph data to CPU first to prevent OOM")
 
         # Load graph data - use shared data if provided (memory optimization)
         if shared_graph_data is not None:
@@ -106,7 +116,14 @@ class ReasoningQueryHandler:
         else:
             logging.info("Loading graph data for reasoning...")
             self.data_loader = GraphReasoningDataLoader(config)
-            self.graph_data = self.data_loader.load(device=self.device)
+            # CRITICAL: Load to CPU first
+            self.graph_data = self.data_loader.load(device=data_device)
+
+            # Log memory usage
+            if self.device == 'cuda':
+                allocated = torch.cuda.memory_allocated(0) / (1024**3)  # GB
+                reserved = torch.cuda.memory_reserved(0) / (1024**3)    # GB
+                logging.info(f"📊 GPU Memory after graph loading: {allocated:.2f}GB allocated, {reserved:.2f}GB reserved")
 
         # Load chunk ID to source info mapping
         logging.info("Loading chunk ID to source mapping...")
@@ -719,8 +736,8 @@ def interactive_mode(config: Dict[str, Any]):
         train_choice = input("Do you want to train the model now? (yes/no) [yes]: ").strip().lower()
 
         if train_choice in ['', 'yes', 'y']:
-            epochs_input = input("Number of training epochs [50]: ").strip()
-            num_epochs = int(epochs_input) if epochs_input else 50
+            epochs_input = input("Number of training epochs [100]: ").strip()
+            num_epochs = int(epochs_input) if epochs_input else 100
 
             print("\n" + "="*80)
             print("Starting Model Training...")
@@ -841,10 +858,19 @@ def command_line_mode():
     """
     import argparse
 
+    # Load config first to get default values
+    config = load_config()
+    setup_logging(config)
+
+    # Get training defaults from config
+    training_config = config.get('reasoning', {}).get('training', {})
+    default_epochs = training_config.get('num_epochs', 100)
+    default_device = 'cuda' if torch.cuda.is_available() else 'cpu'
+
     parser = argparse.ArgumentParser(
         description="Graph Reasoning Query System",
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""
+        epilog=f"""
 Examples:
   # Query mode
   python reasoning_query_qwen.py --query "What is nickel used for?"
@@ -852,8 +878,11 @@ Examples:
   # Interactive mode
   python reasoning_query_qwen.py --interactive
   
-  # Training mode
-  python reasoning_query_qwen.py --train --epochs 100
+  # Training mode (uses config defaults: epochs={default_epochs}, device={default_device})
+  python reasoning_query_qwen.py --train
+  
+  # Training mode with custom parameters
+  python reasoning_query_qwen.py --train --epochs 500 --device cpu
         """
     )
 
@@ -875,9 +904,16 @@ Examples:
     parser.add_argument('--no-strict', action='store_true',
                        help='Allow LLM to use its own knowledge (default: strict mode - only knowledge graph data)')
 
-    # Training parameters
-    parser.add_argument('--epochs', '-e', type=int, default=50,
-                       help='Number of training epochs (default: 50)')
+    # Training parameters (defaults from config)
+    parser.add_argument('--epochs', '-e', type=int, default=default_epochs,
+                       help=f'Number of training epochs (default from config: {default_epochs})')
+    parser.add_argument('--device', '-d', type=str, default=default_device,
+                       choices=['cuda', 'cpu'],
+                       help=f'Training device (default: {default_device})')
+    parser.add_argument('--batch-size', '-b', type=int, default=None,
+                       help=f'Training batch size (default from config: {training_config.get("batch_size", 256)}). Reduce if out of memory.')
+    parser.add_argument('--gradient-accumulation', '-g', type=int, default=None,
+                       help=f'Gradient accumulation steps (default: {training_config.get("gradient_accumulation_steps", 2)}). Increase if out of memory.')
     parser.add_argument('--force-train', action='store_true',
                        help='Force training even if model exists')
 
@@ -887,9 +923,6 @@ Examples:
 
     args = parser.parse_args()
 
-    # Load config
-    config = load_config()
-    setup_logging(config)
 
     # Check model existence
     model_path = PROJECT_ROOT / config.get('reasoning', {}).get('output', {}).get('model_path', 'data/reasoning/model.pt')
@@ -911,7 +944,67 @@ Examples:
             print("Starting Model Training...")
             print("="*80)
 
+            # Determine batch size
+            batch_size = args.batch_size if args.batch_size else training_config.get('batch_size', 256)
+
+            # Determine gradient accumulation (default to 2 for memory safety)
+            gradient_accumulation = args.gradient_accumulation if args.gradient_accumulation is not None else training_config.get('gradient_accumulation_steps', 2)
+
+            # Memory optimization tips
+            if args.device == 'cuda':
+                print(f"GPU Memory Optimization Tips:")
+                print(f"  - If you encounter OOM (Out of Memory) errors:")
+                print(f"    1. Reduce batch size: --batch-size 128 or --batch-size 64")
+                print(f"    2. Use gradient accumulation: --gradient-accumulation 4 or 8")
+                print(f"    3. Try CPU mode: --device cpu (slower but no memory limit)")
+
+            print(f"\nTraining Configuration:")
+            print(f"  - Epochs: {args.epochs}")
+            print(f"  - Device: {args.device}")
+            print(f"  - Batch Size: {batch_size}")
+            print(f"  - Gradient Accumulation Steps: {gradient_accumulation}")
+            print(f"  - Learning Rate: {training_config.get('learning_rate', 0.001)}")
+            print(f"  - Weight Decay: {training_config.get('weight_decay', 0.0001)}")
+            print("="*80)
+
+            # Override batch size in config if specified
+            if args.batch_size:
+                config['reasoning']['training']['batch_size'] = args.batch_size
+
+            # Add gradient accumulation to config
+            config['reasoning']['training']['gradient_accumulation_steps'] = gradient_accumulation
+
             handler = ReasoningQueryHandler(config, load_trained_model=False)
+
+            # CRITICAL: Clear GPU cache before training
+            if args.device == 'cuda':
+                torch.cuda.empty_cache()
+                logging.info("🔧 Cleared GPU cache before training")
+
+            # Override device if specified
+            if args.device:
+                handler.device = args.device
+                logging.info(f"🔧 Setting training device to: {args.device}")
+
+                # Move ONLY models to device, NOT graph data
+                handler.gnn = handler.gnn.to(args.device)
+                handler.query_matcher = handler.query_matcher.to(args.device)
+
+                # CRITICAL CHANGE: Keep ALL graph data on CPU
+                # The trainer will handle moving data to GPU during forward pass
+                logging.info("🔧 [Memory Optimization] ALL graph data kept on CPU (trainer will handle device transfer)")
+                logging.info(f"  - node_embeddings: {handler.graph_data.node_embeddings.device}")
+                logging.info(f"  - edge_index: {handler.graph_data.edge_index.device}")
+                logging.info(f"  - edge_types: {handler.graph_data.edge_types.device}")
+                logging.info(f"  - edge_weights: {handler.graph_data.edge_weights.device}")
+
+                # Clear cache after model initialization
+                if args.device == 'cuda':
+                    torch.cuda.empty_cache()
+                    allocated = torch.cuda.memory_allocated(0) / (1024**3)
+                    reserved = torch.cuda.memory_reserved(0) / (1024**3)
+                    logging.info(f"📊 GPU Memory after setup: {allocated:.2f}GB allocated, {reserved:.2f}GB reserved")
+
             handler.train(num_epochs=args.epochs)
 
             print("\n✓ Training complete!")

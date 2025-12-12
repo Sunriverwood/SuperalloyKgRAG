@@ -142,7 +142,7 @@ query:
   sleep_interval: 60
   basic_rag_prompt: "config/prompts/basic_rag.md"
 
-  embedding_db_path: "data/embeddings/enriched.db"  #no_entities_merge   embedding.db
+  embedding_db_path: "data/embeddings/enriched.db"  #no_entities_merge   embedding.db  enriched.db
   global_table_name: "communities"
   local_table_name: "entities"
   prompt_dir: "config/prompts"
@@ -210,11 +210,15 @@ reasoning:
 
   # Training Configuration
   training:
-    batch_size: 512
+    batch_size: 64
+    gradient_accumulation_steps: 4
     learning_rate: 0.001
-    num_epochs: 1000
+    num_epochs: 100
     weight_decay: 0.0001
     early_stopping_patience: 10
+    contrastive_num_samples: 1024   # 建议 1024~4096 之间试
+    contrastive_temperature: 0.2
+    contrastive_noise_std: 0.1
 
     # Self-supervised task weights
     loss_weights:
@@ -248,7 +252,7 @@ reasoning:
   # Data paths
   data:
     graph_path: "data/graphs/final_graph.json"
-    entity_embeddings_db: "data/embeddings/embedding.db"
+    entity_embeddings_db: "data/embeddings/enriched.db"
     entity_table: "entities"
     relationship_table: "relationships"
     pseudo_queries_path: "data/reasoning/pseudo_queries.jsonl"

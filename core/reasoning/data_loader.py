@@ -68,7 +68,7 @@ class GraphReasoningDataLoader:
         from pathlib import Path
         PROJECT_ROOT = Path(__file__).resolve().parents[2]
         self.graph_path = PROJECT_ROOT / self.data_config.get("graph_path", "data/graphs/final_graph.json")
-        self.embedding_db_path = PROJECT_ROOT / self.data_config.get("entity_embeddings_db", "data/embeddings/embedding.db")
+        self.embedding_db_path = PROJECT_ROOT / self.data_config.get("entity_embeddings_db", "data/embeddings/enriched.db")
         self.entity_table = self.data_config.get("entity_table", "entities")
         self.relationship_table = self.data_config.get("relationship_table", "relationships")
 

@@ -27,6 +27,7 @@
 - **数据库**:
   - **LanceDB**: 用于向量存储 (内嵌式，无需独立安装)。
   - **Neo4j**: (可选) 仅用于图谱可视化分析，不影响核心推理功能。
+  - **Gephi**: (可选) 仅用于图谱可视化分析，不影响核心推理功能。
 
 ### 部署步骤
 
@@ -175,7 +176,110 @@ python core/reasoning/run_reasoning_query.py \
 
 ------
 
-## 7. 项目文件结构详解
+## 7. 系统评估 (Evaluation)
+
+本项目内置了一套完整的自动评估系统，用于测试 RAG 系统在不同难度问题上的表现。评估系统支持并发执行、多维度打分和详细的结果分析。
+
+### 评估数据准备
+
+评估问题集存放在 `data/evaluation_sets/` 目录下，支持按难度级别（L1-L5）组织问题：
+
+- **L1**: 基础事实查询
+- **L2**: 单跳关系推理
+- **L3**: 多跳关系推理
+- **L4**: 复杂综合问题
+- **L5**: 开放性研究问题
+
+### 运行评估
+
+```bash
+# 评估所有题目
+python evaluation/run_evaluation.py
+
+# 评估指定难度
+python evaluation/run_evaluation.py --difficulty L3
+
+# 评估指定题目ID
+python evaluation/run_evaluation.py --ids 1,2,3,4,5
+
+# 指定并发数（加速评估）
+python evaluation/run_evaluation.py --difficulty L4 --concurrency 3
+
+# 指定输出目录
+python evaluation/run_evaluation.py --output ./my_results/
+```
+
+### 评估指标
+
+系统会自动生成多维度评估报告，包括：
+
+- **准确性 (Accuracy)**: 答案与标准答案的匹配度
+- **完整性 (Completeness)**: 是否涵盖所有关键信息点
+- **推理路径质量**: 推理链条的合理性和可解释性
+- **召回率**: 检索到的相关实体/文档的覆盖率
+
+评估结果将保存在 `data/answers/` 目录，包含详细的问答记录和打分明细。
+
+------
+
+## 8. 知识图谱可视化
+
+### 导出到 Gephi
+
+[Gephi](https://gephi.org/) 是一款专业的图可视化工具，适合用于展示知识图谱的宏观结构、社区聚类和节点重要性。
+
+#### 导出步骤
+
+1. **生成 GEXF 格式文件**
+
+   运行图谱转换脚本：
+
+   ```bash
+   python app/gephi.py
+   ```
+
+   该脚本会将 `data/graphs/final_graph.json` 转换为 `final_graph.gexf` 文件，保留所有节点属性（社区ID、度中心性等）。
+
+2. **导入到 Gephi**
+
+   - 打开 Gephi，点击 **"Open Graph File..."**
+   - 选择生成的 `.gexf` 文件
+   - Graph Type 选择 **"Directed"**（有向图）
+   - 点击 **OK** 完成导入
+
+3. **可视化美化**
+
+   推荐的可视化流程：
+   
+   - **布局算法**: 使用 **ForceAtlas 2**，勾选 "Prevent Overlap" 和 "Dissuade Hubs"
+   - **节点颜色**: 按 **Modularity Class**（社区）着色
+   - **节点大小**: 按 **Degree**（度数）或 **PageRank** 调整大小
+   - **边透明度**: 设置为 20-30% 以避免视觉混乱
+   - **导出**: 使用 PDF/SVG 矢量格式，适合学术论文插图
+
+**详细教程**: 参见 [docs/IMPORT_TO_GEPHI.md](docs/IMPORT_TO_GEPHI.md)
+
+### 导出到 Neo4j
+
+Neo4j 是一款图数据库，支持 Cypher 查询语言，适合进行交互式图谱探索和复杂查询。
+
+#### 导出步骤
+
+1. **格式转换**
+
+   ```bash
+   python app/formatting.py
+   ```
+
+   将 `final_graph.json` 转换为 Neo4j 兼容的格式。
+
+2. **导入 Neo4j**
+
+   详细导入步骤和 Cypher 查询示例，请参见 [docs/IMPORT_TO_NEO4J.md](docs/IMPORT_TO_NEO4J.md)
+
+------
+
+## 9. 项目文件结构详解
 
 为了便于二次开发与深度理解，以下列出项目中关键文件的功能说明。
 
@@ -234,6 +338,13 @@ python core/reasoning/run_reasoning_query.py \
 - **`graph_reasoning_utils.py`**: 图推理相关的辅助函数库（如 Adjacency Mask 生成）。
 - **`local_context.py`**: 用于构建查询时的局部上下文窗口。
 
+### evaluation/ (评估系统)
+
+- **`run_evaluation.py`**: **[评估入口]** 评估系统的命令行主程序，支持批量测试和并发执行。
+- **`auto_evaluator.py`**: 自动评估器核心实现，负责问题加载、答案生成和打分。
+- **`scoring.py`**: 评分逻辑模块，实现多维度的答案质量评估。
+- **`distribution_of_questions.py`**: 问题分布分析工具，用于统计评估集的难度分布。
+
 ### data/ (数据存储 - 自动生成)
 
 - `raw_pdfs/`: 存放原始 PDF 输入文件。
@@ -242,3 +353,59 @@ python core/reasoning/run_reasoning_query.py \
 - `graphs/`: 构建完成的知识图谱 (`final_graph.json`)。
 - `embeddings/`: LanceDB 向量数据库文件。
 - `reasoning/`: 存放训练好的模型权重 (`model.pt`) 和推理结果。
+- `evaluation_sets/`: 评估问题集，按难度级别（L1-L5）组织。
+- `answers/`: 评估系统生成的答案和评分结果。
+
+------
+
+## 10. 相关文档
+
+本项目提供了完善的技术文档，位于 `docs/` 目录：
+
+- **[ARCHITECTURE.md](docs/ARCHITECTURE.md)**: 系统架构详细说明（推荐首先阅读）
+- **[RUN_INDEXING_GUIDE.md](docs/RUN_INDEXING_GUIDE.md)**: 索引流水线详细使用指南
+- **[REASONING_GUIDE.md](docs/REASONING_GUIDE.md)**: 图推理系统完整指南
+- **[IMPORT_TO_GEPHI.md](docs/IMPORT_TO_GEPHI.md)**: Gephi 可视化详细教程
+- **[IMPORT_TO_NEO4J.md](docs/IMPORT_TO_NEO4J.md)**: Neo4j 导入与查询指南
+- **[DEPENDENCIES.md](docs/DEPENDENCIES.md)**: 项目依赖说明
+
+------
+
+## 11. 常见问题 (FAQ)
+
+### Q1: 如何选择合适的 LLM 模型？
+
+**A**: 本项目支持任何兼容 OpenAI API 格式的模型。推荐选择：
+- **Qwen-3Max**: 性价比最高
+- **GPT-5.2**: 最新的多模态大模型，成本较高
+- **Gemini-3-Pro**: 多模态能力出色，上下文长度最大，但成本较高
+
+### Q2: 图推理模型训练需要多长时间？
+
+**A**: 取决于图谱规模和硬件配置：
+
+- **小规模**（< 1000 节点）：CPU 训练约 10-20 分钟
+- **中规模**（1000-5000 节点）：GPU 训练约 30-60 分钟
+- **大规模**（> 5000 节点）：GPU 训练约 1-3 小时
+
+### Q3: 如何提升检索准确率？
+
+**A**: 建议优化以下方面：
+1. **提高文本切片质量**: 调整 `settings.yaml` 中的 chunk_size 参数
+2. **改进实体抽取**: 优化 `prompts/text_to_graph.md` 中的提示词
+3. **增强图推理**: 增加训练轮数（epochs），使用 GPU 加速
+4. **调整检索策略**: 根据问题类型选择合适的查询模式（全局/局部/推理）
+
+------
+
+## 12. 贡献与支持
+
+欢迎提交 Issue 和 Pull Request！
+
+如果本项目对您的研究有帮助，请考虑引用我们的工作。
+
+------
+
+## 13. 许可证
+
+本项目采用 Apache-2.0 许可证。详见 LICENSE 文件。
