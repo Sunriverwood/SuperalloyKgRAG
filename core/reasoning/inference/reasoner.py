@@ -414,14 +414,16 @@ class GraphReasoner:
             for path in paths
         ]
 
-        # 6. Compile results
+        # 6. Compile results with chunk_id information for source tracing
         results = {
             'query': query_text,
             'top_nodes': [
                 {
                     'id': node_id,
                     'name': self.graph_data.G.nodes[node_id].get('name', node_id) if node_id in self.graph_data.G.nodes else node_id,
-                    'score': float(score)
+                    'score': float(score),
+                    # Add chunk_id for source reference
+                    'chunk_ids': self._extract_chunk_ids(node_id)
                 }
                 for node_id, score in zip(top_nodes, top_scores)
             ],
@@ -430,7 +432,9 @@ class GraphReasoner:
                     'path': path.path,
                     'score': path.score,
                     'edge_types': path.edge_types,
-                    'explanation': exp
+                    'explanation': exp,
+                    # Add chunk_ids from all nodes in path
+                    'chunk_ids': self._extract_path_chunk_ids(path.path)
                 }
                 for path, exp in zip(paths, explanations)
             ],
@@ -441,6 +445,45 @@ class GraphReasoner:
         logging.info("="*60)
 
         return results
+
+    def _extract_chunk_ids(self, node_id: str) -> List[str]:
+        """
+        Extract chunk_ids from a node.
+
+        Args:
+            node_id: Node ID
+
+        Returns:
+            List of chunk IDs associated with this node
+        """
+        if node_id not in self.graph_data.G.nodes:
+            return []
+
+        node_data = self.graph_data.G.nodes[node_id]
+        chunk_ids = node_data.get('chunk_id') or node_data.get('text_unit_ids', [])
+
+        if isinstance(chunk_ids, str):
+            return [chunk_ids]
+        elif isinstance(chunk_ids, list):
+            return chunk_ids
+        else:
+            return []
+
+    def _extract_path_chunk_ids(self, path: List[str]) -> List[str]:
+        """
+        Extract all chunk_ids from nodes in a path.
+
+        Args:
+            path: List of node IDs forming a path
+
+        Returns:
+            List of unique chunk IDs from all nodes in the path
+        """
+        all_chunks = set()
+        for node_id in path:
+            chunk_ids = self._extract_chunk_ids(node_id)
+            all_chunks.update(chunk_ids)
+        return list(all_chunks)
 
 
 if __name__ == "__main__":

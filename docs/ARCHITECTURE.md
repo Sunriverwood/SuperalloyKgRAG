@@ -783,6 +783,7 @@ reasoning:
 | [REASONING_GUIDE.md](REASONING_GUIDE.md) | 图推理系统的完整指南（架构、训练、使用） |
 | [DEPENDENCIES.md](DEPENDENCIES.md) | 项目依赖包说明 |
 | [IMPORT_TO_NEO4J.md](IMPORT_TO_NEO4J.md) | 如何将图谱导入 Neo4j |
+| [IMPORT_TO_GEPHI.md](IMPORT_TO_GEPHI.md) | 如何将图谱导入 Gephi 进行可视化 |
 
 ---
 

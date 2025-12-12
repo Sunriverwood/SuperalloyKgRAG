@@ -6,7 +6,6 @@ import time
 from pathlib import Path
 from typing import Dict, Any, List, Tuple
 from string import Template
-from concurrent.futures import ThreadPoolExecutor, as_completed
 import numpy as np
 import networkx as nx
 import pandas as pd
@@ -397,6 +396,65 @@ def _monitor_job_completion(client: OpenAI, job: Any, sleep_interval: int, job_t
             time.sleep(max(2, sleep_interval * 2))
 
 
+def _monitor_multiple_jobs_completion(client: OpenAI, jobs: List[Tuple[int, Any, Any]],
+                                      sleep_interval: int, job_type: str = "Batch") -> List[Tuple[int, Any, Any]]:
+    """
+    批量监控多个作业的完成状态（一次API调用查询所有）
+
+    Args:
+        client: OpenAI客户端
+        jobs: 作业列表 [(batch_idx, job, extra_data), ...]
+        sleep_interval: 轮询间隔
+        job_type: 作业类型
+
+    Returns:
+        已完成的作业列表 [(batch_idx, completed_job, extra_data), ...]
+    """
+    if not jobs:
+        return []
+
+    completed_states = {'completed', 'failed', 'cancelled', 'expired'}
+    pending_jobs = {job.id: (batch_idx, job, extra_data) for batch_idx, job, extra_data in jobs}
+    completed_jobs = []
+
+    job_ids = list(pending_jobs.keys())
+    logging.info(f"⏳ [{job_type}] 开始批量监控 {len(job_ids)} 个作业，每 {sleep_interval} 秒统一查询...")
+
+    poll_count = 0
+    while pending_jobs:
+        poll_count += 1
+        logging.info(f"  - [{job_type}] 第 {poll_count} 轮查询，剩余 {len(pending_jobs)} 个作业...")
+
+        try:
+            # 一次性查询所有待完成作业的状态
+            current_pending = list(pending_jobs.keys())
+            for job_id in current_pending:
+                batch_idx, original_job, extra_data = pending_jobs[job_id]
+
+                try:
+                    # 查询单个作业状态
+                    status = client.batches.retrieve(batch_id=job_id)
+
+                    if status.status in completed_states:
+                        # 作业已完成，从待处理列表移除
+                        del pending_jobs[job_id]
+                        completed_jobs.append((batch_idx, status, extra_data))
+                        logging.info(f"     ✅ 批次 {batch_idx + 1} 完成: {status.status}")
+
+                except Exception as e:
+                    logging.warning(f"     ⚠️ 查询批次 {batch_idx + 1} (ID: {job_id}) 失败: {e}")
+
+            # 如果还有未完成的作业，等待后继续
+            if pending_jobs:
+                time.sleep(sleep_interval)
+
+        except Exception as e:
+            logging.error(f"  - [{job_type}] 批量查询失败: {e}")
+            time.sleep(max(2, sleep_interval * 2))
+
+    logging.info(f"🎉 [{job_type}] 所有 {len(completed_jobs)} 个作业已完成（共 {poll_count} 轮查询）")
+    return completed_jobs
+
 def process_results(batch_job_status: Any, client: OpenAI) -> Dict[str, str]:
     """下载并处理批量作业的结果 (OpenAI 格式)，返回 {custom_id: text}。"""
     if not batch_job_status or batch_job_status.status != 'completed':
@@ -595,22 +653,89 @@ def _process_embedding_results(batch_job: Any, client: OpenAI, id_order: List[st
         except:
             pass
 
+    # 调试信息：显示结果映射中的 ID 样本
+    if res_map:
+        sample_keys = list(res_map.keys())[:5]
+        logging.info(f"📋 结果映射中的 ID 样本 (前5个): {sample_keys}")
+        logging.info(f"📊 结果映射总数: {len(res_map)} 个")
+    else:
+        logging.warning("⚠️ 结果映射为空，没有成功的嵌入结果")
+
     vecs: List[np.ndarray] = []
     # 如果 dimensions 参数生效，这里维度应该一致；初始化一个默认以防万一
     # 但由于我们无法预知维度（除非传入），这里假设第一条成功数据的维度
-    default_dim = 768
+    default_dim = 1024
     if res_map:
         default_dim = next(iter(res_map.values())).shape[0]
 
+    # 调试信息：显示查找的 ID 样本
+    if id_order:
+        sample_ids = id_order[:5]
+        logging.info(f"🔍 查找的 ID 样本 (前5个): {sample_ids}")
+        logging.info(f"🔍 查找的 ID 类型: {type(id_order[0]) if id_order else 'N/A'}")
+        logging.info(f"📊 查找的 ID 总数: {len(id_order)} 个")
+
+    matched_count = 0
+    unmatched_count = 0
+    unmatched_samples = []  # 记录未匹配的样本用于调试
+
     for eid in id_order:
-        if str(eid) in res_map:
-            emb = res_map[str(eid)]
+        str_eid = str(eid)
+        found = False
+        emb = None  # 初始化 emb 变量
+
+        # 尝试1: 直接匹配
+        if str_eid in res_map:
+            emb = res_map[str_eid]
+            found = True
+        # 尝试2: 规范化匹配（_ 转 -）
+        elif str_eid.replace('_', '-') in res_map:
+            normalized_id = str_eid.replace('_', '-')
+            emb = res_map[normalized_id]
+            found = True
+            if matched_count == 0:  # 只在第一次输出提示
+                logging.info(f"ℹ️ 使用 ID 规范化匹配 (下划线→连字符)")
+        # 尝试3: 反向规范化匹配（- 转 _）
+        elif str_eid.replace('-', '_') in res_map:
+            normalized_id = str_eid.replace('-', '_')
+            emb = res_map[normalized_id]
+            found = True
+            if matched_count == 0:  # 只在第一次输出提示
+                logging.info(f"ℹ️ 使用 ID 规范化匹配 (连字符→下划线)")
+
+        if found and emb is not None:
             # 归一化 (阿里云 text-embedding-v3/v4 通常已归一化，但保留逻辑)
             n = np.linalg.norm(emb)
             vecs.append(emb / (n if n > 0 else 1.0))
+            matched_count += 1
         else:
-            logging.warning(f"⚠️ 未找到实体 {eid} 的嵌入结果")
+            # 记录未匹配的样本
+            if unmatched_count < 10:
+                unmatched_samples.append(str_eid)
+            # 只在前5个未匹配时输出详细警告
+            if unmatched_count < 5:
+                logging.warning(f"⚠️ 未找到实体 '{eid}' (str: '{str_eid}') 的嵌入结果")
+            unmatched_count += 1
             vecs.append(np.zeros(default_dim, dtype=float))
+
+    # 汇总统计
+    if unmatched_count > 0:
+        logging.warning(f"⚠️ 总计 {unmatched_count}/{len(id_order)} 个实体未找到嵌入结果")
+        if unmatched_count > 5:
+            logging.warning(f"   （仅显示前5个警告，还有 {unmatched_count - 5} 个未显示）")
+        if unmatched_samples:
+            logging.warning(f"   未匹配样本: {unmatched_samples[:10]}")
+
+        # 提供调试建议
+        if res_map and id_order:
+            sample_res_key = next(iter(res_map.keys()))
+            sample_id = str(id_order[0])
+            logging.warning(f"   🔍 调试提示:")
+            logging.warning(f"      - 结果中的 ID 示例: '{sample_res_key}' (类型: {type(sample_res_key)})")
+            logging.warning(f"      - 查找的 ID 示例: '{sample_id}' (类型: {type(sample_id)})")
+            logging.warning(f"      - 是否完全相同: {sample_res_key == sample_id}")
+
+    logging.info(f"✅ 成功匹配 {matched_count}/{len(id_order)} 个实体的嵌入向量")
 
     if not vecs:
         return np.zeros((0, 1), dtype=float)
@@ -627,22 +752,105 @@ def _cosine_sim_matrix(A: np.ndarray) -> np.ndarray:
 
 def build_candidate_clusters(vecs: np.ndarray, ids: List[str], topk: int = 10, min_sim: float = 0.9) -> List[
     List[str]]:
+    """
+    构建候选同义簇（优化版：分块计算避免内存溢出）
+    """
     n = vecs.shape[0]
-    if n == 0: return []
-    sims = _cosine_sim_matrix(vecs)
-    np.fill_diagonal(sims, -1.0)
-    nn_graph = nx.Graph()
-    for i in range(n):
-        row = sims[i]
-        idx = np.argpartition(row, -topk)[-topk:]
-        for j in idx:
-            if row[j] >= min_sim:
-                nn_graph.add_edge(i, j, sim=float(row[j]))
-    to_remove = []
-    for u, v in nn_graph.edges():
-        if not (sims[u, v] >= min_sim and sims[v, u] >= min_sim):
-            to_remove.append((u, v))
-    nn_graph.remove_edges_from(to_remove)
+    if n == 0:
+        return []
+
+    # 估算完整相似度矩阵需要的内存（float64 = 8 bytes）
+    matrix_size_gb = (n * n * 8) / (1024 ** 3)
+    chunk_size = 5000  # 每次处理5000个实体
+
+    if matrix_size_gb > 10.0:  # 如果超过10GB，使用分块计算
+        logging.warning(f"⚠️ 实体数量 {n} 较大，完整相似度矩阵需要 {matrix_size_gb:.1f} GB 内存")
+        logging.info(f"💡 使用分块计算方式，每块 {chunk_size} 个实体，避免内存溢出")
+
+        # 第一遍：构建每个实体的 topk 邻居集合
+        logging.info(f"   第一遍：计算每个实体的 top-{topk} 邻居...")
+        entity_topk_neighbors = {}  # {entity_id: set of neighbor_ids}
+
+        for i in range(0, n, chunk_size):
+            end_i = min(i + chunk_size, n)
+            chunk_vecs = vecs[i:end_i]
+
+            if i % (chunk_size * 5) == 0 or i == 0:
+                logging.info(f"      处理实体 {i+1}-{end_i}/{n}...")
+
+            # 计算当前块与所有实体的相似度
+            sims_chunk = np.clip(chunk_vecs @ vecs.T, -1.0, 1.0)
+
+            # 对当前块的每个实体，找到 top-k 邻居
+            for j in range(sims_chunk.shape[0]):
+                global_idx = i + j
+                row = sims_chunk[j]
+
+                # 找到 top-k 最相似的邻居（排除自己）
+                # 使用 argsort 而不是 argpartition 以确保获取真正的 topk
+                sorted_indices = np.argsort(row)[::-1]
+                neighbors = set()
+                count = 0
+
+                for neighbor_idx in sorted_indices:
+                    if neighbor_idx == global_idx:
+                        continue
+                    if row[neighbor_idx] >= min_sim:
+                        neighbors.add(neighbor_idx)
+                        count += 1
+                        if count >= topk:
+                            break
+                    else:
+                        break  # 相似度已经低于阈值，后面的更低
+
+                entity_topk_neighbors[global_idx] = neighbors
+
+            del sims_chunk
+
+        # 第二遍：构建互为近邻的边
+        logging.info(f"   第二遍：验证互为近邻关系...")
+        nn_graph = nx.Graph()
+        added_edges = 0
+
+        for i in range(n):
+            if i % (chunk_size * 5) == 0 and i > 0:
+                logging.info(f"      验证实体 {i+1}/{n}的邻居关系...")
+
+            i_neighbors = entity_topk_neighbors.get(i, set())
+
+            for j in i_neighbors:
+                # 检查 i 是否也在 j 的 topk 邻居中（互为近邻）
+                j_neighbors = entity_topk_neighbors.get(j, set())
+
+                if i in j_neighbors:
+                    # 避免重复添加边 (i,j) 和 (j,i)
+                    if not nn_graph.has_edge(i, j):
+                        # 计算相似度（用于边权重）
+                        sim = float(np.dot(vecs[i], vecs[j]))
+                        nn_graph.add_edge(i, j, sim=sim)
+                        added_edges += 1
+
+        logging.info(f"✅ 分块计算完成，添加了 {added_edges} 条互为近邻的边")
+        logging.info(f"   （从 {len(entity_topk_neighbors)} 个实体的邻居关系中筛选）")
+    else:
+        # 原有逻辑：实体数量不大时，直接计算完整相似度矩阵
+        logging.info(f"实体数量 {n}，相似度矩阵需要 {matrix_size_gb:.2f} GB，直接计算")
+        sims = _cosine_sim_matrix(vecs)
+        np.fill_diagonal(sims, -1.0)
+        nn_graph = nx.Graph()
+        for i in range(n):
+            row = sims[i]
+            idx = np.argpartition(row, -topk)[-topk:]
+            for j in idx:
+                if row[j] >= min_sim:
+                    nn_graph.add_edge(i, j, sim=float(row[j]))
+        to_remove = []
+        for u, v in nn_graph.edges():
+            if not (sims[u, v] >= min_sim and sims[v, u] >= min_sim):
+                to_remove.append((u, v))
+        nn_graph.remove_edges_from(to_remove)
+
+    # 提取连通分量作为候选簇
     clusters: List[List[str]] = []
     for comp in nx.connected_components(nn_graph):
         c = sorted(list(comp))
@@ -1158,30 +1366,17 @@ def run_disambiguation_stage(client: OpenAI, graph: nx.DiGraph, config: Dict[str
             if job:
                 batch_jobs.append((batch_idx + 1, job))
 
-        # 并行监控所有批次
-        logging.info(f"⏳ 开始监控 {len(batch_jobs)} 个批次作业的完成状态...")
-        completed_jobs = []
-
-        with ThreadPoolExecutor(max_workers=min(len(batch_jobs), 10)) as executor:
-            # 提交监控任务
-            future_to_batch = {
-                executor.submit(_monitor_job_completion, client, job, sleep_interval, f"Disambiguation-Batch{batch_idx}"): (batch_idx, job)
-                for batch_idx, job in batch_jobs
-            }
-
-            # 等待所有任务完成
-            for future in as_completed(future_to_batch):
-                batch_idx, job = future_to_batch[future]
-                try:
-                    completed_job = future.result()
-                    if completed_job:
-                        completed_jobs.append((batch_idx, completed_job))
-                        logging.info(f"✅ 消歧批次 {batch_idx} 已完成")
-                except Exception as e:
-                    logging.error(f"❌ 消歧批次 {batch_idx} 处理失败: {e}")
+        # 批量监控所有批次（一次API调用查询所有）
+        logging.info(f"⏳ 开始批量监控 {len(batch_jobs)} 个消歧批次作业的完成状态...")
+        completed_jobs = _monitor_multiple_jobs_completion(
+            client,
+            [(batch_idx, job, None) for batch_idx, job in batch_jobs],
+            sleep_interval,
+            job_type="Disambiguation"
+        )
 
         # 处理所有批次的结果
-        for batch_idx, completed_job in sorted(completed_jobs, key=lambda x: x[0]):
+        for batch_idx, completed_job, _ in sorted(completed_jobs, key=lambda x: x[0]):
             batch_results = process_results(completed_job, client)
             results.update(batch_results)
             logging.info(f"📊 批次 {batch_idx} 返回 {len(batch_results)} 个结果")
@@ -1257,6 +1452,7 @@ def run_entity_merge_stage(client: OpenAI, graph: nx.DiGraph, config: Dict[str, 
             batch_req_path = tmp_emb_req_path.parent / f"{tmp_emb_req_path.stem}_batch_{batch_idx + 1}.jsonl"
 
             logging.info(f"📝 准备批次 {batch_idx + 1}/{num_batches}：实体 {start_idx + 1}-{end_idx}")
+            logging.info(f"   批次 {batch_idx + 1} 的 ID 样本: {batch_ent_ids[:3] if len(batch_ent_ids) >= 3 else batch_ent_ids}")
             _create_temp_embedding_requests(batch_ent_texts, batch_req_path, model_name=embed_model, dim=embed_dim)
             batch_jobs.append((batch_idx, batch_req_path, batch_ent_ids))
 
@@ -1267,32 +1463,23 @@ def run_entity_merge_stage(client: OpenAI, graph: nx.DiGraph, config: Dict[str, 
             emb_job = _submit_and_monitor_embedding_job(client, batch_req_path, embed_model, sleep_interval,
                                                        batch_idx, num_batches, monitor=False)
             if emb_job:
+                logging.info(f"   作业 ID: {emb_job.id}, 对应批次索引: {batch_idx}, ID 数量: {len(batch_ent_ids)}")
                 submitted_jobs.append((batch_idx, emb_job, batch_ent_ids))
 
-        # 并行监控所有批次
-        logging.info(f"⏳ 开始监控 {len(submitted_jobs)} 个嵌入批次作业的完成状态...")
-        completed_jobs = []
-
-        with ThreadPoolExecutor(max_workers=min(len(submitted_jobs), 10)) as executor:
-            # 提交监控任务
-            future_to_batch = {
-                executor.submit(_monitor_embedding_job_completion, client, job, sleep_interval, batch_idx, num_batches): (batch_idx, job, batch_ent_ids)
-                for batch_idx, job, batch_ent_ids in submitted_jobs
-            }
-
-            # 等待所有任务完成
-            for future in as_completed(future_to_batch):
-                batch_idx, job, batch_ent_ids = future_to_batch[future]
-                try:
-                    completed_job = future.result()
-                    if completed_job:
-                        completed_jobs.append((batch_idx, completed_job, batch_ent_ids))
-                        logging.info(f"✅ 嵌入批次 {batch_idx + 1} 已完成")
-                except Exception as e:
-                    logging.error(f"❌ 嵌入批次 {batch_idx + 1} 处理失败: {e}")
+        # 批量监控所有批次（一次API调用查询所有）
+        logging.info(f"⏳ 开始批量监控 {len(submitted_jobs)} 个嵌入批次作业的完成状态...")
+        completed_jobs = _monitor_multiple_jobs_completion(
+            client,
+            submitted_jobs,
+            sleep_interval,
+            job_type="EntityEmb"
+        )
 
         # 处理所有批次的结果
         for batch_idx, completed_job, batch_ent_ids in sorted(completed_jobs, key=lambda x: x[0]):
+            logging.info(f"📊 处理批次 {batch_idx + 1} 的结果，作业 ID: {completed_job.id}")
+            logging.info(f"   该批次预期的 ID 数量: {len(batch_ent_ids)}")
+            logging.info(f"   该批次 ID 样本: {batch_ent_ids[:3] if len(batch_ent_ids) >= 3 else batch_ent_ids}")
             batch_V = _process_embedding_results(completed_job, client, batch_ent_ids)
             if batch_V.shape[0] > 0:
                 all_embeddings.append(batch_V)
@@ -1347,30 +1534,17 @@ def run_entity_merge_stage(client: OpenAI, graph: nx.DiGraph, config: Dict[str, 
             if merge_job:
                 batch_jobs.append((batch_idx + 1, merge_job))
 
-        # 并行监控所有批次
-        logging.info(f"⏳ 开始监控 {len(batch_jobs)} 个LLM仲裁批次作业的完成状态...")
-        completed_jobs = []
-
-        with ThreadPoolExecutor(max_workers=min(len(batch_jobs), 10)) as executor:
-            # 提交监控任务
-            future_to_batch = {
-                executor.submit(_monitor_job_completion, client, job, sleep_interval, f"EntityMerge-Batch{batch_idx}"): (batch_idx, job)
-                for batch_idx, job in batch_jobs
-            }
-
-            # 等待所有任务完成
-            for future in as_completed(future_to_batch):
-                batch_idx, job = future_to_batch[future]
-                try:
-                    completed_job = future.result()
-                    if completed_job:
-                        completed_jobs.append((batch_idx, completed_job))
-                        logging.info(f"✅ LLM仲裁批次 {batch_idx} 已完成")
-                except Exception as e:
-                    logging.error(f"❌ LLM仲裁批次 {batch_idx} 处理失败: {e}")
+        # 批量监控所有批次（一次API调用查询所有）
+        logging.info(f"⏳ 开始批量监控 {len(batch_jobs)} 个LLM仲裁批次作业的完成状态...")
+        completed_jobs = _monitor_multiple_jobs_completion(
+            client,
+            [(batch_idx, job, None) for batch_idx, job in batch_jobs],
+            sleep_interval,
+            job_type="EntityMerge"
+        )
 
         # 处理所有批次的结果
-        for batch_idx, completed_job in sorted(completed_jobs, key=lambda x: x[0]):
+        for batch_idx, completed_job, _ in sorted(completed_jobs, key=lambda x: x[0]):
             batch_texts = process_results(completed_job, client)
             merge_texts.update(batch_texts)
             logging.info(f"📊 批次 {batch_idx} 返回 {len(batch_texts)} 个结果")

@@ -10,6 +10,9 @@
 |------|---------|
 | [ARCHITECTURE.md](ARCHITECTURE.md) | **项目架构总览** - 系统架构图、目录结构、四种查询模式详细流程图（LOCAL/GLOBAL/REASONING/DRIFT） |
 | [DEPENDENCIES.md](DEPENDENCIES.md) | **依赖说明** - 项目所需的所有依赖包及其用途 |
+| [ID_MANAGEMENT_GUIDE.md](ID_MANAGEMENT_GUIDE.md) | **ID管理指南** - 图谱构建、存储、查询全流程的ID生成、转换和使用详解 |
+| [ID_FLOW_DIAGRAM.md](ID_FLOW_DIAGRAM.md) | **ID流转全景图** - 可视化展示ID从文档到查询的完整生命周期 |
+| [ID_QUICK_REFERENCE.md](ID_QUICK_REFERENCE.md) | **ID快速参考卡** - 常用函数、问题排查、最佳实践速查手册 |
 
 ### 📥 数据处理流程
 

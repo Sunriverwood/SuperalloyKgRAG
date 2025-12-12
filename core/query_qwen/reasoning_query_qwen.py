@@ -70,11 +70,12 @@ class ReasoningQueryHandler:
     4. Answer generation (LLM synthesis with reasoning paths)
     """
 
-    def __init__(self, config: Dict[str, Any], load_trained_model: bool = True):
+    def __init__(self, config: Dict[str, Any], load_trained_model: bool = True, shared_graph_data: Dict = None):
         """
         Args:
             config: Configuration dictionary
             load_trained_model: Whether to load pre-trained model (False for training mode)
+            shared_graph_data: Optional pre-loaded graph data to avoid redundant loading (memory optimization)
         """
         self.config = config
         self.reasoning_config = config.get("reasoning", {})
@@ -97,10 +98,23 @@ class ReasoningQueryHandler:
         self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
         logging.info(f"Using device: {self.device}")
 
-        # Load graph data
-        logging.info("Loading graph data for reasoning...")
-        self.data_loader = GraphReasoningDataLoader(config)
-        self.graph_data = self.data_loader.load(device=self.device)
+        # Load graph data - use shared data if provided (memory optimization)
+        if shared_graph_data is not None:
+            logging.info("💡 [内存优化] 使用共享的图数据，避免重复加载")
+            self.graph_data = shared_graph_data
+            self.data_loader = None  # 不需要 data_loader
+        else:
+            logging.info("Loading graph data for reasoning...")
+            self.data_loader = GraphReasoningDataLoader(config)
+            self.graph_data = self.data_loader.load(device=self.device)
+
+        # Load chunk ID to source info mapping
+        logging.info("Loading chunk ID to source mapping...")
+        self.chunk_id_map = self._load_chunk_id_map()
+
+        # Load text units for source text snippets
+        logging.info("Loading text units for source reference...")
+        self.text_units = self._load_text_units()
 
         # Initialize or load models
         if load_trained_model:
@@ -118,6 +132,219 @@ class ReasoningQueryHandler:
         )
 
         logging.info("ReasoningQueryHandler initialized successfully")
+
+    def _load_chunk_id_map(self) -> Dict[str, Dict[str, Any]]:
+        """
+        Load chunk ID to source info mapping (source_filename, pages, blocks).
+        Loads from all units files: text, abstract, image, table.
+
+        Returns:
+            Dictionary mapping chunk_id to source metadata
+        """
+        chunk_map = {}
+
+        # Define all units files to load with their chunk type
+        units_files = [
+            ("text_units.jsonl", "text"),
+            ("abstract_units.jsonl", "abstract"),
+            ("image_units.jsonl", "image"),
+            ("table_units.jsonl", "table")
+        ]
+
+        chunks_dir = PROJECT_ROOT / "data" / "chunks"
+        total_loaded = 0
+
+        for filename, chunk_type in units_files:
+            units_path = chunks_dir / filename
+
+            try:
+                if not units_path.exists():
+                    logging.debug(f"⚠ {filename} not found, skipping")
+                    continue
+
+                logging.info(f"Loading {chunk_type} units from {filename}...")
+                file_count = 0
+
+                with open(units_path, 'r', encoding='utf-8') as f:
+                    for line in f:
+                        if line.strip():
+                            unit = json.loads(line)
+                            chunk_id = unit.get("id")
+                            metadata = unit.get("metadata", {})
+
+                            if chunk_id:
+                                # For abstract type, use different fields
+                                if chunk_type == "abstract":
+                                    chunk_map[chunk_id] = {
+                                        "source_filename": metadata.get("source_filename", "unknown"),
+                                        "journal": metadata.get("journal", "unknown"),
+                                        "year": metadata.get("year", "unknown")
+                                    }
+                                else:
+                                    # For text, image, table types, use pages and blocks
+                                    chunk_map[chunk_id] = {
+                                        "source_filename": metadata.get("source_filename", "unknown"),
+                                        "pages": metadata.get("pages", []),
+                                        "blocks": metadata.get("blocks", [])
+                                    }
+                                file_count += 1
+
+                logging.info(f"  ✓ Loaded {file_count} mappings from {filename}")
+                total_loaded += file_count
+
+            except Exception as e:
+                logging.warning(f"⚠ Error loading {filename}: {e}")
+                continue
+
+        logging.info(f"✓ Total: loaded {total_loaded} chunk ID mappings")
+
+        if total_loaded == 0:
+            logging.warning("⚠ No chunk ID mappings loaded, source references will not be available")
+
+        return chunk_map
+
+    def _load_text_units(self) -> Dict[str, str]:
+        """
+        Load text units to create chunk_id -> text mapping for source reference.
+
+        Returns:
+            Dictionary mapping chunk_id to original text content
+        """
+        text_units_path = PROJECT_ROOT / self.config["embedding"]["input_text_units_path"]
+        text_map = {}
+        try:
+            logging.info(f"Loading text units from: {text_units_path}")
+            with open(text_units_path, 'r', encoding='utf-8') as f:
+                for line in f:
+                    if line.strip():
+                        unit = json.loads(line)
+                        chunk_id = unit.get("id")
+                        text = unit.get("text", "")
+                        if chunk_id and text:
+                            text_map[chunk_id] = text
+            logging.info(f"✓ Loaded {len(text_map)} text units for source reference")
+            return text_map
+        except FileNotFoundError:
+            logging.warning(f"⚠ Text units file not found: {text_units_path}")
+            return {}
+        except Exception as e:
+            logging.error(f"✗ Error loading text units: {e}", exc_info=True)
+            return {}
+
+    def _format_source_reference(self, chunk_ids: List[str]) -> str:
+        """
+        Format chunk IDs as human-readable source references.
+        Format: [source: filename Page X Block Y]
+
+        Args:
+            chunk_ids: List of chunk IDs
+
+        Returns:
+            Formatted source reference string
+        """
+        if not chunk_ids or not self.chunk_id_map:
+            return ""
+
+        def extract_base_chunk_id(chunk_id_raw: str) -> str:
+            """Extract base chunk ID (remove suffixes like _table_0)."""
+            import re
+            match = re.match(r'^(chunk-[a-f0-9]+)', chunk_id_raw)
+            return match.group(1) if match else chunk_id_raw
+
+        def merge_pages(page_list: List[int]) -> str:
+            """Merge consecutive pages into range format."""
+            if not page_list:
+                return ""
+            unique_pages = sorted(set(page_list))
+            if len(unique_pages) == 1:
+                return f"Page {unique_pages[0]}"
+            # Check if consecutive
+            is_consecutive = all(unique_pages[i+1] - unique_pages[i] == 1
+                               for i in range(len(unique_pages) - 1))
+            if is_consecutive:
+                return f"Page {unique_pages[0]}~{unique_pages[-1]}"
+            elif len(unique_pages) <= 3:
+                return f"Pages {', '.join(map(str, unique_pages))}"
+            else:
+                return f"Pages {unique_pages[0]}~{unique_pages[-1]}"
+
+        def merge_blocks(block_list: List[str]) -> str:
+            """Merge consecutive blocks into range format."""
+            if not block_list:
+                return ""
+            unique_blocks = sorted(set(block_list))
+            if len(unique_blocks) == 1:
+                return unique_blocks[0]
+            # Try to detect if blocks are consecutive numbers
+            try:
+                import re
+                block_nums = []
+                for block in unique_blocks:
+                    match = re.match(r'(Block|block)_(\d+)', block)
+                    if match:
+                        block_nums.append(int(match.group(2)))
+                    else:
+                        block_nums = []
+                        break
+                if block_nums and len(block_nums) == len(unique_blocks):
+                    is_consecutive = all(block_nums[i+1] - block_nums[i] == 1
+                                       for i in range(len(block_nums) - 1))
+                    if is_consecutive:
+                        return f"Block {unique_blocks[0]}~{unique_blocks[-1]}"
+            except Exception:
+                pass
+            if len(unique_blocks) <= 3:
+                return f"Blocks {', '.join(unique_blocks)}"
+            else:
+                return f"Blocks {unique_blocks[0]}~{unique_blocks[-1]}"
+
+        # Group by source file
+        sources_by_file: Dict[str, Dict[str, List]] = {}
+        abstract_sources = []  # Separate handling for abstract type
+
+        for chunk_id_raw in chunk_ids:
+            chunk_id = extract_base_chunk_id(chunk_id_raw)
+            if chunk_id in self.chunk_id_map:
+                source_info = self.chunk_id_map[chunk_id]
+                chunk_type = source_info.get("chunk_type", "text")
+                filename = source_info.get("source_filename", "unknown").replace('.json', '')
+
+                # For abstract type, use different format
+                if chunk_type == "abstract":
+                    journal = source_info.get("journal", "unknown")
+                    year = source_info.get("year", "unknown")
+                    abstract_sources.append(f"{filename}, {journal}, {year}")
+                else:
+                    # For text/image/table types, use pages and blocks
+                    pages = source_info.get("pages", [])
+                    blocks = source_info.get("blocks", [])
+
+                    if filename not in sources_by_file:
+                        sources_by_file[filename] = {"pages": [], "blocks": []}
+                    sources_by_file[filename]["pages"].extend(pages)
+                    sources_by_file[filename]["blocks"].extend(blocks)
+
+        # Format source parts
+        source_parts = []
+
+        # Add abstract sources first
+        if abstract_sources:
+            source_parts.extend(abstract_sources)
+
+        # Add other type sources
+        for filename, info in sources_by_file.items():
+            if filename == "unknown":
+                continue
+            page_str = merge_pages(info["pages"])
+            block_str = merge_blocks(info["blocks"])
+            source_parts.append(f"{filename} {page_str} {block_str}")
+
+        if len(source_parts) == 0:
+            return "[source: unknown]"
+        elif len(source_parts) == 1:
+            return f"[source: {source_parts[0]}]"
+        else:
+            return f"[source: {'; '.join(source_parts)}]"
 
     def _initialize_models(self):
         """Initialize models for training"""
@@ -210,17 +437,71 @@ class ReasoningQueryHandler:
         # Format reasoning paths as context
         context_parts = []
 
-        # Add top nodes
+        # Add top nodes with source references
         context_parts.append("## Relevant Entities:")
+        relevant_chunks = set()
         for node_info in reasoning_results['top_nodes'][:5]:
-            context_parts.append(f"- {node_info['name']} (relevance: {node_info['score']:.3f})")
+            node_id = node_info['id']
+            # Get chunk_id from graph node
+            if node_id in self.graph_data.G.nodes:
+                node_data = self.graph_data.G.nodes[node_id]
+                chunk_ids = node_data.get('chunk_id') or node_data.get('text_unit_ids', [])
+                if isinstance(chunk_ids, str):
+                    chunk_ids = [chunk_ids]
+                elif chunk_ids is None:
+                    chunk_ids = []
 
-        # Add reasoning paths
+                if chunk_ids:
+                    source_ref = self._format_source_reference(chunk_ids)
+                    context_parts.append(f"- {node_info['name']} (relevance: {node_info['score']:.3f}) {source_ref}")
+                    relevant_chunks.update(chunk_ids)
+                else:
+                    context_parts.append(f"- {node_info['name']} (relevance: {node_info['score']:.3f})")
+            else:
+                context_parts.append(f"- {node_info['name']} (relevance: {node_info['score']:.3f})")
+
+        # Add reasoning paths with source references
         if reasoning_results['paths']:
             context_parts.append("\n## Reasoning Paths:")
             for i, path_info in enumerate(reasoning_results['paths'][:3], 1):
-                context_parts.append(f"\nPath {i} (confidence: {path_info['score']:.3f}):")
+                context_parts.append(f"\nPath {i} (confidence: {path_info['score']:.4f}):")
                 context_parts.append(path_info['explanation'])
+
+                # Collect chunk_ids from path nodes and add source reference
+                path_chunks = []
+                for node_id in path_info['path']:
+                    if node_id in self.graph_data.G.nodes:
+                        node_data = self.graph_data.G.nodes[node_id]
+                        chunk_ids = node_data.get('chunk_id') or node_data.get('text_unit_ids', [])
+                        if isinstance(chunk_ids, str):
+                            path_chunks.append(chunk_ids)
+                            relevant_chunks.add(chunk_ids)
+                        elif isinstance(chunk_ids, list):
+                            path_chunks.extend(chunk_ids)
+                            relevant_chunks.update(chunk_ids)
+
+                # Add formatted source reference for this path
+                if path_chunks:
+                    source_ref = self._format_source_reference(path_chunks)
+                    context_parts.append(f"  {source_ref}")
+
+        # Add source text snippets
+        if relevant_chunks and self.text_units:
+            context_parts.append("\n## Source Text Snippets:")
+            # Limit to top 10 most relevant chunks
+            for idx, chunk_id in enumerate(list(relevant_chunks)[:10], 1):
+                if chunk_id in self.text_units:
+                    text = self.text_units[chunk_id]
+                    # Truncate if too long
+                    if len(text) > 500:
+                        preview = text[:500].replace("\n", " ") + "..."
+                    else:
+                        preview = text.replace("\n", " ")
+                    context_parts.append(f"\n**[{chunk_id}]**")
+                    context_parts.append(preview)
+
+            if len(relevant_chunks) > 10:
+                context_parts.append(f"\n... ({len(relevant_chunks) - 10} more source chunks omitted)")
 
         context = "\n".join(context_parts)
 
@@ -229,18 +510,19 @@ class ReasoningQueryHandler:
             system_prompt = """You are a knowledge graph reasoning assistant. 
 
 CRITICAL CONSTRAINTS:
-1. You MUST ONLY use information from the provided knowledge graph reasoning results
+1. You MUST ONLY use information from the provided knowledge graph reasoning results and source text snippets
 2. You MUST NOT use your own training data or general knowledge
 3. If the provided reasoning results don't contain enough information to answer, say "Based on the available knowledge graph data, I cannot find sufficient information to answer this question."
-4. Every statement in your answer must be traceable to the provided entities and reasoning paths
-5. Do not make assumptions or inferences beyond what is explicitly stated in the reasoning results"""
+4. Every statement in your answer must be traceable to the provided entities, reasoning paths, and source texts
+5. Do not make assumptions or inferences beyond what is explicitly stated in the reasoning results
+6. When making claims, reference the sources using the format [source: filename Page X Block Y] to support your statements"""
 
             prompt = f"""Question: {query}
 
 Knowledge Graph Reasoning Results:
 {context}
 
-IMPORTANT: Answer ONLY based on the above reasoning results. Do NOT use any external knowledge or your training data. If the reasoning results are insufficient, explicitly state that."""
+IMPORTANT: Answer ONLY based on the above reasoning results and source texts. Do NOT use any external knowledge or your training data. If the reasoning results are insufficient, explicitly state that. When possible, cite the sources using the [source: ...] format shown above to support your answer."""
 
         else:
             system_prompt = "You are a helpful assistant that answers questions based on knowledge graph reasoning."
@@ -251,8 +533,8 @@ Question: {query}
 
 {context}
 
-Please provide a comprehensive answer based on the reasoning paths and entities above. 
-Explain how the paths support your answer."""
+Please provide a comprehensive answer based on the reasoning paths, entities, and source texts above. 
+Explain how the paths support your answer and cite source chunks when relevant."""
 
         try:
             response = self.client.chat.completions.create(
@@ -363,12 +645,13 @@ Explain how the paths support your answer."""
         return history
 
 
-def print_results(results: Dict[str, Any]):
+def print_results(results: Dict[str, Any], handler: Optional['ReasoningQueryHandler'] = None):
     """
-    Format and print reasoning results.
+    Format and print reasoning results with source references.
 
     Args:
         results: Reasoning results dictionary
+        handler: Optional ReasoningQueryHandler instance for formatting source references
     """
     print("\n" + "="*80)
     print("REASONING RESULTS")
@@ -379,7 +662,13 @@ def print_results(results: Dict[str, Any]):
     print(f"\n{'Top Relevant Entities:':<30}")
     print("-" * 80)
     for i, node in enumerate(results['top_nodes'][:10], 1):
-        print(f"{i:2}. {node['name']:<50} (score: {node['score']:.4f})")
+        # Display node with source reference if available
+        chunk_ids = node.get('chunk_ids', [])
+        if chunk_ids and handler and handler.chunk_id_map:
+            source_ref = handler._format_source_reference(chunk_ids)
+            print(f"{i:2}. {node['name']:<50} (score: {node['score']:.4f}) {source_ref}")
+        else:
+            print(f"{i:2}. {node['name']:<50} (score: {node['score']:.4f})")
 
     # Reasoning paths
     print(f"\n{'Reasoning Paths:':<30}")
@@ -388,8 +677,15 @@ def print_results(results: Dict[str, Any]):
         for i, path_info in enumerate(results['paths'][:5], 1):
             print(f"\nPath {i} (confidence: {path_info['score']:.4f}):")
             print(path_info['explanation'])
+
+            # Show source references for this path
+            chunk_ids = path_info.get('chunk_ids', [])
+            if chunk_ids and handler and handler.chunk_id_map:
+                source_ref = handler._format_source_reference(chunk_ids)
+                print(f"  {source_ref}")
     else:
         print("No reasoning paths found.")
+
 
     # Final answer
     if 'answer' in results:
@@ -646,7 +942,7 @@ Examples:
         )
 
         # Print results
-        print_results(results)
+        print_results(results, handler=handler)
 
         # Save if requested
         if args.output:

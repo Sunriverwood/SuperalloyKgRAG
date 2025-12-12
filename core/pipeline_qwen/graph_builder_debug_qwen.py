@@ -61,15 +61,29 @@ from typing import Dict, List, Any
 import yaml
 from openai import OpenAI
 
+# 统一导入 graph_builder_qwen，所有功能函数都调用它
+from core.pipeline_qwen import graph_builder_qwen as gb
+
 # ========== 配置区域 - 请根据实际情况修改 ==========
 # 恢复模式选择（必填）：
 START_MODE = "EMBEDDING"
 
 # 作业ID配置（根据选择的模式填写对应的ID）
+# 支持单个ID（字符串）或多个批次ID（列表）
 DISAMBIGUATION_JOB_ID = "batch_req_xxxx" # 示例 ID
-EMBEDDING_JOB_ID = "batch_7f3f7022-7cff-4509-9b00-7f69873d6540"
-ENTITY_MERGE_JOB_ID = "batch_b7419a2b-3981-4b6a-8e45-073b4aa73a73"
-COMMUNITY_SUMMARY_JOB_ID = "batch_9ca421db-46c4-4102-a308-df489aca04d8"
+# 如果任务被拆分成多个批次，使用列表格式：
+# DISAMBIGUATION_JOB_ID = ["batch_xxx_1", "batch_xxx_2", "batch_xxx_3"]
+# EMBEDDING_JOB_ID = "batch_req_xxxx"
+EMBEDDING_JOB_ID = ["batch_76179c74-35d1-403e-8b62-f500696b0b99","batch_a378cdeb-e0a2-4a58-84e4-f4bdb67bb692","batch_f28d2645-cb36-4e6e-a01b-895737ecd149",
+                    "batch_13466778-4838-4510-a4fa-7381ce0584aa","batch_02258542-e3ae-4dfb-8496-898daac5638f","batch_b1104eba-27cc-4a0a-beea-e443c17a2ff6",
+                    "batch_60ff8b20-722c-40c2-a329-2f806b73fec5","batch_bb6f09d1-f750-419a-8a8c-4217294033a5","batch_6591e08c-6e2d-4da4-930d-ee00ef3d80df"]
+# EMBEDDING_JOB_ID = ["batch_xxx_1", "batch_xxx_2"]
+
+ENTITY_MERGE_JOB_ID = "batch_b7"
+# ENTITY_MERGE_JOB_ID = ["batch_xxx_1", "batch_xxx_2"]
+
+COMMUNITY_SUMMARY_JOB_ID = "batch_98"
+# COMMUNITY_SUMMARY_JOB_ID = ["batch_xxx_1", "batch_xxx_2"]
 
 # ==================================================
 
@@ -94,148 +108,298 @@ def load_config():
     with open(cfg_path, 'r', encoding='utf-8') as f:
         return yaml.safe_load(f)
 
+def normalize_job_id(job_id):
+    """
+    将作业ID标准化为列表格式
+
+    Args:
+        job_id: 可以是字符串（单个ID）或列表（多个批次ID）
+
+    Returns:
+        列表格式的作业ID
+    """
+    if job_id is None:
+        return []
+    if isinstance(job_id, str):
+        return [job_id] if job_id and not job_id.startswith("batch_req_xxxx") else []
+    if isinstance(job_id, list):
+        return [jid for jid in job_id if jid and not jid.startswith("batch_req_xxxx")]
+    return []
+
+def is_valid_job_id(job_id):
+    """检查作业ID是否有效（非空且非占位符）"""
+    if isinstance(job_id, str):
+        return job_id and not job_id.startswith("batch_req_xxxx")
+    if isinstance(job_id, list):
+        return any(jid and not jid.startswith("batch_req_xxxx") for jid in job_id)
+    return False
+
 def download_and_process_disambiguation_results(client: OpenAI, job: Any) -> Dict[str, str]:
-    """从已完成的消歧作业下载并处理结果 (OpenAI Format)"""
-    if job.status != 'completed':
-        logging.error(f"作业状态不是成功: {job.status}")
-        return {}
+    """从已完成的消歧作业下载并处理结果 - 调用 graph_builder_qwen.process_results"""
+    return gb.process_results(job, client)
 
-    output_file_id = job.output_file_id
-    if not output_file_id:
-        logging.error("作业无输出文件ID")
-        return {}
+def download_and_process_multiple_disambiguation_batches(client: OpenAI, job_ids: List[str]) -> Dict[str, str]:
+    """
+    从多个消歧批次作业下载并合并结果
 
-    try:
-        logging.info(f"📥 正在下载消歧结果文件: {output_file_id}")
-        content = client.files.content(output_file_id).text
+    Args:
+        client: OpenAI客户端
+        job_ids: 批次作业ID列表
 
-        results = {}
-        ok, bad = 0, 0
-        for line in content.strip().split('\n'):
-            try:
-                obj = json.loads(line)
-                key = obj.get("custom_id") # OpenAI Batch 使用 custom_id
-                response = obj.get("response", {})
+    Returns:
+        合并后的消歧结果字典
+    """
+    all_results = {}
+    successful_batches = 0
+    failed_batches = 0
 
-                if key and response.get("status_code") == 200:
-                    # 提取 Chat Completion 内容
-                    body = response.get("body", {})
-                    choices = body.get("choices", [])
-                    if choices:
-                        text = choices[0].get("message", {}).get("content", "")
-                        results[key] = (text or "").strip()
-                        ok += 1
-                    else:
-                        bad += 1
+    for idx, job_id in enumerate(job_ids, 1):
+        logging.info(f"\n📦 处理消歧批次 {idx}/{len(job_ids)}: {job_id}")
+        try:
+            job = client.batches.retrieve(batch_id=job_id)
+            logging.info(f"   作业状态: {job.status}")
+
+            if job.status == 'completed':
+                batch_results = download_and_process_disambiguation_results(client, job)
+                if batch_results:
+                    all_results.update(batch_results)
+                    successful_batches += 1
+                    logging.info(f"   ✅ 批次 {idx} 成功获取 {len(batch_results)} 个结果")
                 else:
-                    err = obj.get("error") or response.get("body")
-                    logging.error(f"  - ❌ 处理 ID '{key}' 时发生错误: {err}")
-                    bad += 1
-            except Exception as e:
-                logging.warning(f"  - ⚠️ 解析结果行失败: {e}")
-                bad += 1
+                    failed_batches += 1
+                    logging.warning(f"   ⚠️ 批次 {idx} 未获取到结果")
+            else:
+                failed_batches += 1
+                logging.error(f"   ❌ 批次 {idx} 状态不是成功: {job.status}")
+        except Exception as e:
+            failed_batches += 1
+            logging.error(f"   ❌ 批次 {idx} 处理失败: {e}")
 
-        logging.info(f"🎉 消歧结果处理完成：成功 {ok} 条，失败 {bad} 条。")
-        return results
-    except Exception as e:
-        logging.error(f"❌ 下载消歧结果失败: {e}")
-        return {}
+    logging.info(f"\n🎉 消歧批次处理完成: 成功 {successful_batches}/{len(job_ids)}, 失败 {failed_batches}/{len(job_ids)}")
+    logging.info(f"   总计获得 {len(all_results)} 个消歧结果")
+    return all_results
 
 def download_and_process_embedding_results(client: OpenAI, job: Any, id_order: List[str]) -> np.ndarray:
-    """从已完成的嵌入作业下载并处理结果 (OpenAI Format)"""
-    if job.status != 'completed':
-        logging.error(f"嵌入作业状态不是成功: {job.status}")
-        return np.zeros((0, 1), dtype=float)
+    """从已完成的嵌入作业下载并处理结果 - 调用 graph_builder_qwen._process_embedding_results"""
+    return gb._process_embedding_results(job, client, id_order)
 
-    output_file_id = job.output_file_id
-    if not output_file_id:
-        return np.zeros((0, 1), dtype=float)
+def download_and_process_multiple_embedding_batches(client: OpenAI, job_ids: List[str], id_order: List[str]) -> np.ndarray:
+    """
+    从多个嵌入批次作业下载并合并结果（修复版：从结果中提取实际ID并匹配）
 
-    try:
-        logging.info(f"📥 正在下载嵌入结果文件: {output_file_id}")
-        content = client.files.content(output_file_id).text
+    Args:
+        client: OpenAI客户端
+        job_ids: 批次作业ID列表
+        id_order: 实体ID顺序列表（完整列表）
 
-        lines = content.strip().split('\n')
-        # 构建 map 以应对乱序
-        res_map = {}
-        for line in lines:
-            try:
-                obj = json.loads(line)
-                cid = obj.get("custom_id")
-                response = obj.get("response", {})
-                if response.get("status_code") == 200:
-                    body = response.get("body", {})
-                    data = body.get("data", [])
-                    if data:
-                        res_map[cid] = np.array(data[0]["embedding"], dtype=float)
-            except:
-                pass
+    Returns:
+        合并后的嵌入矩阵（按 id_order 顺序）
+    """
+    # 第一步：收集所有批次的嵌入结果到字典中
+    logging.info(f"\n🔄 开始处理 {len(job_ids)} 个嵌入批次，收集所有结果...")
+    all_embeddings_dict = {}  # {entity_id: embedding_vector}
+    successful_batches = 0
+    failed_batches = 0
 
-        vecs: List[np.ndarray] = []
-        default_dim = 768
-        if res_map:
-            default_dim = next(iter(res_map.values())).shape[0]
+    for idx, job_id in enumerate(job_ids, 1):
+        logging.info(f"\n📦 处理嵌入批次 {idx}/{len(job_ids)}: {job_id}")
 
-        for eid in id_order:
-            if str(eid) in res_map:
-                emb = res_map[str(eid)]
-                n = np.linalg.norm(emb)
-                vecs.append(emb / (n if n > 0 else 1.0))
+        try:
+            job = client.batches.retrieve(batch_id=job_id)
+            logging.info(f"   作业状态: {job.status}")
+
+            if job.status == 'completed':
+                # 下载结果文件
+                output_file_id = job.output_file_id
+                if not output_file_id:
+                    logging.warning(f"   ⚠️ 批次 {idx} 没有输出文件")
+                    failed_batches += 1
+                    continue
+
+                logging.info(f"   📥 下载批次 {idx} 的结果文件...")
+                content = client.files.content(output_file_id).text
+                lines = content.strip().split('\n')
+
+                # 解析每一行，提取 custom_id 和 embedding
+                batch_count = 0
+                for line in lines:
+                    try:
+                        obj = json.loads(line)
+                        cid = obj.get("custom_id")
+                        response = obj.get("response", {})
+
+                        if response.get("status_code") == 200:
+                            body = response.get("body", {})
+                            data = body.get("data", [])
+                            if data and cid:
+                                # 归一化嵌入向量
+                                emb = np.array(data[0]["embedding"], dtype=float)
+                                n = np.linalg.norm(emb)
+                                all_embeddings_dict[cid] = emb / (n if n > 0 else 1.0)
+                                batch_count += 1
+                    except Exception as e:
+                        logging.debug(f"   解析行失败: {e}")
+                        continue
+
+                successful_batches += 1
+                logging.info(f"   ✅ 批次 {idx} 成功获取 {batch_count} 个嵌入向量")
             else:
-                logging.warning(f"⚠️ 未找到实体 {eid} 的嵌入结果")
-                vecs.append(np.zeros(default_dim, dtype=float))
+                failed_batches += 1
+                logging.error(f"   ❌ 批次 {idx} 状态不是成功: {job.status}")
+        except Exception as e:
+            failed_batches += 1
+            logging.error(f"   ❌ 批次 {idx} 处理失败: {e}")
 
-        V = np.vstack(vecs) if vecs else np.zeros((0, 1), dtype=float)
-        logging.info(f"✅ 成功处理 {V.shape[0]} 个嵌入向量")
-        return V
-    except Exception as e:
-        logging.error(f"❌ 下载嵌入结果失败: {e}")
+    logging.info(f"\n🎉 嵌入批次收集完成: 成功 {successful_batches}/{len(job_ids)}, 失败 {failed_batches}/{len(job_ids)}")
+    logging.info(f"   总计收集到 {len(all_embeddings_dict)} 个实体的嵌入向量")
+
+    # 第二步：按照 id_order 的顺序组装嵌入矩阵
+    if not all_embeddings_dict:
+        logging.error("   ❌ 所有批次均未获得有效嵌入向量")
         return np.zeros((0, 1), dtype=float)
+
+    logging.info(f"\n🔧 按照 {len(id_order)} 个实体的顺序组装嵌入矩阵...")
+
+    # 获取嵌入向量的维度
+    default_dim = next(iter(all_embeddings_dict.values())).shape[0]
+
+    vecs = []
+    matched_count = 0
+    unmatched_count = 0
+    unmatched_samples = []
+
+    for eid in id_order:
+        str_eid = str(eid)
+        found = False
+
+        # 尝试1: 直接匹配
+        if str_eid in all_embeddings_dict:
+            vecs.append(all_embeddings_dict[str_eid])
+            matched_count += 1
+            found = True
+        # 尝试2: 规范化匹配（_ 转 -）
+        elif str_eid.replace('_', '-') in all_embeddings_dict:
+            normalized_id = str_eid.replace('_', '-')
+            vecs.append(all_embeddings_dict[normalized_id])
+            matched_count += 1
+            found = True
+            if matched_count == 1:
+                logging.info(f"   ℹ️ 使用 ID 规范化匹配 (下划线→连字符)")
+        # 尝试3: 反向规范化匹配（- 转 _）
+        elif str_eid.replace('-', '_') in all_embeddings_dict:
+            normalized_id = str_eid.replace('-', '_')
+            vecs.append(all_embeddings_dict[normalized_id])
+            matched_count += 1
+            found = True
+            if matched_count == 1:
+                logging.info(f"   ℹ️ 使用 ID 规范化匹配 (连字符→下划线)")
+
+        if not found:
+            if unmatched_count < 5:
+                logging.warning(f"   ⚠️ 未找到实体 '{eid}' 的嵌入结果")
+            if unmatched_count < 10:
+                unmatched_samples.append(str_eid)
+            vecs.append(np.zeros(default_dim, dtype=float))
+            unmatched_count += 1
+
+    if unmatched_count > 0:
+        logging.warning(f"   ⚠️ 总计 {unmatched_count}/{len(id_order)} 个实体未找到嵌入结果")
+        if unmatched_count > 5:
+            logging.warning(f"      （仅显示前5个警告，还有 {unmatched_count - 5} 个未显示）")
+        if unmatched_samples:
+            logging.warning(f"      未匹配样本: {unmatched_samples}")
+
+    logging.info(f"   ✅ 成功匹配 {matched_count}/{len(id_order)} 个实体的嵌入向量")
+
+    V = np.vstack(vecs)
+    logging.info(f"   📊 最终嵌入矩阵形状: {V.shape}")
+    return V
 
 def download_and_process_community_summary_results(client: OpenAI, job: Any) -> Dict[str, str]:
-    """从已完成的社区摘要作业下载并处理结果 (OpenAI Format)"""
-    if job.status != 'completed':
-        logging.error(f"社区摘要作业状态不是成功: {job.status}")
-        return {}
+    """从已完成的社区摘要作业下载并处理结果 - 调用 graph_builder_qwen.process_results"""
+    return gb.process_results(job, client)
 
-    output_file_id = job.output_file_id
-    if not output_file_id:
-        return {}
+def download_and_process_multiple_merge_batches(client: OpenAI, job_ids: List[str]) -> Dict[str, str]:
+    """
+    从多个实体合并批次作业下载并合并结果
 
-    try:
-        logging.info(f"📥 正在下载社区摘要结果文件: {output_file_id}")
-        content = client.files.content(output_file_id).text
+    Args:
+        client: OpenAI客户端
+        job_ids: 批次作业ID列表
 
-        summaries = {}
-        ok, bad = 0, 0
-        for line in content.strip().split('\n'):
-            try:
-                obj = json.loads(line)
-                key = obj.get("custom_id")
-                response = obj.get("response", {})
+    Returns:
+        合并后的merge结果字典
+    """
+    all_results = {}
+    successful_batches = 0
+    failed_batches = 0
 
-                if key and response.get("status_code") == 200:
-                    body = response.get("body", {})
-                    choices = body.get("choices", [])
-                    if choices:
-                        text = choices[0].get("message", {}).get("content", "")
-                        summaries[key] = (text or "").strip()
-                        ok += 1
-                    else:
-                        bad += 1
+    for idx, job_id in enumerate(job_ids, 1):
+        logging.info(f"\n📦 处理合并批次 {idx}/{len(job_ids)}: {job_id}")
+        try:
+            job = client.batches.retrieve(batch_id=job_id)
+            logging.info(f"   作业状态: {job.status}")
+
+            if job.status == 'completed':
+                batch_results = download_and_process_disambiguation_results(client, job)  # merge也使用相同格式
+                if batch_results:
+                    all_results.update(batch_results)
+                    successful_batches += 1
+                    logging.info(f"   ✅ 批次 {idx} 成功获取 {len(batch_results)} 个结果")
                 else:
-                    err = obj.get("error") or response.get("body")
-                    logging.error(f"  - ❌ 处理社区 '{key}' 时发生错误: {err}")
-                    bad += 1
-            except Exception as e:
-                logging.warning(f"  - ⚠️ 解析结果行失败: {e}")
-                bad += 1
+                    failed_batches += 1
+                    logging.warning(f"   ⚠️ 批次 {idx} 未获取到结果")
+            else:
+                failed_batches += 1
+                logging.error(f"   ❌ 批次 {idx} 状态不是成功: {job.status}")
+        except Exception as e:
+            failed_batches += 1
+            logging.error(f"   ❌ 批次 {idx} 处理失败: {e}")
 
-        logging.info(f"🎉 社区摘要结果处理完成：成功 {ok} 条，失败 {bad} 条。")
-        return summaries
-    except Exception as e:
-        logging.error(f"❌ 下载社区摘要结果失败: {e}")
-        return {}
+    logging.info(f"\n🎉 合并批次处理完成: 成功 {successful_batches}/{len(job_ids)}, 失败 {failed_batches}/{len(job_ids)}")
+    logging.info(f"   总计获得 {len(all_results)} 个合并结果")
+    return all_results
+
+def download_and_process_multiple_community_summary_batches(client: OpenAI, job_ids: List[str]) -> Dict[str, str]:
+    """
+    从多个社区摘要批次作业下载并合并结果
+
+    Args:
+        client: OpenAI客户端
+        job_ids: 批次作业ID列表
+
+    Returns:
+        合并后的社区摘要结果字典
+    """
+    all_summaries = {}
+    successful_batches = 0
+    failed_batches = 0
+
+    for idx, job_id in enumerate(job_ids, 1):
+        logging.info(f"\n📦 处理社区摘要批次 {idx}/{len(job_ids)}: {job_id}")
+        try:
+            job = client.batches.retrieve(batch_id=job_id)
+            logging.info(f"   作业状态: {job.status}")
+
+            if job.status == 'completed':
+                batch_summaries = download_and_process_community_summary_results(client, job)
+                if batch_summaries:
+                    all_summaries.update(batch_summaries)
+                    successful_batches += 1
+                    logging.info(f"   ✅ 批次 {idx} 成功获取 {len(batch_summaries)} 个摘要")
+                else:
+                    failed_batches += 1
+                    logging.warning(f"   ⚠️ 批次 {idx} 未获取到摘要")
+            else:
+                failed_batches += 1
+                logging.error(f"   ❌ 批次 {idx} 状态不是成功: {job.status}")
+        except Exception as e:
+            failed_batches += 1
+            logging.error(f"   ❌ 批次 {idx} 处理失败: {e}")
+
+    logging.info(f"\n🎉 社区摘要批次处理完成: 成功 {successful_batches}/{len(job_ids)}, 失败 {failed_batches}/{len(job_ids)}")
+    logging.info(f"   总计获得 {len(all_summaries)} 个摘��")
+    return all_summaries
 
 def main():
     setup_logging()
@@ -266,13 +430,7 @@ def main():
     )
     logging.info("✅ 阿里云百炼 (OpenAI兼容) 客户端初始化完成")
 
-    # 导入 graph_builder_qwen 的函数
-    # 假设此时 graph_builder_qwen 已经迁移为 OpenAI SDK 版本
-    try:
-        from core.pipeline_qwen import graph_builder_qwen as gb
-    except ImportError:
-        logging.error("❌ 无法导入 core.pipeline_qwen.graph_builder_qwen，请确保文件存在且路径正确")
-        return
+    # graph_builder_qwen 已在文件顶部导入为 gb
 
     # 加载配置参数
     sleep_interval = int(config["graph_builder"].get("sleep_interval", 5))
@@ -305,7 +463,7 @@ def main():
         else:
             logging.info("\n步骤1: 未找到消歧图文件，将从初始图开始并应用消歧结果")
 
-            if not DISAMBIGUATION_JOB_ID or DISAMBIGUATION_JOB_ID.startswith("batch_req_xxxx"):
+            if not is_valid_job_id(DISAMBIGUATION_JOB_ID):
                 logging.error("❌ 请先设置 DISAMBIGUATION_JOB_ID!")
                 return
 
@@ -313,14 +471,40 @@ def main():
             logging.info("加载初始图...")
             graph = gb.load_and_build_initial_graph(input_path)
 
-            # 步骤2: 恢复并应用消歧结果
-            logging.info(f"\n步骤2: 从作业 {DISAMBIGUATION_JOB_ID} 恢复消歧结果...")
-            try:
-                disamb_job = client.batches.retrieve(batch_id=DISAMBIGUATION_JOB_ID)
-                logging.info(f"作业状态: {disamb_job.status}")
+            # 步骤2: 恢复并应用消歧结果（支持单个或多个批次）
+            job_ids = normalize_job_id(DISAMBIGUATION_JOB_ID)
 
-                if disamb_job.status == 'completed':
-                    disamb_results = download_and_process_disambiguation_results(client, disamb_job)
+            if len(job_ids) == 1:
+                # 单个作业ID
+                logging.info(f"\n步骤2: 从作业 {job_ids[0]} 恢复消歧结果...")
+                try:
+                    disamb_job = client.batches.retrieve(batch_id=job_ids[0])
+                    logging.info(f"作业状态: {disamb_job.status}")
+
+                    if disamb_job.status == 'completed':
+                        disamb_results = download_and_process_disambiguation_results(client, disamb_job)
+                        if disamb_results:
+                            updated_count = apply_disambiguation_results(graph, disamb_results)
+                            logging.info(f"✅ 已更新 {updated_count} 个节点的消歧描述")
+                            # 保存消歧图
+                            gb.save_graph(graph, disamb_graph_path)
+                            logging.info(f"✅ 消歧图已保存到: {disamb_graph_path}")
+                        else:
+                            logging.error("❌ 未获取到消歧结果")
+                            return
+                    else:
+                        logging.error(f"❌ 作业状态不是成功: {disamb_job.status}")
+                        return
+                except Exception as e:
+                    logging.error(f"❌ 获取消歧作业失败: {e}")
+                    return
+            else:
+                # 多个批次作业ID
+                logging.info(f"\n步骤2: 从 {len(job_ids)} 个消歧批次作业恢复结果...")
+                logging.info(f"批次ID列表: {job_ids}")
+
+                try:
+                    disamb_results = download_and_process_multiple_disambiguation_batches(client, job_ids)
                     if disamb_results:
                         updated_count = apply_disambiguation_results(graph, disamb_results)
                         logging.info(f"✅ 已更新 {updated_count} 个节点的消歧描述")
@@ -330,14 +514,11 @@ def main():
                     else:
                         logging.error("❌ 未获取到消歧结果")
                         return
-                else:
-                    logging.error(f"❌ 作业状态不是成功: {disamb_job.status}")
+                except Exception as e:
+                    logging.error(f"❌ 获取消歧批次作业失败: {e}")
                     return
-            except Exception as e:
-                logging.error(f"❌ 获取消歧作业失败: {e}")
-                return
 
-        # 步骤3: 生成嵌入
+        # 步骤3: 生成嵌入（支持批次拆分）
         logging.info("\n步骤3: 生成实体嵌入...")
         ent_ids = [nid for nid, nd in graph.nodes(data=True) if nd.get('is_disambiguated')]
         ent_texts = []
@@ -352,14 +533,78 @@ def main():
             logging.warning("⚠️ 已消歧实体数量不足，无法继续")
             return
 
-        # 使用配置中的嵌入模型
+        # 使用配置中的嵌入模型和批次大小
         embed_model = config.get("embedding", {}).get("model", "text-embedding-v3")
         embed_dim = int(config.get("embedding", {}).get("dimensionality", 768))
+        embedding_batch_size = int(config["graph_builder"].get("embedding_batch_size", 5000))
         tmp_emb_req_path = PROJECT_ROOT / config["graph_builder"]["embedding_requests_path"]
 
-        gb._create_temp_embedding_requests(ent_texts, tmp_emb_req_path, model_name=embed_model, dim=embed_dim)
-        emb_job = gb._submit_and_monitor_embedding_job(client, tmp_emb_req_path, embed_model, sleep_interval)
-        V = gb._process_embedding_results(emb_job, client, ent_ids)
+        num_entities = len(ent_texts)
+        num_batches = (num_entities + embedding_batch_size - 1) // embedding_batch_size
+
+        all_embeddings = []
+        if num_batches > 1:
+            logging.info(f"⚙️ 实体数量 {num_entities} 超过批次大小 {embedding_batch_size}，拆分为 {num_batches} 个批次")
+            logging.info(f"🚀 并行提交 {num_batches} 个嵌入批次作业...")
+
+            # 准备所有批次的请求文件
+            batch_jobs = []
+            for batch_idx in range(num_batches):
+                start_idx = batch_idx * embedding_batch_size
+                end_idx = min((batch_idx + 1) * embedding_batch_size, num_entities)
+                batch_ent_texts = ent_texts[start_idx:end_idx]
+                batch_ent_ids = ent_ids[start_idx:end_idx]
+                batch_req_path = tmp_emb_req_path.parent / f"{tmp_emb_req_path.stem}_batch_{batch_idx + 1}.jsonl"
+
+                logging.info(f"📝 准备批次 {batch_idx + 1}/{num_batches}：实体 {start_idx + 1}-{end_idx}")
+                logging.info(f"   批次 {batch_idx + 1} 的 ID 样本: {batch_ent_ids[:3] if len(batch_ent_ids) >= 3 else batch_ent_ids}")
+                gb._create_temp_embedding_requests(batch_ent_texts, batch_req_path, model_name=embed_model, dim=embed_dim)
+                batch_jobs.append((batch_idx, batch_req_path, batch_ent_ids))
+
+            # 并行提交所有嵌入作业
+            submitted_jobs = []
+            for batch_idx, batch_req_path, batch_ent_ids in batch_jobs:
+                logging.info(f"📤 提交嵌入批次 {batch_idx + 1}/{num_batches}")
+                emb_job = gb._submit_and_monitor_embedding_job(client, batch_req_path, embed_model, sleep_interval,
+                                                              batch_idx, num_batches, monitor=False)
+                if emb_job:
+                    logging.info(f"   作业 ID: {emb_job.id}, 对应批次索引: {batch_idx}, ID 数量: {len(batch_ent_ids)}")
+                    submitted_jobs.append((batch_idx, emb_job, batch_ent_ids))
+
+            # 批量监控所有批次（一次轮询查询所有）
+            logging.info(f"⏳ 开始批量监控 {len(submitted_jobs)} 个嵌入批次作业的完成状态...")
+            completed_jobs = gb._monitor_multiple_jobs_completion(
+                client,
+                submitted_jobs,  # [(batch_idx, job, batch_ent_ids), ...]
+                sleep_interval,
+                job_type="EntityEmb"
+            )
+
+            # 处理所有批次的结果
+            for batch_idx, completed_job, batch_ent_ids in sorted(completed_jobs, key=lambda x: x[0]):
+                logging.info(f"📊 处理批次 {batch_idx + 1} 的结果，作业 ID: {completed_job.id}")
+                logging.info(f"   该批次预期的 ID 数量: {len(batch_ent_ids)}")
+                logging.info(f"   该批次 ID 样本: {batch_ent_ids[:3] if len(batch_ent_ids) >= 3 else batch_ent_ids}")
+                batch_V = gb._process_embedding_results(completed_job, client, batch_ent_ids)
+                if batch_V.shape[0] > 0:
+                    all_embeddings.append(batch_V)
+                    logging.info(f"📊 批次 {batch_idx + 1} 获得 {batch_V.shape[0]} 个嵌入向量")
+                else:
+                    logging.warning(f"⚠️ 批次 {batch_idx + 1} 未获得有效嵌入向量")
+
+            if all_embeddings:
+                V = np.vstack(all_embeddings)
+                logging.info(f"🎉 所有嵌入批次处理完成，共获得 {V.shape[0]} 个嵌入向量")
+            else:
+                logging.error("❌ 所有批次均未获得有效嵌入向量")
+                V = np.zeros((0, embed_dim), dtype=float)
+        else:
+            # 单批次处理
+            logging.info(f"🔄 处理单批次：{num_entities} 个实体")
+            gb._create_temp_embedding_requests(ent_texts, tmp_emb_req_path, model_name=embed_model, dim=embed_dim)
+            emb_job = gb._submit_and_monitor_embedding_job(client, tmp_emb_req_path, embed_model, sleep_interval, 0, 1)
+            V = gb._process_embedding_results(emb_job, client, ent_ids)
+
         logging.info(f"✅ 完成 {V.shape[0]} 个嵌入向量")
 
         # 步骤4: 实体合并
@@ -429,25 +674,40 @@ def main():
                 # 加载初始图
                 graph = gb.load_and_build_initial_graph(input_path)
 
-                # 步骤2: 应用消歧结果（从DISAMBIGUATION_JOB_ID）
-                if DISAMBIGUATION_JOB_ID and not DISAMBIGUATION_JOB_ID.startswith("batch_req_"):
-                    logging.info(f"\n步骤2: 从作业 {DISAMBIGUATION_JOB_ID} 应用消歧结果...")
-                    try:
-                        disamb_job = client.batches.retrieve(batch_id=DISAMBIGUATION_JOB_ID)
-                        if disamb_job.status == 'completed':
-                            disamb_results = download_and_process_disambiguation_results(client, disamb_job)
+                # 步骤2: 应用消歧结果（从DISAMBIGUATION_JOB_ID，支持单个或多个批次）
+                if is_valid_job_id(DISAMBIGUATION_JOB_ID):
+                    job_ids = normalize_job_id(DISAMBIGUATION_JOB_ID)
+
+                    if len(job_ids) == 1:
+                        logging.info(f"\n步骤2: 从作业 {job_ids[0]} 应用消歧结果...")
+                        try:
+                            disamb_job = client.batches.retrieve(batch_id=job_ids[0])
+                            if disamb_job.status == 'completed':
+                                disamb_results = download_and_process_disambiguation_results(client, disamb_job)
+                                if disamb_results:
+                                    updated_count = apply_disambiguation_results(graph, disamb_results)
+                                    logging.info(f"✅ 已更新 {updated_count} 个节点的消歧描述")
+                                    gb.save_graph(graph, disamb_graph_path)
+                                    logging.info(f"✅ 消歧图已保存到: {disamb_graph_path}")
+                                else:
+                                    logging.warning("⚠️ 未获取到消歧结果")
+                            else:
+                                logging.warning(f"⚠️ 消歧作业状态不是成功: {disamb_job.status}")
+                        except Exception as e:
+                            logging.warning(f"⚠️ 获取消歧作业失败: {e}")
+                    else:
+                        logging.info(f"\n步骤2: 从 {len(job_ids)} 个消歧批次作业应用结果...")
+                        try:
+                            disamb_results = download_and_process_multiple_disambiguation_batches(client, job_ids)
                             if disamb_results:
                                 updated_count = apply_disambiguation_results(graph, disamb_results)
                                 logging.info(f"✅ 已更新 {updated_count} 个节点的消歧描述")
-                                # 保存消歧图
                                 gb.save_graph(graph, disamb_graph_path)
                                 logging.info(f"✅ 消歧图已保存到: {disamb_graph_path}")
                             else:
                                 logging.warning("⚠️ 未获取到消歧结果")
-                        else:
-                            logging.warning(f"⚠️ 消歧作业状态不是成功: {disamb_job.status}")
-                    except Exception as e:
-                        logging.warning(f"⚠️ 获取消歧作业失败: {e}")
+                        except Exception as e:
+                            logging.warning(f"⚠️ 获取消歧批次作业失败: {e}")
                 else:
                     logging.warning("\n步骤2: 未提供消歧作业ID，跳过消歧结果应用")
 
@@ -460,28 +720,42 @@ def main():
                 logging.error("❌ 已消歧实体数量不足")
                 return
 
-            # 步骤4: 恢复嵌入结果
-            if not EMBEDDING_JOB_ID or EMBEDDING_JOB_ID.startswith("batch_req_"):
+            # 步骤4: 恢复嵌入结果（支持单个或多个批次）
+            if not is_valid_job_id(EMBEDDING_JOB_ID):
                 logging.error("❌ 请先设置 EMBEDDING_JOB_ID!")
                 return
 
-            logging.info(f"\n步骤4: 从作业 {EMBEDDING_JOB_ID} 恢复嵌入结果...")
-            try:
-                emb_job = client.batches.retrieve(batch_id=EMBEDDING_JOB_ID)
-                logging.info(f"作业状态: {emb_job.status}")
+            emb_job_ids = normalize_job_id(EMBEDDING_JOB_ID)
 
-                if emb_job.status == 'completed':
-                    V = download_and_process_embedding_results(client, emb_job, ent_ids)
+            if len(emb_job_ids) == 1:
+                logging.info(f"\n步骤4: 从作业 {emb_job_ids[0]} 恢复嵌入结果...")
+                try:
+                    emb_job = client.batches.retrieve(batch_id=emb_job_ids[0])
+                    logging.info(f"作业状态: {emb_job.status}")
+
+                    if emb_job.status == 'completed':
+                        V = download_and_process_embedding_results(client, emb_job, ent_ids)
+                        if V.shape[0] < 2:
+                            logging.error("❌ 嵌入向量数量不足")
+                            return
+                        logging.info(f"✅ 成功恢复 {V.shape[0]} 个嵌入向量")
+                    else:
+                        logging.error(f"❌ 作业状态不是成功: {emb_job.status}")
+                        return
+                except Exception as e:
+                    logging.error(f"❌ 获取嵌入作业失败: {e}")
+                    return
+            else:
+                logging.info(f"\n步骤4: 从 {len(emb_job_ids)} 个嵌入批次作业恢复结果...")
+                try:
+                    V = download_and_process_multiple_embedding_batches(client, emb_job_ids, ent_ids)
                     if V.shape[0] < 2:
                         logging.error("❌ 嵌入向量数量不足")
                         return
                     logging.info(f"✅ 成功恢复 {V.shape[0]} 个嵌入向量")
-                else:
-                    logging.error(f"❌ 作业状态不是成功: {emb_job.status}")
+                except Exception as e:
+                    logging.error(f"❌ 获取嵌入批次作业失败: {e}")
                     return
-            except Exception as e:
-                logging.error(f"❌ 获取嵌入作业失败: {e}")
-                return
 
             # 步骤5: 实体合并
             logging.info("\n步骤5: 执行实体合并...")
@@ -539,7 +813,7 @@ def main():
         else:
             logging.info("\n步骤1: 未找到合并图文件，需要执行合并流程")
 
-            if not ENTITY_MERGE_JOB_ID or ENTITY_MERGE_JOB_ID.startswith("batch_req_"):
+            if not is_valid_job_id(ENTITY_MERGE_JOB_ID):
                 logging.error("❌ 请先设置 ENTITY_MERGE_JOB_ID!")
                 return
 
@@ -558,25 +832,40 @@ def main():
                 # 加载初始图
                 graph = gb.load_and_build_initial_graph(input_path)
 
-                # 步骤2: 应用消歧结果（从DISAMBIGUATION_JOB_ID）
-                if DISAMBIGUATION_JOB_ID and not DISAMBIGUATION_JOB_ID.startswith("batch_req_"):
-                    logging.info(f"\n步骤2: 从作业 {DISAMBIGUATION_JOB_ID} 应用消歧结果...")
-                    try:
-                        disamb_job = client.batches.retrieve(batch_id=DISAMBIGUATION_JOB_ID)
-                        if disamb_job.status == 'completed':
-                            disamb_results = download_and_process_disambiguation_results(client, disamb_job)
+                # 步骤2: 应用消歧结果（从DISAMBIGUATION_JOB_ID，支持单个或多个批次）
+                if is_valid_job_id(DISAMBIGUATION_JOB_ID):
+                    job_ids = normalize_job_id(DISAMBIGUATION_JOB_ID)
+
+                    if len(job_ids) == 1:
+                        logging.info(f"\n步骤2: 从作业 {job_ids[0]} 应用消歧结果...")
+                        try:
+                            disamb_job = client.batches.retrieve(batch_id=job_ids[0])
+                            if disamb_job.status == 'completed':
+                                disamb_results = download_and_process_disambiguation_results(client, disamb_job)
+                                if disamb_results:
+                                    updated_count = apply_disambiguation_results(graph, disamb_results)
+                                    logging.info(f"✅ 已更新 {updated_count} 个节点的消歧描述")
+                                    gb.save_graph(graph, disamb_graph_path)
+                                    logging.info(f"✅ 消歧图已保存到: {disamb_graph_path}")
+                                else:
+                                    logging.warning("⚠️ 未获取到消歧结果")
+                            else:
+                                logging.warning(f"⚠️ 消歧作业状态不是成功: {disamb_job.status}")
+                        except Exception as e:
+                            logging.warning(f"⚠️ 获取消歧作业失败: {e}")
+                    else:
+                        logging.info(f"\n步骤2: 从 {len(job_ids)} 个消歧批次作业应用结果...")
+                        try:
+                            disamb_results = download_and_process_multiple_disambiguation_batches(client, job_ids)
                             if disamb_results:
                                 updated_count = apply_disambiguation_results(graph, disamb_results)
                                 logging.info(f"✅ 已更新 {updated_count} 个节点的消歧描述")
-                                # 保存消歧图
                                 gb.save_graph(graph, disamb_graph_path)
                                 logging.info(f"✅ 消歧图已保存到: {disamb_graph_path}")
                             else:
                                 logging.warning("⚠️ 未获取到消歧结果")
-                        else:
-                            logging.warning(f"⚠️ 消歧作业状态不是成功: {disamb_job.status}")
-                    except Exception as e:
-                        logging.warning(f"⚠️ 获取消歧作业失败: {e}")
+                        except Exception as e:
+                            logging.warning(f"⚠️ 获取消歧批次作业失败: {e}")
                 else:
                     logging.warning("\n步骤2: 未提供消歧作业ID，跳过消歧结果应用")
 
@@ -588,27 +877,60 @@ def main():
                 logging.error("❌ 已消歧实体数量不足，无法继续")
                 return
 
-            # 步骤4: 应用嵌入结果（从EMBEDDING_JOB_ID）
+            # 步骤4: 应用嵌入结果（从EMBEDDING_JOB_ID，支持单个或多个批次）
             # 注意：这里不需要实际应用嵌入向量到图中，只是为了后续合并验证
-            logging.info(f"\n步骤4: 验证嵌入作业 {EMBEDDING_JOB_ID}...")
-            if EMBEDDING_JOB_ID and not EMBEDDING_JOB_ID.startswith("batch_req_"):
+            if is_valid_job_id(EMBEDDING_JOB_ID):
+                emb_job_ids = normalize_job_id(EMBEDDING_JOB_ID)
+                logging.info(f"\n步骤4: 验证 {len(emb_job_ids)} 个嵌入作业...")
+
+                for idx, job_id in enumerate(emb_job_ids, 1):
+                    try:
+                        emb_job = client.batches.retrieve(batch_id=job_id)
+                        if emb_job.status == 'completed':
+                            logging.info(f"   ✅ 嵌入作业 {idx}/{len(emb_job_ids)} 已完成")
+                        else:
+                            logging.warning(f"   ⚠️ 嵌入作业 {idx}/{len(emb_job_ids)} 状态: {emb_job.status}")
+                    except Exception as e:
+                        logging.warning(f"   ⚠️ 验证嵌入作业 {idx}/{len(emb_job_ids)} 失败: {e}")
+
+            # 步骤5: 恢复并应用合并结果（支持单个或多个批次）
+            merge_job_ids = normalize_job_id(ENTITY_MERGE_JOB_ID)
+
+            if len(merge_job_ids) == 1:
+                logging.info(f"\n步骤5: 从作业 {merge_job_ids[0]} 应用实体合并结果...")
                 try:
-                    emb_job = client.batches.retrieve(batch_id=EMBEDDING_JOB_ID)
-                    if emb_job.status == 'completed':
-                        logging.info("✅ 嵌入作业已完成")
+                    merge_job = client.batches.retrieve(batch_id=merge_job_ids[0])
+                    logging.info(f"作业状态: {merge_job.status}")
+
+                    if merge_job.status == 'completed':
+                        merge_texts = gb.process_results(merge_job, client)
+                        if merge_texts:
+                            groups = gb.parse_entity_merge_results(merge_texts)
+                            logging.info(f"✅ 成功恢复 {len(groups)} 个LLM确认的分组")
+
+                            alias2canon, canon_name_map = gb.build_merge_map(graph, groups)
+                            if alias2canon:
+                                logging.info(f"应用实体合并: {len(alias2canon)} 个别名 → {len(canon_name_map)} 个规范名")
+                                graph = gb.apply_entity_merge(graph, alias2canon, canon_name_map, edge_agg='max')
+                            else:
+                                logging.warning("⚠️ 未找到需要合并的实体")
+
+                            # 保存合并后的图
+                            gb.save_graph(graph, merged_graph_path)
+                            logging.info(f"✅ 合并图已保存到: {merged_graph_path}")
+                        else:
+                            logging.error("❌ 未获取到合并结果")
+                            return
                     else:
-                        logging.warning(f"⚠️ 嵌入作业状态: {emb_job.status}")
+                        logging.error(f"❌ 作业状态不是成功: {merge_job.status}")
+                        return
                 except Exception as e:
-                    logging.warning(f"⚠️ 验证嵌入作业失败: {e}")
-
-            # 步骤5: 恢复并应用合并结果
-            logging.info(f"\n步骤5: 从作业 {ENTITY_MERGE_JOB_ID} 应用实体合并结果...")
-            try:
-                merge_job = client.batches.retrieve(batch_id=ENTITY_MERGE_JOB_ID)
-                logging.info(f"作业状态: {merge_job.status}")
-
-                if merge_job.status == 'completed':
-                    merge_texts = gb.process_results(merge_job, client)
+                    logging.error(f"❌ 获取合并作业失败: {e}")
+                    return
+            else:
+                logging.info(f"\n步骤5: 从 {len(merge_job_ids)} 个合并批次作业应用结果...")
+                try:
+                    merge_texts = download_and_process_multiple_merge_batches(client, merge_job_ids)
                     if merge_texts:
                         groups = gb.parse_entity_merge_results(merge_texts)
                         logging.info(f"✅ 成功恢复 {len(groups)} 个LLM确认的分组")
@@ -626,12 +948,9 @@ def main():
                     else:
                         logging.error("❌ 未获取到合并结果")
                         return
-                else:
-                    logging.error(f"❌ 作业状态不是成功: {merge_job.status}")
+                except Exception as e:
+                    logging.error(f"❌ 获取合并批次作业失败: {e}")
                     return
-            except Exception as e:
-                logging.error(f"❌ 获取合并作业失败: {e}")
-                return
 
         # 步骤6: 社区发现
         logging.info("\n步骤6: 执行社区发现...")
@@ -682,49 +1001,90 @@ def main():
 
         # 如果需要，应用前置步骤
         if not skip_preprocessing:
-            # 步骤2: 应用消歧结果（如果还没有消歧图）
+            # 步骤2: 应用消歧结果（如果还没有消歧图，支持单个或多个批次）
             if not disamb_graph_path.exists():
-                if DISAMBIGUATION_JOB_ID and not DISAMBIGUATION_JOB_ID.startswith("batch_req_"):
-                    logging.info(f"\n步骤2: 从作业 {DISAMBIGUATION_JOB_ID} 应用消歧结果...")
-                    try:
-                        disamb_job = client.batches.retrieve(batch_id=DISAMBIGUATION_JOB_ID)
-                        if disamb_job.status == 'completed':
-                            disamb_results = download_and_process_disambiguation_results(client, disamb_job)
+                if is_valid_job_id(DISAMBIGUATION_JOB_ID):
+                    job_ids = normalize_job_id(DISAMBIGUATION_JOB_ID)
+
+                    if len(job_ids) == 1:
+                        logging.info(f"\n步骤2: 从作业 {job_ids[0]} 应用消歧结果...")
+                        try:
+                            disamb_job = client.batches.retrieve(batch_id=job_ids[0])
+                            if disamb_job.status == 'completed':
+                                disamb_results = download_and_process_disambiguation_results(client, disamb_job)
+                                if disamb_results:
+                                    updated_count = apply_disambiguation_results(graph, disamb_results)
+                                    logging.info(f"✅ 已更新 {updated_count} 个节点的消歧描述")
+                                    gb.save_graph(graph, disamb_graph_path)
+                                    logging.info(f"✅ 消歧图已保存到: {disamb_graph_path}")
+                                else:
+                                    logging.warning("⚠️ 未获取到消歧结果")
+                            else:
+                                logging.warning(f"⚠️ 消歧作业状态不是成功: {disamb_job.status}")
+                        except Exception as e:
+                            logging.warning(f"⚠️ 获取消歧作业失败: {e}")
+                    else:
+                        logging.info(f"\n步骤2: 从 {len(job_ids)} 个消歧批次作业应用结果...")
+                        try:
+                            disamb_results = download_and_process_multiple_disambiguation_batches(client, job_ids)
                             if disamb_results:
                                 updated_count = apply_disambiguation_results(graph, disamb_results)
                                 logging.info(f"✅ 已更新 {updated_count} 个节点的消歧描述")
-                                # 保存消歧图
                                 gb.save_graph(graph, disamb_graph_path)
                                 logging.info(f"✅ 消歧图已保存到: {disamb_graph_path}")
                             else:
                                 logging.warning("⚠️ 未获取到消歧结果")
-                        else:
-                            logging.warning(f"⚠️ 消歧作业状态不是成功: {disamb_job.status}")
-                    except Exception as e:
-                        logging.warning(f"⚠️ 获取消歧作业失败: {e}")
+                        except Exception as e:
+                            logging.warning(f"⚠️ 获取消歧批次作业失败: {e}")
                 else:
                     logging.warning("\n步骤2: 未提供消歧作业ID，跳过消歧结果应用")
 
-            # 步骤3: 验证嵌入作业
-            if EMBEDDING_JOB_ID and not EMBEDDING_JOB_ID.startswith("batch_req_"):
-                logging.info(f"\n步骤3: 验证嵌入作业 {EMBEDDING_JOB_ID}...")
-                try:
-                    emb_job = client.batches.retrieve(batch_id=EMBEDDING_JOB_ID)
-                    if emb_job.status == 'completed':
-                        logging.info("✅ 嵌入作业已完成")
-                    else:
-                        logging.warning(f"⚠️ 嵌入作业状态: {emb_job.status}")
-                except Exception as e:
-                    logging.warning(f"⚠️ 验证嵌入作业失败: {e}")
+            # 步骤3: 验证嵌入作业（支持单个或多个批次）
+            if is_valid_job_id(EMBEDDING_JOB_ID):
+                emb_job_ids = normalize_job_id(EMBEDDING_JOB_ID)
+                logging.info(f"\n步骤3: 验证 {len(emb_job_ids)} 个嵌入作业...")
 
-            # 步骤4: 应用合并结果（如果还没有合并图）
-            if not merged_graph_path.exists():
-                if ENTITY_MERGE_JOB_ID and not ENTITY_MERGE_JOB_ID.startswith("batch_req_"):
-                    logging.info(f"\n步骤4: 从作业 {ENTITY_MERGE_JOB_ID} 应用实体合并结果...")
+                for idx, job_id in enumerate(emb_job_ids, 1):
                     try:
-                        merge_job = client.batches.retrieve(batch_id=ENTITY_MERGE_JOB_ID)
-                        if merge_job.status == 'completed':
-                            merge_texts = gb.process_results(merge_job, client)
+                        emb_job = client.batches.retrieve(batch_id=job_id)
+                        if emb_job.status == 'completed':
+                            logging.info(f"   ✅ 嵌入作业 {idx}/{len(emb_job_ids)} 已完成")
+                        else:
+                            logging.warning(f"   ⚠️ 嵌入作业 {idx}/{len(emb_job_ids)} 状态: {emb_job.status}")
+                    except Exception as e:
+                        logging.warning(f"   ⚠️ 验证嵌入作业 {idx}/{len(emb_job_ids)} 失败: {e}")
+
+            # 步骤4: 应用合并结果（如果还没有合并图，支持单个或多个批次）
+            if not merged_graph_path.exists():
+                if is_valid_job_id(ENTITY_MERGE_JOB_ID):
+                    merge_job_ids = normalize_job_id(ENTITY_MERGE_JOB_ID)
+
+                    if len(merge_job_ids) == 1:
+                        logging.info(f"\n步骤4: 从作业 {merge_job_ids[0]} 应用实体合并结果...")
+                        try:
+                            merge_job = client.batches.retrieve(batch_id=merge_job_ids[0])
+                            if merge_job.status == 'completed':
+                                merge_texts = gb.process_results(merge_job, client)
+                                if merge_texts:
+                                    groups = gb.parse_entity_merge_results(merge_texts)
+                                    logging.info(f"✅ 成功恢复 {len(groups)} 个LLM确认的分组")
+
+                                    alias2canon, canon_name_map = gb.build_merge_map(graph, groups)
+                                    if alias2canon:
+                                        logging.info(f"应用实体合并: {len(alias2canon)} 个别名 → {len(canon_name_map)} 个规范名")
+                                        graph = gb.apply_entity_merge(graph, alias2canon, canon_name_map, edge_agg='max')
+                                        gb.save_graph(graph, merged_graph_path)
+                                        logging.info(f"✅ 合并图已保存到: {merged_graph_path}")
+                                else:
+                                    logging.warning("⚠️ 未获取到合并结果")
+                            else:
+                                logging.warning(f"⚠️ 合并作业状态不是成功: {merge_job.status}")
+                        except Exception as e:
+                            logging.warning(f"⚠️ 获取合并作业失败: {e}")
+                    else:
+                        logging.info(f"\n步骤4: 从 {len(merge_job_ids)} 个合并批次作业应用结果...")
+                        try:
+                            merge_texts = download_and_process_multiple_merge_batches(client, merge_job_ids)
                             if merge_texts:
                                 groups = gb.parse_entity_merge_results(merge_texts)
                                 logging.info(f"✅ 成功恢复 {len(groups)} 个LLM确认的分组")
@@ -733,15 +1093,12 @@ def main():
                                 if alias2canon:
                                     logging.info(f"应用实体合并: {len(alias2canon)} 个别名 → {len(canon_name_map)} 个规范名")
                                     graph = gb.apply_entity_merge(graph, alias2canon, canon_name_map, edge_agg='max')
-                                    # 保存合并后的图
                                     gb.save_graph(graph, merged_graph_path)
                                     logging.info(f"✅ 合并图已保存到: {merged_graph_path}")
                             else:
                                 logging.warning("⚠️ 未获取到合并结果")
-                        else:
-                            logging.warning(f"⚠️ 合并作业状态不是成功: {merge_job.status}")
-                    except Exception as e:
-                        logging.warning(f"⚠️ 获取合并作业失败: {e}")
+                        except Exception as e:
+                            logging.warning(f"⚠️ 获取合并批次作业失败: {e}")
                 else:
                     logging.warning("\n步骤4: 未提供合并作业ID，跳过合并结果应用")
 
@@ -756,24 +1113,37 @@ def main():
             communities = set(data.get('community') for _, data in graph.nodes(data=True) if 'community' in data)
             logging.info(f"发现 {len(communities)} 个社区")
 
-        # 步骤6: 社区摘要（恢复或生成）
+        # 步骤6: 社区摘要（恢复或生成，支持单个或多个批次）
         summaries = {}
-        if COMMUNITY_SUMMARY_JOB_ID and not COMMUNITY_SUMMARY_JOB_ID.startswith("batch_req_"):
-            logging.info(f"\n步骤6: 从作业 {COMMUNITY_SUMMARY_JOB_ID} 恢复社区摘要结果...")
-            try:
-                summary_job = client.batches.retrieve(batch_id=COMMUNITY_SUMMARY_JOB_ID)
-                logging.info(f"作业状态: {summary_job.status}")
+        if is_valid_job_id(COMMUNITY_SUMMARY_JOB_ID):
+            summary_job_ids = normalize_job_id(COMMUNITY_SUMMARY_JOB_ID)
 
-                if summary_job.status == 'completed':
-                    summaries = download_and_process_community_summary_results(client, summary_job)
+            if len(summary_job_ids) == 1:
+                logging.info(f"\n步骤6: 从作业 {summary_job_ids[0]} 恢复社区摘要结果...")
+                try:
+                    summary_job = client.batches.retrieve(batch_id=summary_job_ids[0])
+                    logging.info(f"作业状态: {summary_job.status}")
+
+                    if summary_job.status == 'completed':
+                        summaries = download_and_process_community_summary_results(client, summary_job)
+                        if summaries:
+                            logging.info(f"✅ 成功恢复 {len(summaries)} 个社区的摘要")
+                        else:
+                            logging.warning("⚠️ 未获取到社区摘要结果，将重新生成")
+                    else:
+                        logging.warning(f"⚠️ 作业状态不是成功: {summary_job.status}，将重新生成")
+                except Exception as e:
+                    logging.warning(f"⚠️ 获取社区摘要作业失败: {e}，将重新生成")
+            else:
+                logging.info(f"\n步骤6: 从 {len(summary_job_ids)} 个社区摘要批次作业恢复结果...")
+                try:
+                    summaries = download_and_process_multiple_community_summary_batches(client, summary_job_ids)
                     if summaries:
                         logging.info(f"✅ 成功恢复 {len(summaries)} 个社区的摘要")
                     else:
                         logging.warning("⚠️ 未获取到社区摘要结果，将重新生成")
-                else:
-                    logging.warning(f"⚠️ 作业状态不是成功: {summary_job.status}，将重新生成")
-            except Exception as e:
-                logging.warning(f"⚠️ 获取社区摘要作业失败: {e}，将重新生成")
+                except Exception as e:
+                    logging.warning(f"⚠️ 获取社区摘要批次作业失败: {e}，将重新生成")
 
         # 如果没有成功恢复摘要，则生成新的
         if not summaries:
@@ -799,7 +1169,7 @@ def main():
     logging.info(f"社区报告: {reports_path}")
     logging.info(f"最终图: {final_graph_path}")
 
-from core.pipeline_qwen import graph_builder_qwen as gb # 再次导入确保引用
+# apply_disambiguation_results 函数使用 gb（已在顶部导入）
 def apply_disambiguation_results(graph: nx.DiGraph, disamb_results: Dict[str, str]) -> int:
     """应用消歧结果到图中的节点，支持ID规范化"""
     updated_count = 0

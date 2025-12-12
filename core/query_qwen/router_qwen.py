@@ -2,6 +2,7 @@ import asyncio
 import json
 import logging
 import re
+import gc
 from typing import Dict, Any, List, Literal
 from string import Template
 import yaml
@@ -121,6 +122,13 @@ class DriftSearchHandler(LocalQueryHandler):
             # 并行执行后续查询的向量检索
             new_contexts = []
             for follow_up in follow_ups:
+                # 验证后续查询不为空
+                if not follow_up or not follow_up.strip():
+                    logging.warning(f"跳过空的后续查询")
+                    continue
+
+                follow_up = follow_up.strip()
+
                 # 实际生产中建议使用 asyncio.gather 优化
                 try:
                     vec = self._embed_query(follow_up)
@@ -134,11 +142,34 @@ class DriftSearchHandler(LocalQueryHandler):
                 logging.info("后续查询未检索到新内容，停止漂移。")
                 break
 
-            # 合并上下文
-            combined_context += "\n\n" + "\n\n".join(new_contexts)
-            if len(combined_context) > self.max_context_tokens * 4:
-                combined_context = combined_context[:self.max_context_tokens * 4]
-                logging.info("上下文过长，已截断。")
+            # 合并上下文（内存优化：更严格的限制）
+            new_context_text = "\n\n".join(new_contexts)
+
+            # 估算 token 数量（粗略：1 token ≈ 4 字符）
+            current_tokens = len(combined_context) // 4
+            new_tokens = len(new_context_text) // 4
+
+            # 设置更严格的上限：max_context_tokens * 2（而非 * 4）
+            max_total_tokens = self.max_context_tokens * 2
+
+            if current_tokens + new_tokens > max_total_tokens:
+                # 需要截断
+                available_tokens = max_total_tokens - current_tokens
+                if available_tokens <= 0:
+                    logging.info(f"上下文已达上限 ({current_tokens} tokens)，停止漂移。")
+                    break
+
+                # 截断新上下文
+                available_chars = available_tokens * 4
+                new_context_text = new_context_text[:available_chars]
+                logging.info(f"新上下文被截断到 {available_tokens} tokens，总计 {current_tokens + available_tokens} tokens")
+
+            combined_context += "\n\n" + new_context_text
+
+            # 最终安全检查
+            if len(combined_context) > max_total_tokens * 4:
+                combined_context = combined_context[:max_total_tokens * 4]
+                logging.warning(f"上下文超过限制，强制截断到 {max_total_tokens} tokens")
                 break
 
         # 3. 最终合成 (Final Synthesis)
@@ -158,6 +189,11 @@ class DriftSearchHandler(LocalQueryHandler):
         )
 
         response_text = await self.generate_async_wrapper(prompt=prompt)
+
+        # 内存优化：显式释放大对象并触发垃圾回收
+        del combined_context
+        gc.collect()
+
         return self._resolve_chunk_citations(response_text)
 
 
@@ -169,6 +205,8 @@ class GraphRouter:
     2. LOCAL: 局部查询（特定实体、关系）
     3. REASONING: 推理查询（多跳推理、因果关系）
     4. DRIFT: 漂移搜索（需要上下文扩展的查询）
+
+    内存优化：使用单例模式共享数据，避免重复加载
     """
 
     def __init__(self, config: Dict[str, Any]):
@@ -187,18 +225,30 @@ class GraphRouter:
 
         self.model_name = config["query"]["generation_model"]  # 复用生成模型进行分类
 
-        # 初始化子处理器
-        self.global_handler = GlobalQueryHandler(config)
+        # 内存优化：使用共享的 DriftSearchHandler，避免重复加载数据
+        # DriftSearchHandler 继承自 LocalQueryHandler，已包含所有局部查询功能
+        logging.info("💡 [内存优化] 使用共享数据加载器初始化处理器...")
+
+        # 只初始化一次 DriftHandler（包含 Local 功能）
         self.drift_handler = DriftSearchHandler(config)
 
-        # 初始化推理处理器（智能检测模型）
+        # Global handler 需要单独初始化（使用不同的数据）
+        self.global_handler = GlobalQueryHandler(config)
+
+        # 初始化推理处理器（智能检测模型，使用共享图数据）
         try:
             model_path = PROJECT_ROOT / config.get('reasoning', {}).get('output', {}).get('model_path', 'data/reasoning/model.pt')
             load_model = model_path.exists()
 
             if load_model:
                 logging.info(f"检测到推理模型: {model_path}")
-                self.reasoning_handler = ReasoningQueryHandler(config, load_trained_model=True)
+                # 内存优化：传递 drift_handler 的图数据，避免重复加载
+                logging.info("💡 [内存优化] 共享图数据给 ReasoningHandler")
+                self.reasoning_handler = ReasoningQueryHandler(
+                    config,
+                    load_trained_model=True,
+                    shared_graph_data=self.drift_handler.graph_data  # 共享图数据
+                )
                 self.reasoning_enabled = True
             else:
                 logging.warning(f"未找到推理模型: {model_path}，推理功能将被禁用")
@@ -209,11 +259,25 @@ class GraphRouter:
             self.reasoning_handler = None
             self.reasoning_enabled = False
 
+        logging.info(f"✅ 路由器初始化完成 (内存优化模式)")
+        logging.info(f"   - 启用处理器: Global, Local, Drift" +
+                    (", Reasoning" if self.reasoning_enabled else ""))
+        logging.info(f"   - 内存优化: 图数据共享" +
+                    ("✓" if self.reasoning_enabled else " (Reasoning未启用)"))
+
     async def route_and_answer(self, query: str) -> str:
         """
         路由并回答问题的入口函数。
         使用 CoT (Chain of Thought) 技术进行智能分类和方法选择。
         """
+        # 输入验证
+        if not query or not query.strip():
+            logging.error("❌ 收到空查询字符串")
+            return "错误：查询不能为空，请提供有效的问题。"
+
+        query = query.strip()  # 清理空白字符
+        logging.info(f"📥 收到查询: '{query[:100]}...'")
+
         # 1. CoT 意图分类（包含推理模式）
         classification_result = await self._cot_classify_intent(query)
         intent = classification_result['intent']
@@ -443,7 +507,7 @@ Return ONLY one word: GLOBAL, LOCAL, REASONING, or DRIFT
 async def main():
     import argparse
 
-    parser = argparse.ArgumentParser(description="GraphRAG 智能路由与漂移检索")
+    parser = argparse.ArgumentParser(description="智能路由与漂移检索")
     parser.add_argument("query", type=str, nargs='?', default="", help="输入问题")
     args = parser.parse_args()
 

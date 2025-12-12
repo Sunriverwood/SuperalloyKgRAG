@@ -481,7 +481,7 @@ def main():
 
     # --- 2. 初始化文本清洁器 ---
     graph_path = PROJECT_ROOT / config["embedding"]["input_graph_path"]
-    id_maps_path = PROJECT_ROOT / "data" / "cache" / "community_detection_id_maps.json"
+    id_maps_path = PROJECT_ROOT / config["embedding"]["input_id_maps_path"]
     text_cleaner = init_text_cleaner(graph_path, id_maps_path)
     logging.info("文本清洁器初始化完成。")
 

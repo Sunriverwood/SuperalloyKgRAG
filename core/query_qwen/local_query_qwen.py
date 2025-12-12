@@ -141,35 +141,68 @@ class LocalQueryHandler:
             return f.read()
 
     def _load_chunk_id_map(self) -> Dict[str, Dict[str, Any]]:
-        """加载 text_units.jsonl 文件，构建 chunk ID 到源信息的映射。"""
-        text_units_path = PROJECT_ROOT / self.config["embedding"]["input_text_units_path"]
+        """加载所有类型的 units 文件（text, abstract, image, table），构建 chunk ID 到源信息的映射。"""
         chunk_map = {}
 
-        try:
-            logging.info(f"正在加载文本单元映射: {text_units_path}")
-            with open(text_units_path, 'r', encoding='utf-8') as f:
-                for line in f:
-                    if line.strip():
-                        unit = json.loads(line)
-                        chunk_id = unit.get("id")
-                        metadata = unit.get("metadata", {})
+        # 定义所有需要加载的 units 文件类型及其chunk类型标识
+        units_files = [
+            ("text_units.jsonl", "text"),
+            ("abstract_units.jsonl", "abstract"),
+            ("image_units.jsonl", "image"),
+            ("table_units.jsonl", "table")
+        ]
 
-                        if chunk_id:
-                            chunk_map[chunk_id] = {
-                                "source_filename": metadata.get("source_filename", "unknown"),
-                                "pages": metadata.get("pages", []),
-                                "blocks": metadata.get("blocks", [])
-                            }
+        chunks_dir = PROJECT_ROOT / "data" / "chunks"
+        total_loaded = 0
 
-            logging.info(f"✅ 成功加载 {len(chunk_map)} 个文本单元的映射关系")
-            return chunk_map
+        for filename, chunk_type in units_files:
+            units_path = chunks_dir / filename
 
-        except FileNotFoundError:
-            logging.warning(f"⚠️ 未找到文本单元文件: {text_units_path}，将无法解析chunk ID引用")
-            return {}
-        except Exception as e:
-            logging.error(f"❌ 加载文本单元映射时出错: {e}", exc_info=True)
-            return {}
+            try:
+                if not units_path.exists():
+                    logging.debug(f"⚠️ 未找到文件: {units_path}，跳过")
+                    continue
+
+                logging.info(f"正在加载 {filename}...")
+                file_count = 0
+
+                with open(units_path, 'r', encoding='utf-8') as f:
+                    for line in f:
+                        if line.strip():
+                            unit = json.loads(line)
+                            chunk_id = unit.get("id")
+                            metadata = unit.get("metadata", {})
+
+                            if chunk_id:
+                                # 对于abstract类型，使用不同的字段
+                                if chunk_type == "abstract":
+                                    chunk_map[chunk_id] = {
+                                        "source_filename": metadata.get("source_filename", "unknown"),
+                                        "journal": metadata.get("journal", "unknown"),
+                                        "year": metadata.get("year", "unknown")
+                                    }
+                                else:
+                                    # 对于text, image, table类型，使用pages和blocks
+                                    chunk_map[chunk_id] = {
+                                        "source_filename": metadata.get("source_filename", "unknown"),
+                                        "pages": metadata.get("pages", []),
+                                        "blocks": metadata.get("blocks", [])
+                                    }
+                                file_count += 1
+
+                logging.info(f"  ✓ 从 {filename} 加载了 {file_count} 个映射")
+                total_loaded += file_count
+
+            except Exception as e:
+                logging.warning(f"⚠️ 加载 {filename} 时出错: {e}")
+                continue
+
+        logging.info(f"✅ 总共加载 {total_loaded} 个 chunk ID 映射关系")
+
+        if total_loaded == 0:
+            logging.warning("⚠️ 未能加载任何 chunk ID 映射，将无法解析引用")
+
+        return chunk_map
 
     def _load_graph_data(self) -> Dict[str, Any]:
         """加载 final_graph.json 数据"""
@@ -294,32 +327,52 @@ class LocalQueryHandler:
 
         def build_source_string(chunk_ids_raw: List[str]) -> str:
             sources_by_file: Dict[str, Dict[str, List]] = {}
+            abstract_sources = []  # 单独处理abstract类型的引用
+
             for chunk_id_raw in chunk_ids_raw:
                 chunk_id = extract_base_chunk_id(chunk_id_raw)
                 if chunk_id in self.chunk_id_map:
                     source_info = self.chunk_id_map[chunk_id]
+                    chunk_type = source_info.get("chunk_type", "text")
                     filename = source_info.get("source_filename", "unknown").replace('.json', '')
-                    pages = source_info.get("pages", [])
-                    blocks = source_info.get("blocks", [])
-                    if filename not in sources_by_file:
-                        sources_by_file[filename] = {"pages": [], "blocks": []}
-                    sources_by_file[filename]["pages"].extend(pages)
-                    sources_by_file[filename]["blocks"].extend(blocks)
+
+                    # 对于abstract类型，使用不同的格式
+                    if chunk_type == "abstract":
+                        journal = source_info.get("journal", "unknown")
+                        year = source_info.get("year", "unknown")
+                        abstract_sources.append(f"{filename}, {journal}, {year}")
+                    else:
+                        # 对于text/image/table类型，使用pages和blocks
+                        pages = source_info.get("pages", [])
+                        blocks = source_info.get("blocks", [])
+                        if filename not in sources_by_file:
+                            sources_by_file[filename] = {"pages": [], "blocks": []}
+                        sources_by_file[filename]["pages"].extend(pages)
+                        sources_by_file[filename]["blocks"].extend(blocks)
                 else:
                     if "unknown" not in sources_by_file:
                         sources_by_file["unknown"] = {"pages": [], "blocks": []}
-            if not sources_by_file: return ""
+
             source_parts = []
+
+            # 处理abstract类型的引用
+            if abstract_sources:
+                source_parts.extend(abstract_sources)
+
+            # 处理其他类型的引用
             for filename, info in sources_by_file.items():
-                if filename == "unknown": continue
+                if filename == "unknown":
+                    continue
                 page_str = merge_pages(info["pages"])
                 block_str = merge_blocks(info["blocks"])
                 source_parts.append(f"{filename} {page_str} {block_str}")
+
             if len(source_parts) == 0:
                 return "[source: unknown]"
-            if len(source_parts) == 1:
+            elif len(source_parts) == 1:
                 return f"[source: {source_parts[0]}]"
-            return f"[source: {'; '.join(source_parts)}]"
+            else:
+                return f"[source: {'; '.join(source_parts)}]"
 
         def replace_data_citation(match):
             chunk_ids_raw = match.group(2)
@@ -343,13 +396,20 @@ class LocalQueryHandler:
 
     def _embed_query(self, query: str) -> List[float]:
         """查询向量化 (修改为 OpenAI 兼容接口)"""
-        logging.info(f"正在为查询进行向量化: '{query[:2000]}...'")
+        # 验证输入
+        if not query or not query.strip():
+            logging.error("❌ 查询字符串为空，无法进行向量化")
+            raise ValueError("查询字符串不能为空")
+
+        query = query.strip()  # 清理空白字符
+        logging.info(f"正在为查询进行向量化: '{query[:100]}...'")
+
         try:
             # 修改：使用 client.embeddings.create
             # 注意：需确保 config 中的 model 是兼容的（如 text-embedding-v3）
             result = self.client.embeddings.create(
                 model=self.embedding_model_name,
-                input=query,
+                input=query,  # 确保这里传入的是非空字符串
                 dimensions=self.dimensionality  # 千问 text-embedding-v3 支持此参数
             )
             # 获取嵌入向量
@@ -365,6 +425,8 @@ class LocalQueryHandler:
 
         except Exception as e:
             logging.error(f"❌ 查询向量化失败: {e}", exc_info=True)
+            logging.error(f"   查询内容: '{query}'")
+            logging.error(f"   模型名称: {self.embedding_model_name}")
             raise
 
     def _build_local_context(self, query_vector: List[float]) -> str:

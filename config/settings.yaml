@@ -113,8 +113,9 @@ embedding:
   dimensionality: 1024
   input_text_units_path: "data/chunks/text_units.jsonl"
   input_graph_path: "data/graphs/final_graph.json"
-  input_community_report_path: "data/reports/community_summaries_enriched.jsonl"
-  output_db_path: "data/embeddings/enriched.db"  #no_entities_merge
+  input_community_report_path: "data/reports/community_summaries.jsonl"
+  input_id_maps_path: "data/cache/community_detection_id_maps.json"
+  output_db_path: "data/embeddings/enriched.db"  #no_entities_merge embedding.db
   output_db_text_path: "data/embeddings/text.db"
   output_text_table_name: "text"
   requests_path: "data/cache"
@@ -123,7 +124,7 @@ embedding:
 
 query:
   top_k: 20
-  generation_model: "qwen3-max-preview"  #gemini-2.5-pro""qwen3-max"
+  generation_model: "qwen3-max"  #gemini-2.5-pro""qwen3-max"
   temperature: 0.1
   top_p: 0.9
   search_config: false # allow_general_knowledge or not
@@ -141,7 +142,7 @@ query:
   sleep_interval: 60
   basic_rag_prompt: "config/prompts/basic_rag.md"
 
-  embedding_db_path: "data/embeddings/embedding.db"  #no_entities_merge   embedding.db
+  embedding_db_path: "data/embeddings/enriched.db"  #no_entities_merge   embedding.db
   global_table_name: "communities"
   local_table_name: "entities"
   prompt_dir: "config/prompts"
