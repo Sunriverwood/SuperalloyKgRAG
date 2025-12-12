@@ -1,3 +1,4 @@
 /data/cache/
 /data/reasoning/checkpoints/
 /data/reasoning/model.pt
+.idea/workspace.xml
