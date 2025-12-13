@@ -408,4 +408,35 @@ Neo4j 是一款图数据库，支持 Cypher 查询语言，适合进行交互式
 
 ## 13. 许可证
 
-本项目采用 Apache-2.0 许可证。详见 LICENSE 文件。
+本项目采用 **Apache License 2.0** 开源许可证。
+
+### 许可证要点
+
+- ✅ **允许商业使用**: 可以在商业项目中使用本项目代码
+- ✅ **允许修改**: 可以修改源代码并分发
+- ✅ **允许分发**: 可以自由分发原始或修改后的代码
+- ✅ **专利授权**: 自动获得贡献者的相关专利授权
+- ⚠️ **保留声明**: 必须保留版权声明和许可证文本
+- ⚠️ **声明修改**: 修改文件时建议说明变更
+
+### 详细文档
+
+- 📄 完整许可证文本: [LICENSE](LICENSE)
+
+### 版权信息
+
+```
+Copyright 2025 SUNRIVERWOOD
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+```
