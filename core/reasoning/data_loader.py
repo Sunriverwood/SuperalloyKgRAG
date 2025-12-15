@@ -97,7 +97,7 @@ class GraphReasoningDataLoader:
         with open(self.graph_path, 'r', encoding='utf-8') as f:
             graph_data = json.load(f)
 
-        G = nx.node_link_graph(graph_data, directed=True)
+        G = nx.node_link_graph(graph_data, directed=True, edges="links")
 
         logging.info(f"Loaded graph with {G.number_of_nodes()} nodes and {G.number_of_edges()} edges")
         return G

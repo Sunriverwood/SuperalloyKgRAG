@@ -100,7 +100,7 @@ def load_graph_data(graph_path: Path) -> nx.DiGraph:
     logging.info(f"正在从 {graph_path} 加载图谱...")
     with open(graph_path, 'r', encoding='utf-8') as f:
         graph_data = json.load(f)
-    graph = nx.node_link_graph(graph_data)
+    graph = nx.node_link_graph(graph_data, edges="links")
     logging.info("图谱加载成功。")
     return graph
 

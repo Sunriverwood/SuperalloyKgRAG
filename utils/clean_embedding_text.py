@@ -55,7 +55,7 @@ class EmbeddingTextCleaner:
                 graph_data = json.load(f)
 
             # 使用 networkx 正确解析图谱结构
-            graph = nx.node_link_graph(graph_data)
+            graph = nx.node_link_graph(graph_data, edges="links")
 
             for node_id, data in graph.nodes(data=True):
                 # 映射: 全局ID -> 实体名称

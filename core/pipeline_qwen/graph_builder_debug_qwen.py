@@ -999,7 +999,7 @@ def main():
             logging.info("直接加载合并图，跳过所有前置步骤")
             with open(merged_graph_path, 'r', encoding='utf-8') as f:
                 data = json.load(f)
-            graph = nx.node_link_graph(data, directed=True)
+            graph = nx.node_link_graph(data, directed=True, edges="links")
             logging.info(f"✅ 成功加载合并图：{graph.number_of_nodes()} 节点, {graph.number_of_edges()} 边")
             skip_preprocessing = True
         elif disamb_graph_path.exists():
@@ -1007,7 +1007,7 @@ def main():
             logging.info("加载消歧图，需要应用嵌入和合并步骤")
             with open(disamb_graph_path, 'r', encoding='utf-8') as f:
                 data = json.load(f)
-            graph = nx.node_link_graph(data, directed=True)
+            graph = nx.node_link_graph(data, directed=True, edges="links")
             logging.info(f"✅ 成功加载消歧图：{graph.number_of_nodes()} 节点, {graph.number_of_edges()} 边")
         else:
             logging.info("未找到任何中间图文件，从初始图开始")

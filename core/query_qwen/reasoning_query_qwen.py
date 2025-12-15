@@ -412,8 +412,7 @@ class ReasoningQueryHandler:
 
         logging.info(f"Loading trained model from {model_path}")
 
-        checkpoint = torch.load(model_path, map_location=self.device)
-
+        checkpoint = torch.load(model_path, map_location=self.device, weights_only=False)
         # Initialize models with same architecture
         self._initialize_models()
 

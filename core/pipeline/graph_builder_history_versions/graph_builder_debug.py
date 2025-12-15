@@ -541,7 +541,7 @@ def main():
             logging.info(f"从 {merge_graph_path} 加载已合并的图...")
             with open(merge_graph_path, 'r', encoding='utf-8') as f:
                 data = json.load(f)
-            graph = nx.node_link_graph(data, directed=True)
+            graph = nx.node_link_graph(data, directed=True, edges="links")
             logging.info(f"✅ 成功加载图：{graph.number_of_nodes()} 节点, {graph.number_of_edges()} 边")
 
             # 检查图中是否已经应用了所有前置步骤

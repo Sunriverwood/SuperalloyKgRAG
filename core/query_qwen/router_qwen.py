@@ -249,19 +249,21 @@ class GraphRouter:
         # Global handler 需要单独初始化（使用不同的数据）
         self.global_handler = GlobalQueryHandler(config)
 
-        # 初始化推理处理器（智能检测模型，使用共享图数据）
+        # 初始化推理处理器（智能检测模型）
         try:
             model_path = PROJECT_ROOT / config.get('reasoning', {}).get('output', {}).get('model_path', 'data/reasoning/model.pt')
             load_model = model_path.exists()
 
             if load_model:
                 logging.info(f"检测到推理模型: {model_path}")
-                # 内存优化：传递 drift_handler 的图数据，避免重复加载
-                logging.info("💡 [内存优化] 共享图数据给 ReasoningHandler")
+                # 注意：ReasoningQueryHandler 需要 GraphData 对象（dataclass），
+                # 而 drift_handler.graph_data 是 dict 类型（JSON格式），不能共享
+                # 因此让 ReasoningQueryHandler 自行加载其所需的 GraphData
+                logging.info("正在加载推理处理器...")
                 self.reasoning_handler = ReasoningQueryHandler(
                     config,
                     load_trained_model=True,
-                    shared_graph_data=self.drift_handler.graph_data  # 共享图数据
+                    shared_graph_data=None  # 不共享，让其自行加载
                 )
                 self.reasoning_enabled = True
             else:
@@ -273,11 +275,11 @@ class GraphRouter:
             self.reasoning_handler = None
             self.reasoning_enabled = False
 
-        logging.info(f"✅ 路由器初始化完成 (内存优化模式)")
+        logging.info(f"✅ 路由器初始化完成")
         logging.info(f"   - 启用处理器: Global, Local, Drift" +
                     (", Reasoning" if self.reasoning_enabled else ""))
-        logging.info(f"   - 内存优化: 图数据共享" +
-                    ("✓" if self.reasoning_enabled else " (Reasoning未启用)"))
+        if self.reasoning_enabled:
+            logging.info(f"   - 推理处理器: 已启用")
 
     async def route_and_answer(self, query: str) -> str:
         """
