@@ -43,7 +43,6 @@ from core.reasoning.training.trainer import GraphReasoningTrainer, QueryEntityMa
 from core.reasoning.inference.reasoner import GraphReasoner
 
 
-
 def setup_logging(config: Dict[str, Any]):
     """根据配置文件设置日志记录器"""
     log_config = config.get("logging", {})
@@ -114,7 +113,7 @@ class ReasoningQueryHandler:
         self.temperature = config["query"]["temperature"]
 
         # Device setup - CRITICAL: Load data to CPU first to avoid OOM
-        self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
+        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         logging.info(f"Target device: {self.device}")
 
         # MEMORY OPTIMIZATION: Always load graph data to CPU first
@@ -134,10 +133,11 @@ class ReasoningQueryHandler:
             self.graph_data = self.data_loader.load(device=data_device)
 
             # Log memory usage
-            if self.device == 'cuda':
-                allocated = torch.cuda.memory_allocated(0) / (1024**3)  # GB
-                reserved = torch.cuda.memory_reserved(0) / (1024**3)    # GB
-                logging.info(f"📊 GPU Memory after graph loading: {allocated:.2f}GB allocated, {reserved:.2f}GB reserved")
+            if self.device.type == 'cuda':
+                allocated = torch.cuda.memory_allocated(0) / (1024 ** 3)  # GB
+                reserved = torch.cuda.memory_reserved(0) / (1024 ** 3)  # GB
+                logging.info(
+                    f"📊 GPU Memory after graph loading: {allocated:.2f}GB allocated, {reserved:.2f}GB reserved")
 
         # Load chunk ID to source info mapping
         logging.info("Loading chunk ID to source mapping...")
@@ -265,7 +265,7 @@ class ReasoningQueryHandler:
     def _format_source_reference(self, chunk_ids: List[str]) -> str:
         """
         Format chunk IDs as human-readable source references.
-        Format: [source: filename Page X Block Y]
+        Format:
 
         Args:
             chunk_ids: List of chunk IDs
@@ -290,8 +290,8 @@ class ReasoningQueryHandler:
             if len(unique_pages) == 1:
                 return f"Page {unique_pages[0]}"
             # Check if consecutive
-            is_consecutive = all(unique_pages[i+1] - unique_pages[i] == 1
-                               for i in range(len(unique_pages) - 1))
+            is_consecutive = all(unique_pages[i + 1] - unique_pages[i] == 1
+                                 for i in range(len(unique_pages) - 1))
             if is_consecutive:
                 return f"Page {unique_pages[0]}~{unique_pages[-1]}"
             elif len(unique_pages) <= 3:
@@ -318,8 +318,8 @@ class ReasoningQueryHandler:
                         block_nums = []
                         break
                 if block_nums and len(block_nums) == len(unique_blocks):
-                    is_consecutive = all(block_nums[i+1] - block_nums[i] == 1
-                                       for i in range(len(block_nums) - 1))
+                    is_consecutive = all(block_nums[i + 1] - block_nums[i] == 1
+                                         for i in range(len(block_nums) - 1))
                     if is_consecutive:
                         return f"Block {unique_blocks[0]}~{unique_blocks[-1]}"
             except Exception:
@@ -453,7 +453,7 @@ class ReasoningQueryHandler:
             return np.zeros(self.graph_data.embed_dim)
 
     def generate_answer(self, query: str, reasoning_results: Dict[str, Any],
-                       strict_mode: bool = True) -> str:
+                        strict_mode: bool = True) -> str:
         """
         Generate final answer using LLM with reasoning context.
 
@@ -546,7 +546,7 @@ CRITICAL CONSTRAINTS:
 3. If the provided reasoning results don't contain enough information to answer, say "Based on the available knowledge graph data, I cannot find sufficient information to answer this question."
 4. Every statement in your answer must be traceable to the provided entities, reasoning paths, and source texts
 5. Do not make assumptions or inferences beyond what is explicitly stated in the reasoning results
-6. When making claims, reference the sources using the format [source: filename Page X Block Y] to support your statements"""
+6. When making claims, reference the sources using the format to support your statements"""
 
             prompt = f"""Question: {query}
 
@@ -585,7 +585,7 @@ Explain how the paths support your answer and cite source chunks when relevant."
             return "Error generating answer. Please try again."
 
     def query(self, query_text: str, method: str = 'ppr',
-             include_llm_answer: bool = True, strict_mode: bool = True) -> Dict[str, Any]:
+              include_llm_answer: bool = True, strict_mode: bool = True) -> Dict[str, Any]:
         """
         Main query interface.
 
@@ -598,21 +598,58 @@ Explain how the paths support your answer and cite source chunks when relevant."
         Returns:
             Complete query results including reasoning and answer
         """
-        logging.info("="*80)
+        logging.info("=" * 80)
         logging.info(f"Processing query: {query_text}")
         logging.info(f"Mode: method={method}, include_llm={include_llm_answer}, strict_mode={strict_mode}")
-        logging.info("="*80)
+        logging.info("=" * 80)
 
         # 1. Encode query
         query_embedding_np = self.encode_query(query_text)
         query_embedding = torch.from_numpy(query_embedding_np).float().to(self.device)
 
-        # 2. Perform graph reasoning
-        reasoning_results = self.reasoner.reason(
-            query_text=query_text,
-            text_encoder=self.encode_query,
-            method=method
-        )
+        # --- FIX: Handle device mismatch similar to trainer.py ---
+        # The GraphReasoner instance expects data on same device as model/query.
+        # Since we keep graph_data on CPU for memory optimization, we must
+        # temporarily move necessary tensors to the GPU for the reasoning pass.
+
+        original_devices = {}
+        tensors_to_move = [
+            'node_embeddings', 'edge_index', 'edge_types',
+            'edge_weights', 'edge_type_embeddings'
+        ]
+
+        try:
+            # Move graph tensors to device (if not already there)
+            if self.device.type == 'cuda':
+                logging.debug(f"🔧 Temporarily moving graph tensors to {self.device} for reasoning...")
+                for attr in tensors_to_move:
+                    if hasattr(self.graph_data, attr):
+                        tensor = getattr(self.graph_data, attr)
+                        if isinstance(tensor, torch.Tensor):
+                            original_devices[attr] = tensor.device
+                            if tensor.device != self.device:
+                                # In-place update of graph_data reference so reasoner sees it
+                                setattr(self.graph_data, attr, tensor.to(self.device))
+
+            # 2. Perform graph reasoning
+            reasoning_results = self.reasoner.reason(
+                query_text=query_text,
+                text_encoder=self.encode_query,
+                method=method
+            )
+
+        finally:
+            # Restore to original device (likely CPU) to save memory
+            if original_devices:
+                logging.debug("🔧 Restoring graph tensors to original devices...")
+                for attr, device in original_devices.items():
+                    tensor = getattr(self.graph_data, attr)
+                    if tensor.device != device:
+                        setattr(self.graph_data, attr, tensor.to(device))
+
+                # Clear GPU cache
+                if self.device.type == 'cuda':
+                    torch.cuda.empty_cache()
 
         # 3. Generate final answer (optional)
         if include_llm_answer:
@@ -622,7 +659,7 @@ Explain how the paths support your answer and cite source chunks when relevant."
         logging.info(f"Query processing complete")
         logging.info(f"  Top nodes: {len(reasoning_results['top_nodes'])}")
         logging.info(f"  Reasoning paths: {reasoning_results['num_paths']}")
-        logging.info("="*80)
+        logging.info("=" * 80)
 
         return reasoning_results
 
@@ -684,9 +721,9 @@ def print_results(results: Dict[str, Any], handler: Optional['ReasoningQueryHand
         results: Reasoning results dictionary
         handler: Optional ReasoningQueryHandler instance for formatting source references
     """
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print("REASONING RESULTS")
-    print("="*80)
+    print("=" * 80)
     print(f"\nQuery: {results['query']}")
 
     # Top entities
@@ -717,14 +754,13 @@ def print_results(results: Dict[str, Any], handler: Optional['ReasoningQueryHand
     else:
         print("No reasoning paths found.")
 
-
     # Final answer
     if 'answer' in results:
         print(f"\n{'Final Answer:':<30}")
         print("-" * 80)
         print(results['answer'])
 
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
 
 
 def interactive_mode(config: Dict[str, Any]):
@@ -734,9 +770,9 @@ def interactive_mode(config: Dict[str, Any]):
     Args:
         config: Configuration dictionary
     """
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print("Graph Reasoning Query System - Interactive Mode")
-    print("="*80)
+    print("=" * 80)
 
     # Check if model exists
     model_path = PROJECT_ROOT / config.get('reasoning', {}).get('output', {}).get('model_path', 'data/reasoning/model.pt')
@@ -753,9 +789,9 @@ def interactive_mode(config: Dict[str, Any]):
             epochs_input = input("Number of training epochs [100]: ").strip()
             num_epochs = int(epochs_input) if epochs_input else 100
 
-            print("\n" + "="*80)
+            print("\n" + "=" * 80)
             print("Starting Model Training...")
-            print("="*80)
+            print("=" * 80)
 
             # Train model
             handler = ReasoningQueryHandler(config, load_trained_model=False)
@@ -888,13 +924,13 @@ def command_line_mode():
 Examples:
   # Query mode
   python reasoning_query_qwen.py --query "What is nickel used for?"
-  
+
   # Interactive mode
   python reasoning_query_qwen.py --interactive
-  
+
   # Training mode (uses config defaults: epochs={default_epochs}, device={default_device})
   python reasoning_query_qwen.py --train
-  
+
   # Training mode with custom parameters
   python reasoning_query_qwen.py --train --epochs 500 --device cpu
         """
@@ -903,40 +939,39 @@ Examples:
     # Mode selection
     mode_group = parser.add_mutually_exclusive_group()
     mode_group.add_argument('--interactive', '-i', action='store_true',
-                           help='Run in interactive mode')
+                            help='Run in interactive mode')
     mode_group.add_argument('--train', action='store_true',
-                           help='Train the model (skip if model exists)')
+                            help='Train the model (skip if model exists)')
 
     # Query parameters
     parser.add_argument('--query', '-q', type=str, default=None,
-                       help='Natural language query')
+                        help='Natural language query')
     parser.add_argument('--method', '-m', type=str, default='ppr',
-                       choices=['ppr', 'gnn'],
-                       help='Reasoning method (default: ppr)')
+                        choices=['ppr', 'gnn'],
+                        help='Reasoning method (default: ppr)')
     parser.add_argument('--no-llm', action='store_true',
-                       help='Skip LLM answer generation')
+                        help='Skip LLM answer generation')
     parser.add_argument('--no-strict', action='store_true',
-                       help='Allow LLM to use its own knowledge (default: strict mode - only knowledge graph data)')
+                        help='Allow LLM to use its own knowledge (default: strict mode - only knowledge graph data)')
 
     # Training parameters (defaults from config)
     parser.add_argument('--epochs', '-e', type=int, default=default_epochs,
-                       help=f'Number of training epochs (default from config: {default_epochs})')
+                        help=f'Number of training epochs (default from config: {default_epochs})')
     parser.add_argument('--device', '-d', type=str, default=default_device,
-                       choices=['cuda', 'cpu'],
-                       help=f'Training device (default: {default_device})')
+                        choices=['cuda', 'cpu'],
+                        help=f'Training device (default: {default_device})')
     parser.add_argument('--batch-size', '-b', type=int, default=None,
-                       help=f'Training batch size (default from config: {training_config.get("batch_size", 256)}). Reduce if out of memory.')
+                        help=f'Training batch size (default from config: {training_config.get("batch_size", 256)}). Reduce if out of memory.')
     parser.add_argument('--gradient-accumulation', '-g', type=int, default=None,
-                       help=f'Gradient accumulation steps (default: {training_config.get("gradient_accumulation_steps", 2)}). Increase if out of memory.')
+                        help=f'Gradient accumulation steps (default: {training_config.get("gradient_accumulation_steps", 2)}). Increase if out of memory.')
     parser.add_argument('--force-train', action='store_true',
-                       help='Force training even if model exists')
+                        help='Force training even if model exists')
 
     # Output
     parser.add_argument('--output', '-o', type=str, default=None,
-                       help='Save results to JSON file')
+                        help='Save results to JSON file')
 
     args = parser.parse_args()
-
 
     # Check model existence
     model_path = PROJECT_ROOT / config.get('reasoning', {}).get('output', {}).get('model_path', 'data/reasoning/model.pt')
@@ -954,9 +989,9 @@ Examples:
             print("  Use --force-train to retrain anyway.")
             print("  Skipping training.\n")
         else:
-            print("\n" + "="*80)
+            print("\n" + "=" * 80)
             print("Starting Model Training...")
-            print("="*80)
+            print("=" * 80)
 
             # Determine batch size
             batch_size = args.batch_size if args.batch_size else training_config.get('batch_size', 256)
@@ -979,7 +1014,7 @@ Examples:
             print(f"  - Gradient Accumulation Steps: {gradient_accumulation}")
             print(f"  - Learning Rate: {training_config.get('learning_rate', 0.001)}")
             print(f"  - Weight Decay: {training_config.get('weight_decay', 0.0001)}")
-            print("="*80)
+            print("=" * 80)
 
             # Override batch size in config if specified
             if args.batch_size:
@@ -1015,8 +1050,8 @@ Examples:
                 # Clear cache after model initialization
                 if args.device == 'cuda':
                     torch.cuda.empty_cache()
-                    allocated = torch.cuda.memory_allocated(0) / (1024**3)
-                    reserved = torch.cuda.memory_reserved(0) / (1024**3)
+                    allocated = torch.cuda.memory_allocated(0) / (1024 ** 3)
+                    reserved = torch.cuda.memory_reserved(0) / (1024 ** 3)
                     logging.info(f"📊 GPU Memory after setup: {allocated:.2f}GB allocated, {reserved:.2f}GB reserved")
 
             handler.train(num_epochs=args.epochs)
@@ -1026,9 +1061,9 @@ Examples:
 
     # Query mode
     if args.query:
-        print("\n" + "="*80)
+        print("\n" + "=" * 80)
         print("Graph Reasoning Query System")
-        print("="*80)
+        print("=" * 80)
 
         if not model_exists:
             print(f"\n✗ Error: No trained model found at {model_path}")
@@ -1079,4 +1114,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

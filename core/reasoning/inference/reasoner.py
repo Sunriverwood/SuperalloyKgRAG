@@ -62,9 +62,9 @@ class GraphReasoner:
         self.inference_config = self.reasoning_config.get('inference', {})
 
         self.graph_data = graph_data
-        self.gnn = gnn_model.to(device)
-        self.query_matcher = query_matcher.to(device)
-        self.device = device
+        self.device = torch.device(device)
+        self.gnn = gnn_model.to(self.device)
+        self.query_matcher = query_matcher.to(self.device)
 
         # Set to eval mode
         self.gnn.eval()
@@ -84,6 +84,7 @@ class GraphReasoner:
         logging.info("GraphReasoner initialized")
         logging.info(f"  PPR alpha: {self.ppr_alpha}")
         logging.info(f"  Max path length: {self.max_path_length}")
+        logging.info(f"  Device: {self.device}")
 
     def encode_query(self, query_text: str, text_encoder=None) -> torch.Tensor:
         """
@@ -105,6 +106,20 @@ class GraphReasoner:
             logging.warning("No text encoder provided, using zero vector for query")
             return torch.zeros(self.graph_data.embed_dim, device=self.device)
 
+    def _get_tensor(self, name: str) -> torch.Tensor:
+        """Helper to get a tensor from graph_data and ensure it's on self.device"""
+        if not hasattr(self.graph_data, name):
+            raise AttributeError(f"GraphData missing attribute: {name}")
+
+        tensor = getattr(self.graph_data, name)
+        if tensor is None:
+            return None
+
+        if isinstance(tensor, torch.Tensor):
+            if tensor.device != self.device:
+                return tensor.to(self.device)
+        return tensor
+
     @torch.no_grad()
     def score_nodes(self, query_emb: torch.Tensor, use_gnn: bool = True) -> torch.Tensor:
         """
@@ -117,15 +132,25 @@ class GraphReasoner:
         Returns:
             Node scores [num_nodes]
         """
-        # Always use GNN to get correct dimension for query_matcher
-        # The difference is whether we pass the query for query-aware attention
+        # CRITICAL FIX: Ensure all tensors are on the correct device for GNN forward pass
+        # This handles cases where graph_data stays on CPU for memory optimization
+        x = self._get_tensor('node_embeddings')
+        edge_index = self._get_tensor('edge_index')
+        edge_weights = self._get_tensor('edge_weights')
+        edge_types = self._get_tensor('edge_types')
+        edge_type_embeddings_full = self._get_tensor('edge_type_embeddings')
+        adjacency_mask = self._get_tensor('adjacency_mask')
+
+        # Perform indexing on the correct device
+        edge_type_emb = edge_type_embeddings_full[edge_types]
+
         node_embeddings = self.gnn(
-            x=self.graph_data.node_embeddings,
-            edge_index=self.graph_data.edge_index,
-            edge_type_emb=self.graph_data.edge_type_embeddings[self.graph_data.edge_types],
-            edge_weights=self.graph_data.edge_weights,
+            x=x,
+            edge_index=edge_index,
+            edge_type_emb=edge_type_emb,
+            edge_weights=edge_weights,
             query_emb=query_emb if use_gnn else None,  # Pass query only if use_gnn=True
-            adjacency_mask=self.graph_data.adjacency_mask
+            adjacency_mask=adjacency_mask
         )
 
         # Compute similarity scores using query matcher
@@ -191,7 +216,7 @@ class GraphReasoner:
 
     @torch.no_grad()
     def propagate_ppr(self, query_emb: torch.Tensor, alpha: Optional[float] = None,
-                     max_iter: Optional[int] = None, tol: Optional[float] = None) -> np.ndarray:
+                      max_iter: Optional[int] = None, tol: Optional[float] = None) -> np.ndarray:
         """
         Personalized PageRank propagation with query-aware initialization.
 
@@ -239,7 +264,7 @@ class GraphReasoner:
             pi = pi_new
 
             if diff < tol:
-                logging.info(f"PPR converged at iteration {iteration+1}, diff={diff:.2e}")
+                logging.info(f"PPR converged at iteration {iteration + 1}, diff={diff:.2e}")
                 break
         else:
             logging.warning(f"PPR did not converge after {max_iter} iterations")
@@ -258,25 +283,37 @@ class GraphReasoner:
             Dictionary mapping (source_id, target_id) -> attention_weight
         """
         attention_dict = {}
-        edge_index = self.graph_data.edge_index.cpu().numpy()
+
+        # Prepare inputs on correct device
+        x = self._get_tensor('node_embeddings')
+        edge_index_tensor = self._get_tensor('edge_index')
+        edge_weights = self._get_tensor('edge_weights')
+        edge_types = self._get_tensor('edge_types')
+        edge_type_embeddings_full = self._get_tensor('edge_type_embeddings')
+        adjacency_mask = self._get_tensor('adjacency_mask')
+
+        edge_type_emb = edge_type_embeddings_full[edge_types]
+
+        # For mapping back to node IDs, we need edge_index on CPU
+        edge_index_cpu = self.graph_data.edge_index.cpu().numpy()
 
         # Use GNN's extract_attention method to get real attention weights
         try:
             _, attentions = self.gnn.extract_attention(
-                x=self.graph_data.node_embeddings,
-                edge_index=self.graph_data.edge_index,
-                edge_type_emb=self.graph_data.edge_type_embeddings[self.graph_data.edge_types],
-                edge_weights=self.graph_data.edge_weights,
+                x=x,
+                edge_index=edge_index_tensor,
+                edge_type_emb=edge_type_emb,
+                edge_weights=edge_weights,
                 query_emb=query_emb,
-                adjacency_mask=self.graph_data.adjacency_mask
+                adjacency_mask=adjacency_mask
             )
 
             # Use attention from the last layer, averaged across heads
             last_layer_attn = attentions[-1]  # [num_edges, num_heads]
             avg_attention = last_layer_attn.mean(dim=-1).cpu().numpy()  # [num_edges]
 
-            for i in range(edge_index.shape[1]):
-                src_idx, tgt_idx = edge_index[0, i], edge_index[1, i]
+            for i in range(edge_index_cpu.shape[1]):
+                src_idx, tgt_idx = edge_index_cpu[0, i], edge_index_cpu[1, i]
                 src_id = self.graph_data.idx_to_node[src_idx]
                 tgt_id = self.graph_data.idx_to_node[tgt_idx]
                 attention_dict[(src_id, tgt_id)] = float(avg_attention[i])
@@ -286,13 +323,13 @@ class GraphReasoner:
         except Exception as e:
             # Fallback to edge weights if attention extraction fails
             logging.warning(f"Attention extraction failed: {e}, using edge weights as fallback")
-            edge_weights = self.graph_data.edge_weights.cpu().numpy()
+            edge_weights_cpu = self.graph_data.edge_weights.cpu().numpy()
 
-            for i in range(edge_index.shape[1]):
-                src_idx, tgt_idx = edge_index[0, i], edge_index[1, i]
+            for i in range(edge_index_cpu.shape[1]):
+                src_idx, tgt_idx = edge_index_cpu[0, i], edge_index_cpu[1, i]
                 src_id = self.graph_data.idx_to_node[src_idx]
                 tgt_id = self.graph_data.idx_to_node[tgt_idx]
-                attention_dict[(src_id, tgt_id)] = float(edge_weights[i])
+                attention_dict[(src_id, tgt_id)] = float(edge_weights_cpu[i])
 
         return attention_dict
 
@@ -347,7 +384,8 @@ class GraphReasoner:
             logging.warning("No paths found between start and end nodes")
             logging.warning(f"  Start nodes: {len(start_nodes)}, End nodes: {len(end_nodes)}")
             logging.warning(f"  Max path length: {self.max_path_length}")
-            logging.warning(f"  Graph has {self.graph_data.G.number_of_nodes()} nodes, {self.graph_data.G.number_of_edges()} edges")
+            logging.warning(
+                f"  Graph has {self.graph_data.G.number_of_nodes()} nodes, {self.graph_data.G.number_of_edges()} edges")
 
             # Try to diagnose connectivity issue
             if start_nodes and end_nodes:
@@ -381,7 +419,7 @@ class GraphReasoner:
         return ranked_paths
 
     def reason(self, query_text: str, text_encoder=None,
-              method: str = 'ppr') -> Dict[str, Any]:
+               method: str = 'ppr') -> Dict[str, Any]:
         """
         Main reasoning function.
 
@@ -397,9 +435,9 @@ class GraphReasoner:
             - paths: reasoning paths
             - explanations: formatted path explanations
         """
-        logging.info("="*60)
+        logging.info("=" * 60)
         logging.info(f"Reasoning for query: {query_text}")
-        logging.info("="*60)
+        logging.info("=" * 60)
 
         # 1. Encode query
         query_emb = self.encode_query(query_text, text_encoder)
@@ -434,7 +472,8 @@ class GraphReasoner:
             'top_nodes': [
                 {
                     'id': node_id,
-                    'name': self.graph_data.G.nodes[node_id].get('name', node_id) if node_id in self.graph_data.G.nodes else node_id,
+                    'name': self.graph_data.G.nodes[node_id].get('name',
+                                                                 node_id) if node_id in self.graph_data.G.nodes else node_id,
                     'score': float(score),
                     # Add chunk_id for source reference
                     'chunk_ids': self._extract_chunk_ids(node_id)
@@ -456,7 +495,7 @@ class GraphReasoner:
         }
 
         logging.info(f"Reasoning complete: {len(top_nodes)} top nodes, {len(paths)} paths")
-        logging.info("="*60)
+        logging.info("=" * 60)
 
         return results
 
@@ -503,4 +542,3 @@ class GraphReasoner:
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
     print("✓ Inference module loaded successfully")
-
