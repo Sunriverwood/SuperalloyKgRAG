@@ -66,9 +66,10 @@ igraph==0.11.9
 leidenalg==0.10.2
 
 # ==================================================
-# Vector Database
+# Vector Database & Similarity Search
 # ==================================================
 lancedb==0.16.0
+hnswlib>=0.8.0  # 高性能近似最近邻搜索，用于实体合并优化
 
 # ==================================================
 # Data Processing & Analysis
@@ -245,8 +246,11 @@ pyyaml>=6.0
 # API Client (OpenAI-compatible)
 openai>=1.0.0
 
-# Optional: For visualization (future)
-# matplotlib>=3.7.0
-# seaborn>=0.12.0
+# ==================================================
+# Visualization
+# ==================================================
+matplotlib>=3.7.0
+scienceplots>=2.0.0
+seaborn>=0.12.0
 # plotly>=5.14.0
 

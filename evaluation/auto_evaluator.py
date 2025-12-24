@@ -38,7 +38,7 @@ sys.path.insert(0, str(PROJECT_ROOT))
 sys.path.insert(0, str(PROJECT_ROOT / "core" / "query_qwen"))
 
 # 导入评分模块
-from scoring import ScorerFactory
+from evaluation.scoring import ScorerFactory
 
 
 def load_config(settings_filename: str = "settings.yaml") -> Dict[str, Any]:
@@ -141,25 +141,52 @@ class EvaluationDataLoader:
 
 
 class AutoEvaluator:
-    """自动评测器"""
+    """
+    自动评测器 - 一站式评测解决方案
 
-    def __init__(self, config: Dict[str, Any], max_concurrency: int = 5):
+    功能：
+    1. 加载评测题目
+    2. 异步调用查询系统获取回答
+    3. 多级评分系统评估回答质量
+    4. 生成详细评测报告
+
+    使用示例：
+        evaluator = AutoEvaluator.from_config()
+        report = await evaluator.run(difficulty="L3", max_concurrency=5)
+    """
+
+    def __init__(self, config: Dict[str, Any], max_concurrency: int = 5, query_mode: Optional[str] = None):
         """
         初始化评测器
 
         Args:
             config: 配置字典
             max_concurrency: 最大并发数
+            query_mode: 指定查询模式 ('local', 'global', 'reasoning', 'drift', None=自动路由)
         """
         self.config = config
         self.max_concurrency = max_concurrency
         self.semaphore = asyncio.Semaphore(max_concurrency)
+
+        # 查询模式设置
+        self.query_mode = query_mode.lower() if query_mode else None
+        if self.query_mode and self.query_mode not in ['local', 'global', 'reasoning', 'drift']:
+            raise ValueError(f"无效的查询模式: {query_mode}. 可选值: local, global, reasoning, drift")
 
         # 初始化评分器工厂
         self.scorer_factory = ScorerFactory(config)
 
         # 初始化路由器（延迟加载）
         self._router = None
+
+        # 初始化具体查询模块（延迟加载）
+        self._local_query = None
+        self._global_query = None
+        self._reasoning_query = None
+        self._drift_query = None
+
+        # 初始化数据加载器
+        self.data_loader = EvaluationDataLoader()
 
         # 输出目录
         self.output_dir = PROJECT_ROOT / "data" / "answers"
@@ -168,6 +195,28 @@ class AutoEvaluator:
         # 报告目录
         self.report_dir = PROJECT_ROOT / "data" / "reports"
         self.report_dir.mkdir(exist_ok=True, parents=True)
+
+        if self.query_mode:
+            logging.info(f"评测器将使用指定查询模式: {self.query_mode.upper()}")
+        else:
+            logging.info("评测器将使用自动路由模式")
+
+    @classmethod
+    def from_config(cls, settings_filename: str = "settings.yaml", max_concurrency: int = 5, query_mode: Optional[str] = None):
+        """
+        从配置文件创建评测器实例
+
+        Args:
+            settings_filename: 配置文件名
+            max_concurrency: 最大并发数
+            query_mode: 指定查询模式 ('local', 'global', 'reasoning', 'drift', None=自动路由)
+
+        Returns:
+            AutoEvaluator 实例
+        """
+        config = load_config(settings_filename)
+        setup_logging(config)
+        return cls(config, max_concurrency, query_mode)
 
     @property
     def router(self):
@@ -178,9 +227,45 @@ class AutoEvaluator:
             logging.info("GraphRouter 初始化完成")
         return self._router
 
+    @property
+    def local_query(self):
+        """延迟加载 LocalQueryHandler"""
+        if self._local_query is None:
+            from core.query_qwen.local_query_qwen import LocalQueryHandler
+            self._local_query = LocalQueryHandler(self.config)
+            logging.info("LocalQueryHandler 初始化完成")
+        return self._local_query
+
+    @property
+    def global_query(self):
+        """延迟加载 GlobalQueryHandler"""
+        if self._global_query is None:
+            from core.query_qwen.global_query_qwen import GlobalQueryHandler
+            self._global_query = GlobalQueryHandler(self.config)
+            logging.info("GlobalQueryHandler 初始化完成")
+        return self._global_query
+
+    @property
+    def reasoning_query(self):
+        """延迟加载 ReasoningQueryHandler"""
+        if self._reasoning_query is None:
+            from core.query_qwen.reasoning_query_qwen import ReasoningQueryHandler
+            self._reasoning_query = ReasoningQueryHandler(self.config)
+            logging.info("ReasoningQueryHandler 初始化完成")
+        return self._reasoning_query
+
+    @property
+    def drift_query(self):
+        """延迟加载 DriftSearchHandler"""
+        if self._drift_query is None:
+            from core.query_qwen.router_qwen import DriftSearchHandler
+            self._drift_query = DriftSearchHandler(self.config)
+            logging.info("DriftSearchHandler 初始化完成")
+        return self._drift_query
+
     async def get_answer(self, question: str) -> str:
         """
-        调用 GraphRouter 获取回答
+        调用查询模块获取回答
 
         Args:
             question: 问题文本
@@ -190,10 +275,30 @@ class AutoEvaluator:
         """
         async with self.semaphore:
             try:
-                answer = await self.router.route_and_answer(question)
+                if self.query_mode is None:
+                    # 使用自动路由
+                    answer = await self.router.route_and_answer(question)
+                elif self.query_mode == 'local':
+                    answer = await self.local_query.answer_query(question)
+                elif self.query_mode == 'global':
+                    answer = await self.global_query.answer_query(question)
+                elif self.query_mode == 'reasoning':
+                    # ReasoningQueryHandler.query 是同步方法，使用 to_thread 运行
+                    result = await asyncio.to_thread(
+                        self.reasoning_query.query, 
+                        question, 
+                        method='ppr', 
+                        include_llm_answer=True
+                    )
+                    answer = result.get('answer', '未能生成推理答案')
+                elif self.query_mode == 'drift':
+                    answer = await self.drift_query.perform_drift_search(question)
+                else:
+                    raise ValueError(f"未知的查询模式: {self.query_mode}")
+
                 return answer
             except Exception as e:
-                logging.error(f"获取回答失败: {e}")
+                logging.error(f"获取回答失败 (模式: {self.query_mode or '自动路由'}): {e}")
                 return f"[ERROR] {str(e)}"
 
     async def evaluate_single(self, item: Dict[str, Any]) -> Dict[str, Any]:
@@ -262,7 +367,7 @@ class AutoEvaluator:
             save_intermediate: bool = True
     ) -> List[Dict[str, Any]]:
         """
-        批量评测题目
+        批量评测题目 (并行处理)
 
         Args:
             questions: 题目列表
@@ -271,19 +376,23 @@ class AutoEvaluator:
         Returns:
             评测结果列表
         """
-        results = []
         total = len(questions)
-
+        
         # 生成输出文件名
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         output_file = self.output_dir / f"evaluation_{timestamp}.jsonl"
 
-        logging.info(f"开始批量评测，共 {total} 道题目")
+        logging.info(f"开始批量评测，共 {total} 道题目 (并发限制: {self.max_concurrency})")
         logging.info(f"结果将保存到: {output_file}")
 
-        for i, item in enumerate(questions, 1):
+        # 创建任务列表
+        tasks = [self.evaluate_single(item) for item in questions]
+        
+        results = []
+        # 使用 as_completed 实时获取完成的任务，以便显示进度和保存中间结果
+        for i, completed_task in enumerate(asyncio.as_completed(tasks), 1):
             try:
-                result = await self.evaluate_single(item)
+                result = await completed_task
                 results.append(result)
 
                 # 保存中间结果
@@ -291,17 +400,10 @@ class AutoEvaluator:
                     with open(output_file, 'a', encoding='utf-8') as f:
                         f.write(json.dumps(result, ensure_ascii=False) + '\n')
 
-                logging.info(f"进度: {i}/{total} ({100 * i / total:.1f}%)")
+                logging.info(f"进度: {i}/{total} ({100 * i / total:.1f}%) - ID: {result.get('id')}")
 
             except Exception as e:
-                logging.error(f"评测题目 {item.get('id')} 失败: {e}")
-                error_result = {
-                    "id": item.get("id"),
-                    "question": item.get("question"),
-                    "error": str(e),
-                    "timestamp": datetime.now().isoformat()
-                }
-                results.append(error_result)
+                logging.error(f"评测任务执行失败: {e}")
 
         logging.info(f"批量评测完成，共 {len(results)} 条结果")
         return results
@@ -399,57 +501,62 @@ class AutoEvaluator:
 
         return report
 
+    async def run(
+            self,
+            difficulty: Optional[str] = None,
+            question_ids: Optional[List[int]] = None,
+            save_intermediate: bool = True
+    ) -> Dict[str, Any]:
+        """
+        运行完整评测流程的主入口方法
 
-async def run_evaluation(
-        difficulty: Optional[str] = None,
-        question_ids: Optional[List[int]] = None,
-        max_concurrency: int = 5,
-        save_intermediate: bool = True
-) -> Dict[str, Any]:
-    """
-    运行评测的入口函数
+        Args:
+            difficulty: 指定难度级别 (L1/L2/L3/L4)，None 表示全部
+            question_ids: 指定题目 ID 列表，None 表示全部
+            save_intermediate: 是否保存中间结果
 
-    Args:
-        difficulty: 指定难度级别
-        question_ids: 指定题目 ID
-        max_concurrency: 最大并发数
-        save_intermediate: 是否保存中间结果
+        Returns:
+            评测报告字典
+        """
+        logging.info("=" * 80)
+        logging.info("开始自动评测流程")
+        logging.info("=" * 80)
 
-    Returns:
-        评测报告
-    """
-    # 加载配置
-    config = load_config()
-    setup_logging(config)
+        # 加载题目
+        questions = self.data_loader.load_questions(
+            difficulty=difficulty,
+            question_ids=question_ids
+        )
 
-    # 加载题目
-    loader = EvaluationDataLoader()
-    questions = loader.load_questions(difficulty=difficulty, question_ids=question_ids)
+        if not questions:
+            logging.warning("没有找到符合条件的题目")
+            return {"error": "No questions found"}
 
-    if not questions:
-        logging.warning("没有找到符合条件的题目")
-        return {"error": "No questions found"}
+        # 执行评测
+        results = await self.evaluate_batch(questions, save_intermediate=save_intermediate)
 
-    # 初始化评测器
-    evaluator = AutoEvaluator(config, max_concurrency=max_concurrency)
+        # 生成报告
+        report = self.generate_report(results)
 
-    # 执行评测
-    results = await evaluator.evaluate_batch(questions, save_intermediate=save_intermediate)
+        logging.info("=" * 80)
+        logging.info("评测流程完成")
+        logging.info("=" * 80)
 
-    # 生成报告
-    report = evaluator.generate_report(results)
-
-    return report
+        return report
 
 
 if __name__ == "__main__":
-    # 简单测试
+    # 命令行接口
     import argparse
 
     parser = argparse.ArgumentParser(description="自动评测系统")
     parser.add_argument("--difficulty", type=str, default=None, help="难度级别 (L1/L2/L3/L4)")
     parser.add_argument("--ids", type=str, default=None, help="题目ID列表，逗号分隔")
     parser.add_argument("--concurrency", type=int, default=5, help="最大并发数")
+    parser.add_argument("--settings", type=str, default="settings.yaml", help="配置文件名")
+    parser.add_argument("--mode", type=str, default=None,
+                       choices=['local', 'global', 'reasoning', 'drift'],
+                       help="指定查询模式 (local/global/reasoning/drift)，不指定则使用自动路由")
 
     args = parser.parse_args()
 
@@ -458,15 +565,23 @@ if __name__ == "__main__":
     if args.ids:
         question_ids = [int(x.strip()) for x in args.ids.split(",")]
 
-    # 运行评测
-    report = asyncio.run(run_evaluation(
+    # 创建评测器并运行
+    evaluator = AutoEvaluator.from_config(
+        settings_filename=args.settings,
+        max_concurrency=args.concurrency,
+        query_mode=args.mode
+    )
+
+    report = asyncio.run(evaluator.run(
         difficulty=args.difficulty,
-        question_ids=question_ids,
-        max_concurrency=args.concurrency
+        question_ids=question_ids
     ))
 
     print("\n" + "=" * 80)
     print("评测报告摘要")
     print("=" * 80)
     print(json.dumps(report, ensure_ascii=False, indent=2))
+
+
+
 

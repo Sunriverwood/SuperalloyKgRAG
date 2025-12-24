@@ -525,6 +525,9 @@ async def main():
 
     parser = argparse.ArgumentParser(description="智能路由与漂移检索")
     parser.add_argument("query", type=str, nargs='?', default="", help="输入问题")
+    parser.add_argument("--mode", type=str, default=None,
+                       choices=['local', 'global', 'reasoning', 'drift'],
+                       help="指定查询模式 (local/global/reasoning/drift)，不指定则使用自动路由")
     args = parser.parse_args()
 
     try:
@@ -535,18 +538,48 @@ async def main():
         # 初始化路由器
         router = GraphRouter(config)
 
+        async def get_answer(q, mode):
+            if mode == 'local':
+                # 使用 DriftHandler 的基础 LocalQueryHandler 功能
+                query_vector = router.drift_handler._embed_query(q)
+                context = router.drift_handler._build_local_context(query_vector)
+                from string import Template
+                template = Template(router.drift_handler.local_prompt_template)
+                prompt = template.safe_substitute(
+                    context_data=context,
+                    query=q,
+                    constraints="严格基于提供的上下文回答，禁止编造。"
+                )
+                response_text = await router.drift_handler.generate_async_wrapper(prompt=prompt)
+                return router.drift_handler._resolve_chunk_citations(response_text)
+            elif mode == 'global':
+                return await router.global_handler.answer_query(q)
+            elif mode == 'drift':
+                return await router.drift_handler.perform_drift_search(q)
+            elif mode == 'reasoning':
+                if not router.reasoning_enabled:
+                    return "错误：推理功能未启用（未找到模型）。"
+                loop = asyncio.get_running_loop()
+                result = await loop.run_in_executor(
+                    None,
+                    lambda: router.reasoning_handler.query(q, method='ppr', include_llm_answer=True)
+                )
+                return result.get('answer', '未能生成推理答案')
+            else:
+                return await router.route_and_answer(q)
+
         if args.query:
-            print(f"正在处理: {args.query}")
-            answer = await router.route_and_answer(args.query)
+            print(f"正在处理 (模式: {args.mode or '自动路由'}): {args.query}")
+            answer = await get_answer(args.query, args.mode)
             logging.info(f"最终答案:\n{answer}")
             print("\n--- 最终答案 ---\n")
             print(answer)
         else:
-            print("进入交互模式 (输入 exit 退出)")
+            print(f"进入交互模式 (模式: {args.mode or '自动路由'}, 输入 exit 退出)")
             while True:
                 q = input("\n问题: ")
                 if q.lower() in ["exit", "quit"]: break
-                answer = await router.route_and_answer(q)
+                answer = await get_answer(q, args.mode)
                 logging.info(f"问题: {q}\n答案:\n{answer}")
                 print(f"\n>>> 答案:\n{answer}\n")
 

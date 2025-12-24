@@ -26,6 +26,12 @@
 |------|---------|
 | [REASONING_GUIDE.md](REASONING_GUIDE.md) | **图推理系统指南** - 架构、自监督训练、PPR/GNN 推理流程、使用方法 |
 
+### 📊 评测系统
+
+| 文档 | 内容描述 |
+|------|---------|
+| [EVALUATION_GUIDE.md](EVALUATION_GUIDE.md) | **评测系统指南** - 多级评分机制（L1-L4）、使用方法、评测报告详解 |
+
 ### 🛠️ 工具与集成
 
 | 文档 | 内容描述 |
@@ -58,7 +64,13 @@
    python core/query_qwen/router_qwen.py
    ```
 
-5. **高级功能** 🚀
+5. **系统评测** 📊
+   - 参考 [EVALUATION_GUIDE.md](EVALUATION_GUIDE.md) 运行评测系统
+   ```bash
+   python evaluation/auto_evaluator.py --difficulty L3
+   ```
+
+6. **高级功能** 🚀
    - 阅读 [REASONING_GUIDE.md](REASONING_GUIDE.md) 了解图推理功能
 
 ## 📊 查询模式说明

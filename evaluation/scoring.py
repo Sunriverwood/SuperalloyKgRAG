@@ -83,7 +83,7 @@ class KeywordMatcher:
     TECHNICAL_TERMS = [
         # 相与结构
         "γ相", "γ'相", "γ\"相", "gamma", "gamma prime", "δ相", "σ相", "μ相", "P相",
-        "TCP相", "拓扑密排相", "FCC", "BCC", "HCP", "L12", "D022",
+        "TCP相", "拓扑密排相", "FCC", "BCC", "HCP",
         # 强化机制
         "固溶强化", "沉淀强化", "弥散强化", "晶界强化", "奥罗万", "Orowan",
         "位错", "滑移", "攀移", "交滑移", "层错", "反相畴界", "APB",
@@ -173,7 +173,7 @@ class SemanticScorer:
 
     def __init__(self, config: Dict[str, Any]):
         self.config = config
-        self.api_key = os.environ.get("QWEN_API_KEY") or os.environ.get("GEMINI_API_KEY")
+        self.api_key = os.environ.get("QWEN_API_KEY")
         self.embedding_model = config.get("embedding", {}).get("model", "text-embedding-v4")
         self.dimensionality = config.get("embedding", {}).get("dimensionality", 768)
 
@@ -215,13 +215,22 @@ class LLMJudge:
 
     def __init__(self, config: Dict[str, Any]):
         self.config = config
-        self.api_key = os.environ.get("QWEN_API_KEY") or os.environ.get("GEMINI_API_KEY")
-        self.model_name = config.get("query", {}).get("generation_model", "qwen3-max")
+        
+        # 从配置文件读取评判模型设置
+        eval_llm_config = config.get("evaluation", {}).get("llm", {})
+        
+        self.model_name = eval_llm_config.get("model", "qwen-plus")
+        self.base_url = eval_llm_config.get("base_url", "https://dashscope.aliyuncs.com/compatible-mode/v1")
+        
+        # 解析 API Key (支持环境变量引用)
+        raw_api_key = eval_llm_config.get("api_key", "")
+        self.api_key = self._resolve_api_key(raw_api_key)
 
-        self.client = OpenAI(
-            api_key=self.api_key,
-            base_url="https://dashscope.aliyuncs.com/compatible-mode/v1"
-        )
+        if not self.api_key:
+            logging.warning("未找到评判模型的 API Key，请在 settings.yaml 或环境变量中配置")
+
+        # 不在初始化时创建客户端，因为需要在设置代理后创建
+        self.client = None
 
         # 加载评判 Prompt 模板
         self.prompts = {}
@@ -233,6 +242,24 @@ class LLMJudge:
                     self.prompts[level] = f.read()
             else:
                 logging.warning(f"评判 Prompt 未找到: {prompt_path}")
+
+    def _needs_proxy(self, model_name: str) -> bool:
+        """判断模型是否需要代理"""
+        model_lower = model_name.lower()
+        # Gemini 系列或 ChatGPT/GPT 系列需要代理
+        return "gemini" in model_lower or "gpt" in model_lower or "chatgpt" in model_lower
+
+    def _resolve_api_key(self, api_key_str: str) -> str:
+        """解析 API Key，支持 ${VAR} 格式"""
+        if not api_key_str:
+            # 兜底逻辑：尝试从环境变量直接读取
+            return os.environ.get("QWEN_API_KEY") or os.environ.get("GEMINI_API_KEY") or ""
+        
+        api_key_str = api_key_str.strip()
+        if api_key_str.startswith("${") and api_key_str.endswith("}"):
+            var_name = api_key_str[2:-1].strip()
+            return os.getenv(var_name, "")
+        return api_key_str
 
     def judge(
             self,
@@ -253,6 +280,25 @@ class LLMJudge:
         Returns:
             评判结果字典
         """
+        # 在每次调用前设置代理，避免被其他调用清除
+        if self._needs_proxy(self.model_name):
+            proxy = self.config.get("proxy")
+            if proxy:
+                os.environ["HTTP_PROXY"] = proxy
+                os.environ["HTTPS_PROXY"] = proxy
+                logging.info(f"评判模型 {self.model_name} 使用代理: {proxy}")
+        else:
+            # 不需要代理时清除环境变量
+            os.environ.pop("HTTP_PROXY", None)
+            os.environ.pop("HTTPS_PROXY", None)
+            logging.info(f"评判模型 {self.model_name} 不使用代理")
+        
+        # 在设置代理后创建客户端，确保代理生效
+        client = OpenAI(
+            api_key=self.api_key,
+            base_url=self.base_url
+        )
+        
         if level not in self.prompts:
             logging.error(f"未找到 {level} 级别的评判 Prompt")
             return {"error": f"Missing prompt for level {level}"}
@@ -266,7 +312,7 @@ class LLMJudge:
         )
 
         try:
-            response = self.client.chat.completions.create(
+            response = client.chat.completions.create(
                 model=self.model_name,
                 messages=[{"role": "user", "content": prompt}],
                 temperature=0.1  # 低温度以保证评判一致性

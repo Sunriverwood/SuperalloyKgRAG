@@ -98,15 +98,39 @@ graph_builder:
   community_summary_max_report_words: 1000
   community_summary_used_entities_num: 25
   community_summary_used_relationships_num: 50
-  community_importance_weight_alpha: 0.6 # 重要性权重的alpha值
+  community_importance_weight_alpha: 0.8 # 重要性权重的alpha值
   enable_entity_merge: True
   entity_merge_topk: 10
   entity_merge_min_sim: 0.9
   embedding_batch_size: 10000 # 每批次处理的实体嵌入数量和LLM仲裁数量，避免API配额错误
+  
+  similarity_algorithm: "auto"  # 可选值: "hnsw", "brute_force", "auto"  # 实体合并相似度计算算法配置
+  auto_algorithm_threshold: 5000  # 自动模式下的切换阈值（实体数量）
+
+  hnsw_params:
+    auto_tune: true  # 是否自动计算参数（基于数据规模的启发式规则） # HNSW 参数配置
+    quality_level: "balanced"  # 质量级别: "fast", "balanced", "accurate"
+    # 手动配置参数（当 auto_tune=false 时生效）
+    M: 16
+    ef_construction: 200
+    ef_search: 100  # 最小值100，保证高召回率
   # 人工审核配置
   enable_manual_review: False # 是否启用人工审核功能
   manual_review_sample_size: 5 # 人工审核抽样数量
   manual_review_output_dir: "data/reports/manual_review" # 人工审核输出目录
+
+
+  use_hierarchical_communities: true  # true: 使用递归分层Leiden算法，支持多层级社区结构   # false: 使用传统扁平化Leiden算法（向后兼容）
+  max_cluster_size: 300   # 当某个社区的节点数超过此值时，会对其进行进一步细分 小(<1000节点):50 中(1000-10000节点): 100 大(>10000节点): 200
+  max_community_level: 3  # 最大递归层级（从0开始算）
+  min_community_size: 5  # 当社区节点数少于此值时，不再进行细分
+  
+  # 分层社区信息保存路径
+  # 如果指定，会将完整的社区层级结构保存为CSV文件
+  # 包含：community_id, level, title, parent_id, children_ids, node_ids, node_count
+  # 注释掉此行则不保存
+  hierarchical_communities_path: "data/reports/hierarchical_communities.csv"
+
 
 embedding:
   model: "text-embedding-v4"  #"gemini-embedding-001""text-embedding-v4"
@@ -197,6 +221,13 @@ evaluation:
       mechanism_invocation: 0.35
       solution_proposal: 0.35
 
+  # 评判模型配置
+  llm:
+    model: "gemini-2.5-flash"   # qwen-plus  gemini-3-flash-preview
+    api_key: "${GEMINI_API_KEY} " # ${GEMINI_API_KEY}  ${QWEN_API_KEY}
+    base_url: "https://generativelanguage.googleapis.com/v1beta/openai/"
+              #https://generativelanguage.googleapis.com/v1beta/openai/   https://dashscope.aliyuncs.com/compatible-mode/v1
+
 reasoning:
   # Graph Reasoning Model Configuration
   model:
@@ -263,3 +294,25 @@ reasoning:
     inference_results: "data/reasoning/inference_results.jsonl"
     attention_viz: "data/reasoning/attention_viz"
 
+baseline:
+  models:
+    - name: "qwen3-max-2025-09-23"
+      provider: "openai"
+      api_key: "${QWEN_API_KEY}"
+      base_url: "https://dashscope.aliyuncs.com/compatible-mode/v1"
+    - name: "kimi-k2-thinking"
+      provider: "openai"
+      api_key: "${QWEN_API_KEY}"
+      base_url: "https://dashscope.aliyuncs.com/compatible-mode/v1"
+    - name: "deepseek-v3.2"
+      provider: "openai"
+      api_key: "${QWEN_API_KEY}"
+      base_url: "https://dashscope.aliyuncs.com/compatible-mode/v1"
+    - name: "glm-4.6"
+      provider: "openai"
+      api_key: "${QWEN_API_KEY}"
+      base_url: "https://dashscope.aliyuncs.com/compatible-mode/v1" 
+    - name: "MiniMax-M2"
+      provider: "openai"
+      api_key: "${QWEN_API_KEY_2}"
+      base_url: "https://llmapi.paratera.com/v1"
