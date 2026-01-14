@@ -308,7 +308,7 @@ reasoning:
 
   # Output paths
   output:
-    model_path: "data/reasoning/model.pt"
+    model_path: "data/reasoning/develop.pt"
     inference_results: "data/reasoning/inference_results.jsonl"
     attention_viz: "data/reasoning/attention_viz"
 
