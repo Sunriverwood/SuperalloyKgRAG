@@ -110,3 +110,17 @@ A: 使用右侧的 **Filters** (过滤器)。
 **Q: 标签有些重叠怎么办？**
 A: 导出 SVG 后，使用 Adobe Illustrator 或 Inkscape 手动微调重叠的标签位置。这是制作顶刊图片的必经之路。
 
+---
+
+## 相关文档
+
+- [IMPORT_TO_NEO4J.md](IMPORT_TO_NEO4J.md) - 使用 Neo4j 进行查询和可视化
+- [ARCHITECTURE.md](ARCHITECTURE.md) - 项目架构说明
+
+---
+
+## 更新日志
+
+| 日期 | 更新内容 |
+|------|---------|
+| 2026-01-14 | 添加相关文档链接 |

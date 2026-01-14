@@ -342,9 +342,17 @@ class LocalQueryHandler:
         def build_source_string(chunk_ids_raw: List[str]) -> str:
             sources_by_file: Dict[str, Dict[str, List]] = {}
             abstract_sources = []  # 单独处理abstract类型的引用
+            community_sources = []  # 单独处理社区ID引用
 
             for chunk_id_raw in chunk_ids_raw:
                 chunk_id = extract_base_chunk_id(chunk_id_raw)
+
+                # 检查是否是社区ID格式（如 0_32_8_0）
+                if re.match(r'^\d+(_\d+)+$', chunk_id):
+                    # 这是社区ID，直接引用
+                    community_sources.append(f"community {chunk_id}")
+                    continue
+
                 if chunk_id in self.chunk_id_map:
                     source_info = self.chunk_id_map[chunk_id]
                     chunk_type = source_info.get("chunk_type", "text")
@@ -364,10 +372,13 @@ class LocalQueryHandler:
                         sources_by_file[filename]["pages"].extend(pages)
                         sources_by_file[filename]["blocks"].extend(blocks)
                 else:
-                    if "unknown" not in sources_by_file:
-                        sources_by_file["unknown"] = {"pages": [], "blocks": []}
+                    logging.warning(f"⚠️ 未找到 chunk ID 的映射: {chunk_id}")
 
             source_parts = []
+
+            # 处理社区ID引用（优先显示）
+            if community_sources:
+                source_parts.extend(community_sources)
 
             # 处理abstract类型的引用
             if abstract_sources:
@@ -375,14 +386,12 @@ class LocalQueryHandler:
 
             # 处理其他类型的引用
             for filename, info in sources_by_file.items():
-                if filename == "unknown":
-                    continue
                 page_str = merge_pages(info["pages"])
                 block_str = merge_blocks(info["blocks"])
                 source_parts.append(f"{filename} {page_str} {block_str}")
 
             if len(source_parts) == 0:
-                return "[source: unknown]"
+                return ""  # 如果没有有效引用，返回空字符串
             elif len(source_parts) == 1:
                 return f"[source: {source_parts[0]}]"
             else:

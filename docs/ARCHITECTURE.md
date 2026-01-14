@@ -782,6 +782,10 @@ reasoning:
 | [RUN_INDEXING_GUIDE.md](RUN_INDEXING_GUIDE.md) | 索引流水线的详细使用说明 |
 | [REASONING_GUIDE.md](REASONING_GUIDE.md) | 图推理系统的完整指南（架构、训练、使用） |
 | [DEPENDENCIES.md](DEPENDENCIES.md) | 项目依赖包说明 |
+| [HIERARCHICAL_COMMUNITIES_GUIDE.md](HIERARCHICAL_COMMUNITIES_GUIDE.md) | 分层社区发现指南 |
+| [COMMUNITY_REPORT_GENERATION.md](COMMUNITY_REPORT_GENERATION.md) | 社区报告生成方法 |
+| [ENTITY_MERGE_GUIDE.md](ENTITY_MERGE_GUIDE.md) | 实体合并机制说明 |
+| [EVALUATION_GUIDE.md](EVALUATION_GUIDE.md) | 评测系统使用指南 |
 | [IMPORT_TO_NEO4J.md](IMPORT_TO_NEO4J.md) | 如何将图谱导入 Neo4j |
 | [IMPORT_TO_GEPHI.md](IMPORT_TO_GEPHI.md) | 如何将图谱导入 Gephi 进行可视化 |
 
@@ -820,3 +824,10 @@ python core/query_qwen/router_qwen.py --query "镍和涡轮叶片的关系？"
 
 **注意**: 推理查询需要先训练 GNN 模型，详见 [REASONING_GUIDE.md](REASONING_GUIDE.md)。
 
+---
+
+## 更新日志
+
+| 日期 | 更新内容 |
+|------|---------|
+| 2026-01-14 | 更新相关文档链接 |

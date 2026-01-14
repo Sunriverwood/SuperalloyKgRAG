@@ -45,11 +45,50 @@
   * 如果已有消歧图：加载消歧图 →【应用前置步骤】→ 社区发现 →【下载并应用社区摘要或重新生成】
   * 否则：【应用所有前置步骤】→ 社区发现 →【下载并应用社区摘要或重新生成】
 
+- "COMMUNITY_LEVEL_RESUME": 从指定层级恢复社区报告生成【新增】
+  * 用途：当某个层级（如Level 3）完成后，下一层级（如Level 2）失败时使用
+  * 优先从本地检查点加载已完成报告
+  * 如果没有检查点，自动从 COMMUNITY_SUMMARY_JOB_ID 下载云端作业结果
+  * 从指定层级（RESUME_FROM_LEVEL）继续生成报告
+
+  使用方法：
+  1. 设置 START_MODE = "COMMUNITY_LEVEL_RESUME"
+  2. 设置 RESUME_FROM_LEVEL = 2  # 从Level 2开始恢复（Level 3已完成）
+  3. 设置 COMMUNITY_SUMMARY_JOB_ID = ["batch_xxx"]  # Level 3的作业ID
+  4. 确保已有 data/graphs/merged_graph.json
+  5. 运行脚本，系统会：
+     - 首先尝试加载本地检查点
+     - 如果没有检查点，从云端作业下载 Level 3 的结果
+     - 保存为检查点（方便下次恢复）
+     - 从 Level 2 继续生成
+
+- "DOWNLOAD_COMMUNITY_REPORTS": 从云端下载已完成的社区报告并保存到本地【新增】
+  * 用途：当所有层级（Level 3到Level 0）的社区报告都在云端生成完成后，
+         批量下载并保存为本地的社区报告文件
+  * 自动解析每个层级的作业结果
+  * 合并所有层级的报告到一个文件
+  * 按层级排序保存（Level 0在前，Level 3在后）
+
+  使用方法：
+  1. 设置 START_MODE = "DOWNLOAD_COMMUNITY_REPORTS"
+  2. 设置 COMMUNITY_SUMMARY_JOB_IDS_BY_LEVEL = {
+         3: ["batch_level3_xxx"],  # Level 3的作业ID列表
+         2: ["batch_level2_xxx"],  # Level 2的作业ID列表
+         1: ["batch_level1_xxx"],  # Level 1的作业ID列表
+         0: ["batch_level0_xxx"],  # Level 0的作业ID列表
+     }
+  3. 确保已有 data/graphs/final_graph.json（用于获取社区元数据）
+  4. 运行脚本，系统会：
+     - 依次从各层级的云端作业下载报告
+     - 合并所有报告
+     - 保存为本地的社区报告文件
+
 工作原理：
 - 每个模式都会首先检查对应阶段的图文件是否存在（消歧图、合并图）
 - 如果存在，直接加载该图并跳过前置步骤
 - 如果不存在，才从云端作业下载并应用结果，然后保存中间图文件供下次使用
 - 这样可以最大程度复用已有结果，避免重复下载和处理
+- 每个社区层级完成后，会保存检查点文件，支持从任意层级恢复
 
 中间图文件：
 - 消歧图: data/graphs/disambiguation_graph.json
@@ -78,9 +117,21 @@ from openai import OpenAI
 # 统一导入 graph_builder_qwen，所有功能函数都调用它
 from core.pipeline_qwen import graph_builder_qwen as gb
 
+# 导入社区报告模块的恢复功能
+from utils.community_reports import (
+    load_level_checkpoint,
+    run_hierarchical_community_summaries_with_resume,
+    merge_all_level_id_maps
+)
+
 # ========== 配置区域 - 请根据实际情况修改 ==========
 # 恢复模式选择（必填）：
-START_MODE = "EMBEDDING"
+# 可选值: "DISAMBIGUATION", "EMBEDDING", "MERGE", "COMMUNITY", "COMMUNITY_LEVEL_RESUME", "DOWNLOAD_COMMUNITY_REPORTS"
+START_MODE = "DOWNLOAD_COMMUNITY_REPORTS"
+
+# 层级恢复配置（仅在 START_MODE = "COMMUNITY_LEVEL_RESUME" 时使用）
+# 从哪个层级开始恢复（例如：如果Level 3已完成但Level 2失败，设置为2）
+RESUME_FROM_LEVEL = 2
 
 # 作业ID配置（根据选择的模式填写对应的ID）
 # 支持单个ID（字符串）或多个批次ID（列表）
@@ -96,8 +147,17 @@ EMBEDDING_JOB_ID = ["batch_76179c74-35d1-403e-8b62-f500696b0b99","batch_a378cdeb
 ENTITY_MERGE_JOB_ID = "batch_b7"
 # ENTITY_MERGE_JOB_ID = ["batch_xxx_1", "batch_xxx_2"]
 
-COMMUNITY_SUMMARY_JOB_ID = "batch_98"
+COMMUNITY_SUMMARY_JOB_ID = ["batch_93c74a8c-233b-44bc-ae8b-9d2805f52cf4"]
 # COMMUNITY_SUMMARY_JOB_ID = ["batch_xxx_1", "batch_xxx_2"]
+
+# 各层级社区报告作业ID配置（仅在 START_MODE = "DOWNLOAD_COMMUNITY_REPORTS" 时使用）
+# 格式：{层级: [作业ID列表]}，从高层级到低层级配置
+COMMUNITY_SUMMARY_JOB_IDS_BY_LEVEL = {
+    3: ["batch_d7ad65d0-d1c4-45f9-bcdb-8e8396182a5d"],  # Level 3的作业ID列表
+    2: ["batch_e3c4ce99-5825-469a-8216-42bbd02c00c9"],  # Level 2的作业ID列表
+    1: ["batch_7f357a99-5c13-4569-b5bc-a3c627f144d2"],  # Level 1的作业ID列表
+    0: ["batch_0563d1a7-ba22-46e1-aa79-12935253580a"],  # Level 0的作业ID列表
+}
 
 # ==================================================
 
@@ -423,7 +483,7 @@ def main():
     logging.info("=" * 80)
 
     # 验证模式
-    valid_modes = ["DISAMBIGUATION", "EMBEDDING", "MERGE", "COMMUNITY"]
+    valid_modes = ["DISAMBIGUATION", "EMBEDDING", "MERGE", "COMMUNITY", "COMMUNITY_LEVEL_RESUME", "DOWNLOAD_COMMUNITY_REPORTS"]
     if START_MODE not in valid_modes:
         logging.error(f"❌ 无效的启动模式: {START_MODE}")
         logging.error(f"请选择以下模式之一: {', '.join(valid_modes)}")
@@ -449,6 +509,12 @@ def main():
     # 加载配置参数
     sleep_interval = int(config["graph_builder"].get("sleep_interval", 5))
     model_name = config["llm"]["model"]
+
+    # 社区检测配置参数
+    use_hierarchical = config["graph_builder"].get("use_hierarchical_communities", True)
+    max_level = int(config["graph_builder"].get("max_community_level", 10))
+    min_community_size = int(config["graph_builder"].get("min_community_size", 10))
+    logging.info(f"社区检测配置: use_hierarchical={use_hierarchical}, max_level={max_level}, min_community_size={min_community_size}")
     prompt_dir = config["graph_builder"].get("prompt_dir", "prompts")
     weight_alpha = float(config["graph_builder"].get("community_importance_weight_alpha", 0.6))
     entity_topk = int(config["graph_builder"].get("entity_merge_topk", 10))
@@ -623,7 +689,7 @@ def main():
 
         # 步骤4: 实体合并
         logging.info("\n步骤4: 执行实体合并...")
-        clusters = gb.build_candidate_clusters(V, ent_ids, topk=entity_topk, min_sim=entity_min_sim)
+        clusters = gb.build_candidate_clusters(V, ent_ids, topk=entity_topk, min_sim=entity_min_sim, config=config)
         logging.info(f"候选同义簇数量: {len(clusters)}")
 
         if clusters:
@@ -642,18 +708,32 @@ def main():
 
         # 步骤5: 社区发现
         logging.info("\n步骤5: 执行社区发现...")
-        graph = gb.detect_communities(graph, weight_alpha)
+        graph, communities_list = gb.detect_communities(
+            graph=graph,
+            weight_alpha=weight_alpha,
+            use_hierarchical=use_hierarchical,
+            max_level=max_level,
+            min_community_size=min_community_size
+        )
 
         # 步骤6: 社区摘要
         logging.info("\n步骤6: 生成社区摘要...")
-        summaries = gb.run_community_summaries(client, graph, model_name, prompt_dir,
-                                           config, sleep_interval, community_requests_path)
+        summaries = gb.run_community_summaries(
+            client=client,
+            graph=graph,
+            model_name=model_name,
+            prompt_dir=prompt_dir,
+            config=config,
+            sleep_interval=sleep_interval,
+            community_requests_path=community_requests_path,
+            communities_list=communities_list
+        )
 
         # 保存结果
         logging.info("\n步骤7: 保存最终结果...")
         id_map_path = community_requests_path.parent / f"{community_requests_path.stem}_id_maps.json"
         if summaries:
-            gb.save_community_reports(summaries, reports_path, id_map_path)
+            gb.save_community_reports(summaries, reports_path, id_map_path, communities_list)
         gb.save_graph(graph, final_graph_path)
 
     # ========== 模式2: 从嵌入结果开始 ==========
@@ -773,7 +853,7 @@ def main():
 
             # 步骤5: 实体合并
             logging.info("\n步骤5: 执行实体合并...")
-            clusters = gb.build_candidate_clusters(V, ent_ids, topk=entity_topk, min_sim=entity_min_sim)
+            clusters = gb.build_candidate_clusters(V, ent_ids, topk=entity_topk, min_sim=entity_min_sim, config=config)
             logging.info(f"候选同义簇数量: {len(clusters)}")
 
             if clusters:
@@ -796,18 +876,32 @@ def main():
 
         # 步骤6: 社区发现
         logging.info("\n步骤6: 执行社区发现...")
-        graph = gb.detect_communities(graph, weight_alpha)
+        graph, communities_list = gb.detect_communities(
+            graph=graph,
+            weight_alpha=weight_alpha,
+            use_hierarchical=use_hierarchical,
+            max_level=max_level,
+            min_community_size=min_community_size
+        )
 
         # 步骤7: 社区摘要
         logging.info("\n步骤7: 生成社区摘要...")
-        summaries = gb.run_community_summaries(client, graph, model_name, prompt_dir,
-                                           config, sleep_interval, community_requests_path)
+        summaries = gb.run_community_summaries(
+            client=client,
+            graph=graph,
+            model_name=model_name,
+            prompt_dir=prompt_dir,
+            config=config,
+            sleep_interval=sleep_interval,
+            community_requests_path=community_requests_path,
+            communities_list=communities_list
+        )
 
         # 保存结果
         logging.info("\n步骤8: 保存最终结果...")
         id_map_path = community_requests_path.parent / f"{community_requests_path.stem}_id_maps.json"
         if summaries:
-            gb.save_community_reports(summaries, reports_path, id_map_path)
+            gb.save_community_reports(summaries, reports_path, id_map_path, communities_list)
         gb.save_graph(graph, final_graph_path)
 
     # ========== 模式3: 从合并结果开始 ==========
@@ -968,18 +1062,32 @@ def main():
 
         # 步骤6: 社区发现
         logging.info("\n步骤6: 执行社区发现...")
-        graph = gb.detect_communities(graph, weight_alpha)
+        graph, communities_list = gb.detect_communities(
+            graph=graph,
+            weight_alpha=weight_alpha,
+            use_hierarchical=use_hierarchical,
+            max_level=max_level,
+            min_community_size=min_community_size
+        )
 
         # 步骤7: 社区摘要
         logging.info("\n步骤7: 生成社区摘要...")
-        summaries = gb.run_community_summaries(client, graph, model_name, prompt_dir,
-                                           config, sleep_interval, community_requests_path)
+        summaries = gb.run_community_summaries(
+            client=client,
+            graph=graph,
+            model_name=model_name,
+            prompt_dir=prompt_dir,
+            config=config,
+            sleep_interval=sleep_interval,
+            community_requests_path=community_requests_path,
+            communities_list=communities_list
+        )
 
         # 保存结果
         logging.info("\n步骤8: 保存最终结果...")
         id_map_path = community_requests_path.parent / f"{community_requests_path.stem}_id_maps.json"
         if summaries:
-            gb.save_community_reports(summaries, reports_path, id_map_path)
+            gb.save_community_reports(summaries, reports_path, id_map_path, communities_list)
         gb.save_graph(graph, final_graph_path)
 
     # ========== 模式4: 从社区发现/摘要开始 ==========
@@ -1118,14 +1226,22 @@ def main():
 
         # 步骤5: 检查/执行社区发现
         has_community = any('community' in data for _, data in graph.nodes(data=True))
+        communities_list = None  # 初始化
         if not has_community:
             logging.info("\n步骤5: 图中没有社区信息，执行社区发现...")
-            graph = gb.detect_communities(graph, weight_alpha)
+            graph, communities_list = gb.detect_communities(
+                graph=graph,
+                weight_alpha=weight_alpha,
+                use_hierarchical=use_hierarchical,
+                max_level=max_level,
+                min_community_size=min_community_size
+            )
             logging.info(f"✅ 社区发现完成")
         else:
             logging.info("\n步骤5: 图中已有社区信息，跳过社区发现")
             communities = set(data.get('community') for _, data in graph.nodes(data=True) if 'community' in data)
             logging.info(f"发现 {len(communities)} 个社区")
+            logging.info("⚠️ 注意：使用已有社区信息时，社区报告将使用传统扁平模式")
 
         # 步骤6: 社区摘要（恢复或生成，支持单个或多个批次）
         summaries = {}
@@ -1162,20 +1278,750 @@ def main():
         # 如果没有成功恢复摘要，则生成新的
         if not summaries:
             logging.info("\n步骤6: 生成社区摘要...")
-            summaries = gb.run_community_summaries(client, graph, model_name, prompt_dir,
-                                               config, sleep_interval, community_requests_path)
+            summaries = gb.run_community_summaries(
+                client=client,
+                graph=graph,
+                model_name=model_name,
+                prompt_dir=prompt_dir,
+                config=config,
+                sleep_interval=sleep_interval,
+                community_requests_path=community_requests_path,
+                communities_list=communities_list
+            )
 
         # 步骤7: 保存最终结果
         logging.info("\n步骤7: 保存最终结果...")
         id_map_path = community_requests_path.parent / f"{community_requests_path.stem}_id_maps.json"
         if summaries:
-            gb.save_community_reports(summaries, reports_path, id_map_path)
+            gb.save_community_reports(summaries, reports_path, id_map_path, communities_list)
             logging.info(f"✅ 社区报告已保存到: {reports_path}")
         else:
             logging.warning("⚠️ 没有社区摘要可保存")
 
         gb.save_graph(graph, final_graph_path)
         logging.info(f"✅ 最终图已保存到: {final_graph_path}")
+
+    # ========== 模式5: 从指定层级恢复社区报告生成 ==========
+    elif START_MODE == "COMMUNITY_LEVEL_RESUME":
+        logging.info("\n🚀 模式: 从指定层级恢复社区报告生成")
+        logging.info(f"执行流程: 加载已完成报告 → 从 Level {RESUME_FROM_LEVEL} 继续 → 完成所有层级")
+
+        # 步骤1: 加载图
+        logging.info("\n步骤1: 加载图...")
+        merged_graph_path = PROJECT_ROOT / config["graph_builder"]["merged_graph_path"]
+
+        if merged_graph_path.exists():
+            logging.info(f"加载合并图文件: {merged_graph_path}")
+            with open(merged_graph_path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+            graph = nx.node_link_graph(data, directed=True, edges="links")
+            logging.info(f"✅ 成功加载合并图：{graph.number_of_nodes()} 节点, {graph.number_of_edges()} 边")
+        else:
+            logging.error(f"❌ 未找到合并图文件: {merged_graph_path}")
+            logging.error("   请先运行 MERGE 或 COMMUNITY 模式生成合并图")
+            return
+
+        # 步骤2: 尝试加载已完成的报告（优先检查点，其次云端作业）
+        logging.info(f"\n步骤2: 加载已完成的报告...")
+        preloaded_summaries = {}
+
+        # 2.1 首先尝试从本地检查点加载
+        checkpoint_summaries, actual_level = load_level_checkpoint(
+            community_requests_path,
+            RESUME_FROM_LEVEL + 1  # 尝试加载比目标层级更深一层的检查点
+        )
+
+        if checkpoint_summaries:
+            preloaded_summaries = checkpoint_summaries
+            logging.info(f"✅ 从检查点加载了 {len(preloaded_summaries)} 个已完成的报告")
+            if actual_level is not None:
+                logging.info(f"   检查点来自层级: {actual_level}")
+
+        # 2.2 如果没有检查点，尝试从云端作业下载
+        if not preloaded_summaries and is_valid_job_id(COMMUNITY_SUMMARY_JOB_ID):
+            logging.info("   未找到本地检查点，尝试从云端作业下载已完成的报告...")
+            summary_job_ids = normalize_job_id(COMMUNITY_SUMMARY_JOB_ID)
+
+            try:
+                if len(summary_job_ids) == 1:
+                    logging.info(f"   从作业 {summary_job_ids[0]} 下载报告...")
+                    summary_job = client.batches.retrieve(batch_id=summary_job_ids[0])
+                    logging.info(f"   作业状态: {summary_job.status}")
+
+                    if summary_job.status == 'completed':
+                        preloaded_summaries = download_and_process_community_summary_results(client, summary_job)
+                        if preloaded_summaries:
+                            logging.info(f"   ✅ 从云端下载了 {len(preloaded_summaries)} 个报告")
+
+                            # 保存为检查点，方便下次恢复
+                            checkpoint_path = community_requests_path.parent / f"community_summaries_checkpoint_level{RESUME_FROM_LEVEL + 1}.json"
+                            try:
+                                with open(checkpoint_path, 'w', encoding='utf-8') as f:
+                                    json.dump({
+                                        "level": RESUME_FROM_LEVEL + 1,
+                                        "total_summaries": len(preloaded_summaries),
+                                        "summaries": preloaded_summaries,
+                                        "source": "cloud_job",
+                                        "job_ids": summary_job_ids
+                                    }, f, ensure_ascii=False, indent=2)
+                                logging.info(f"   💾 已保存检查点: {checkpoint_path.name}")
+                            except Exception as e:
+                                logging.warning(f"   ⚠️ 保存检查点失败: {e}")
+                        else:
+                            logging.warning("   ⚠️ 云端作业未返回有效报告")
+                    else:
+                        logging.warning(f"   ⚠️ 云端作业状态不是已完成: {summary_job.status}")
+                else:
+                    logging.info(f"   从 {len(summary_job_ids)} 个批次作业下载报告...")
+                    preloaded_summaries = download_and_process_multiple_community_summary_batches(client, summary_job_ids)
+                    if preloaded_summaries:
+                        logging.info(f"   ✅ 从云端下载了 {len(preloaded_summaries)} 个报告")
+
+                        # 保存为检查点
+                        checkpoint_path = community_requests_path.parent / f"community_summaries_checkpoint_level{RESUME_FROM_LEVEL + 1}.json"
+                        try:
+                            with open(checkpoint_path, 'w', encoding='utf-8') as f:
+                                json.dump({
+                                    "level": RESUME_FROM_LEVEL + 1,
+                                    "total_summaries": len(preloaded_summaries),
+                                    "summaries": preloaded_summaries,
+                                    "source": "cloud_job",
+                                    "job_ids": summary_job_ids
+                                }, f, ensure_ascii=False, indent=2)
+                            logging.info(f"   💾 已保存检查点: {checkpoint_path.name}")
+                        except Exception as e:
+                            logging.warning(f"   ⚠️ 保存检查点失败: {e}")
+                    else:
+                        logging.warning("   ⚠️ 云端作业未返回有效报告")
+            except Exception as e:
+                logging.error(f"   ❌ 从云端下载报告失败: {e}")
+
+        if not preloaded_summaries:
+            logging.warning("⚠️ 未能加载任何已完成的报告，将从头开始生成所有层级")
+
+        # 步骤3: 执行社区发现（如果图中没有社区信息）
+        has_community = any('community' in data for _, data in graph.nodes(data=True))
+        communities_list = None
+
+        if not has_community:
+            logging.info("\n步骤3: 图中没有社区信息，执行社区发现...")
+            graph, communities_list = gb.detect_communities(
+                graph=graph,
+                weight_alpha=weight_alpha,
+                use_hierarchical=use_hierarchical,
+                max_level=max_level,
+                min_community_size=min_community_size
+            )
+            logging.info(f"✅ 社区发现完成")
+        else:
+            logging.info("\n步骤3: 图中已有社区信息，尝试从图中重建communities_list...")
+            # 尝试从图节点中重建communities_list
+            communities_by_level = {}
+            for node_id, node_data in graph.nodes(data=True):
+                if 'community' in node_data:
+                    comm_id = str(node_data['community'])
+                    level = node_data.get('community_level', 0)
+                    if comm_id not in communities_by_level:
+                        communities_by_level[comm_id] = {
+                            'community_id': comm_id,
+                            'level': level,
+                            'node_ids': [],
+                            'children_ids': node_data.get('community_children', []),
+                            'parent_id': node_data.get('community_parent')
+                        }
+                    communities_by_level[comm_id]['node_ids'].append(node_id)
+
+            if communities_by_level:
+                communities_list = list(communities_by_level.values())
+                logging.info(f"✅ 从图中重建了 {len(communities_list)} 个社区的信息")
+            else:
+                logging.warning("⚠️ 无法从图中重建社区信息")
+
+        # 步骤4: 从已加载的报告恢复，继续生成剩余层级
+        logging.info(f"\n步骤4: 从 Level {RESUME_FROM_LEVEL} 继续生成社区摘要...")
+        logging.info(f"   已预加载 {len(preloaded_summaries)} 个报告")
+
+        if communities_list:
+            max_report_words = str(config["graph_builder"].get("community_summary_max_report_words", 800))
+            max_entities = int(config["graph_builder"].get("community_summary_used_entities_num", 25))
+            max_relationships = int(config["graph_builder"].get("community_summary_used_relationships_num", 50))
+
+            summaries = run_hierarchical_community_summaries_with_resume(
+                client=client,
+                graph=graph,
+                model_name=model_name,
+                prompt_dir=prompt_dir,
+                config=config,
+                sleep_interval=sleep_interval,
+                community_requests_path=community_requests_path,
+                communities_list=communities_list,
+                max_report_words=max_report_words,
+                max_entities=max_entities,
+                max_relationships=max_relationships,
+                load_prompt_func=gb.load_prompt,
+                build_context_func=gb.build_community_context,
+                submit_job_func=gb.submit_and_monitor_job,
+                process_results_func=gb.process_results,
+                resume_from_level=RESUME_FROM_LEVEL,
+                preloaded_summaries=preloaded_summaries
+            )
+        else:
+            logging.error("❌ 无法获取社区列表，无法继续")
+            return
+
+        # 步骤5: 保存最终结果
+        logging.info("\n步骤5: 保存最终结果...")
+        id_map_path = community_requests_path.parent / f"{community_requests_path.stem}_id_maps.json"
+        if summaries:
+            gb.save_community_reports(summaries, reports_path, id_map_path, communities_list)
+            logging.info(f"✅ 社区报告已保存到: {reports_path}")
+        else:
+            logging.warning("⚠️ 没有社区摘要可保存")
+
+        gb.save_graph(graph, final_graph_path)
+        logging.info(f"✅ 最终图已保存到: {final_graph_path}")
+
+    # ========== 模式6: 从云端下载所有层级的社区报告 ==========
+    elif START_MODE == "DOWNLOAD_COMMUNITY_REPORTS":
+        logging.info("\n🚀 模式: 从云端下载所有层级的社区报告")
+        logging.info("执行流程: 加载最终图谱 → 构建社区结构 → 创建请求文件 → 下载云端结果 → 保存报告")
+
+        # 步骤1: 加载最终图谱
+        logging.info("\n步骤1: 加载最终图谱...")
+
+        if final_graph_path.exists():
+            logging.info(f"加载最终图谱文件: {final_graph_path}")
+            with open(final_graph_path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+            graph = nx.node_link_graph(data, directed=True, edges="links")
+            logging.info(f"✅ 成功加载最终图谱：{graph.number_of_nodes()} 节点, {graph.number_of_edges()} 边")
+        else:
+            logging.error(f"❌ 未找到最终图谱文件: {final_graph_path}")
+            logging.error("   请先运行 COMMUNITY 模式生成最终图谱")
+            return
+
+        # 步骤2: 从图中重建communities_list（使用community_levels字段）
+        logging.info("\n步骤2: 从图中重建社区结构...")
+        communities_by_id = {}  # {community_id: community_info}
+
+        for node_id, node_data in graph.nodes(data=True):
+            community_levels = node_data.get('community_levels', {})
+            if not community_levels:
+                # 兼容旧格式
+                if 'community' in node_data:
+                    comm_id = str(node_data['community'])
+                    level = node_data.get('community_level', 0)
+                    if comm_id not in communities_by_id:
+                        communities_by_id[comm_id] = {
+                            'community_id': comm_id,
+                            'level': level,
+                            'node_ids': [],
+                            'children_ids': node_data.get('community_children', []),
+                            'parent_id': node_data.get('community_parent'),
+                            'title': ''
+                        }
+                    communities_by_id[comm_id]['node_ids'].append(node_id)
+            else:
+                # 新格式：使用 community_levels 字段
+                max_level = max(int(k.replace('level_', '')) for k in community_levels.keys())
+                for level_key, comm_id in community_levels.items():
+                    try:
+                        level = int(level_key.replace('level_', ''))
+                    except ValueError:
+                        continue
+
+                    comm_id_str = str(comm_id)
+                    if comm_id_str not in communities_by_id:
+                        parent_id = None
+                        if level > 0:
+                            parent_key = f"level_{level - 1}"
+                            parent_id = community_levels.get(parent_key)
+
+                        communities_by_id[comm_id_str] = {
+                            'community_id': comm_id_str,
+                            'level': level,
+                            'node_ids': [],
+                            'children_ids': [],
+                            'parent_id': parent_id,
+                            'title': ''
+                        }
+
+                    # 只在最底层添加节点ID
+                    if level == max_level:
+                        if node_id not in communities_by_id[comm_id_str]['node_ids']:
+                            communities_by_id[comm_id_str]['node_ids'].append(node_id)
+
+        # 构建父子关系
+        for comm_id, comm_info in communities_by_id.items():
+            parent_id = comm_info.get('parent_id')
+            if parent_id and str(parent_id) in communities_by_id:
+                parent_comm = communities_by_id[str(parent_id)]
+                if comm_id not in parent_comm['children_ids']:
+                    parent_comm['children_ids'].append(comm_id)
+
+        communities_list = list(communities_by_id.values())
+
+        # 按层级分组
+        communities_by_level = {}
+        for comm in communities_list:
+            level = comm['level']
+            if level not in communities_by_level:
+                communities_by_level[level] = []
+            communities_by_level[level].append(comm)
+
+        max_level = max(communities_by_level.keys()) if communities_by_level else 0
+        logging.info(f"✅ 从图中重建了 {len(communities_list)} 个社区")
+        logging.info(f"   层级范围: 0 到 {max_level}")
+        for level in sorted(communities_by_level.keys()):
+            logging.info(f"   Level {level}: {len(communities_by_level[level])} 个社区")
+
+        # 步骤3: 验证作业ID配置
+        logging.info("\n步骤3: 验证各层级作业ID配置...")
+        valid_levels = []
+        for level, job_ids in sorted(COMMUNITY_SUMMARY_JOB_IDS_BY_LEVEL.items(), reverse=True):
+            normalized_ids = normalize_job_id(job_ids)
+            if normalized_ids:
+                valid_levels.append((level, normalized_ids))
+                logging.info(f"   Level {level}: {len(normalized_ids)} 个作业ID")
+            else:
+                logging.warning(f"   Level {level}: 未配置有效的作业ID")
+
+        if not valid_levels:
+            logging.error("❌ 未配置任何有效的作业ID，请设置 COMMUNITY_SUMMARY_JOB_IDS_BY_LEVEL")
+            return
+
+        # 步骤4: 为每个层级创建请求文件、下载结果、保存检查点
+        logging.info("\n步骤4: 逐层处理社区报告...")
+
+        # 导入Template
+        from string import Template
+
+        # 获取配置参数
+        max_report_words = str(config["graph_builder"].get("community_summary_max_report_words", 800))
+        max_entities = int(config["graph_builder"].get("community_summary_used_entities_num", 25))
+        max_relationships = int(config["graph_builder"].get("community_summary_used_relationships_num", 50))
+
+        all_summaries = {}
+        level_summaries = {}
+
+        # 按层级从高到低处理（自底向上）
+        for level, job_ids in sorted(valid_levels, key=lambda x: x[0], reverse=True):
+            logging.info(f"\n{'='*60}")
+            logging.info(f"🔄 处理 Level {level}")
+            logging.info(f"{'='*60}")
+
+            level_communities = communities_by_level.get(level, [])
+            if not level_communities:
+                logging.warning(f"   ⚠️ Level {level} 没有社区，跳过")
+                continue
+
+            # 分离叶子社区和非叶子社区
+            leaf_communities = [c for c in level_communities if not c['children_ids']]
+            non_leaf_communities = [c for c in level_communities if c['children_ids']]
+
+            logging.info(f"   叶子社区: {len(leaf_communities)} 个")
+            logging.info(f"   中间层社区: {len(non_leaf_communities)} 个")
+
+            # 4.1 创建该层级的请求文件（level{n}.jsonl）
+            level_temp_path = community_requests_path.parent / f"{community_requests_path.stem}_level{level}.jsonl"
+            level_id_maps = {}
+
+            # 加载prompt模板
+            community_prompt = Template(gb.load_prompt(prompt_dir, "community_summary.md"))
+            hierarchical_prompt = Template(gb.load_prompt(prompt_dir, "hierarchical_community_summary.md"))
+
+            with open(level_temp_path, 'w', encoding='utf-8') as f:
+                # 处理叶子社区（基于节点上下文）
+                for comm in leaf_communities:
+                    comm_id = comm['community_id']
+                    members = comm['node_ids']
+
+                    # 构建社区上下文
+                    context, id_map = gb.build_community_context(graph, members, max_entities, max_relationships)
+                    level_id_maps[comm_id] = id_map
+                    prompt = community_prompt.substitute(max_report_len=max_report_words, context=context)
+
+                    # 写入请求
+                    request_line = {
+                        "custom_id": comm_id,
+                        "method": "POST",
+                        "url": "/v1/chat/completions",
+                        "body": {
+                            "model": model_name,
+                            "messages": [{"role": "user", "content": prompt}],
+                            "temperature": 0.1
+                        }
+                    }
+                    f.write(json.dumps(request_line, ensure_ascii=False) + '\n')
+
+                # 处理非叶子社区（基于子社区报告或节点上下文）
+                for comm in non_leaf_communities:
+                    comm_id = comm['community_id']
+                    children_ids = comm['children_ids']
+
+                    # 收集子社区报告
+                    sub_reports = []
+                    for child_id in children_ids:
+                        if child_id in all_summaries:
+                            child_text = all_summaries[child_id]
+                            # 解析JSON
+                            try:
+                                if isinstance(child_text, str):
+                                    cleaned = child_text.strip()
+                                    if cleaned.startswith("```json"):
+                                        cleaned = cleaned[7:]
+                                    elif cleaned.startswith("```"):
+                                        cleaned = cleaned[3:]
+                                    if cleaned.endswith("```"):
+                                        cleaned = cleaned[:-3]
+                                    child_obj = json.loads(cleaned.strip())
+                                else:
+                                    child_obj = child_text
+                                sub_reports.append({"community_id": child_id, "report": child_obj})
+                            except:
+                                pass
+
+                    # 构建上下文
+                    if sub_reports:
+                        # 使用子社区报告作为上下文
+                        context_text = ""
+                        for sr in sub_reports:
+                            report = sr['report']
+                            context_text += f"\n## Sub-Community {sr['community_id']}\n"
+                            context_text += f"**Title**: {report.get('title', 'N/A')}\n"
+                            context_text += f"**Summary**: {report.get('summary', 'N/A')}\n"
+                            context_text += f"**Rating**: {report.get('rating', 0)}/10 - {report.get('rating_explanation', 'N/A')}\n"
+                            findings = report.get('findings', [])
+                            if findings:
+                                context_text += f"**Key Findings** ({len(findings)} findings):\n"
+                                for f_idx, finding in enumerate(findings[:3], 1):
+                                    context_text += f"{f_idx}. {finding.get('summary', 'N/A')}\n"
+                            context_text += "\n"
+                        prompt = hierarchical_prompt.substitute(
+                            max_report_len=max_report_words,
+                            sub_community_reports=context_text
+                        )
+                    else:
+                        # 没有子报告，使用节点上下文（叶子社区或投影社区）
+                        members = comm['node_ids']
+                        context, id_map = gb.build_community_context(graph, members, max_entities, max_relationships)
+                        level_id_maps[comm_id] = id_map
+                        prompt = community_prompt.substitute(max_report_len=max_report_words, context=context)
+
+                    # 写入请求
+                    request_line = {
+                        "custom_id": comm_id,
+                        "method": "POST",
+                        "url": "/v1/chat/completions",
+                        "body": {
+                            "model": model_name,
+                            "messages": [{"role": "user", "content": prompt}],
+                            "temperature": 0.1
+                        }
+                    }
+                    f.write(json.dumps(request_line, ensure_ascii=False) + '\n')
+
+            logging.info(f"   📝 已创建请求文件: {level_temp_path.name} ({len(level_communities)} 个社区)")
+
+            # 4.2 保存该层级的ID映射
+            level_id_map_path = level_temp_path.parent / f"{level_temp_path.stem}_id_maps.json"
+            with open(level_id_map_path, 'w', encoding='utf-8') as f:
+                json.dump(level_id_maps, f, ensure_ascii=False, indent=2)
+
+            # 详细统计ID映射情况
+            total_mappings = sum(len(id_map) for id_map in level_id_maps.values())
+            logging.info(f"   📝 已保存ID映射: {level_id_map_path.name}")
+            logging.info(f"      - {len(level_id_maps)} 个社区有映射（叶子:{len(leaf_communities)}, 使用节点上下文的非叶子:{len([c for c in non_leaf_communities if c['community_id'] in level_id_maps])}）")
+            logging.info(f"      - 总计 {total_mappings} 个ID映射条目")
+
+            # 样本展示
+            if level_id_maps:
+                sample_comm_id = list(level_id_maps.keys())[0]
+                sample_map = level_id_maps[sample_comm_id]
+                logging.info(f"      - 映射样本 ({sample_comm_id}): {dict(list(sample_map.items())[:2])}...")
+
+            # 4.3 从云端下载该层级的报告
+            logging.info(f"\n   📥 从云端下载 Level {level} 的报告...")
+            level_reports = {}
+
+            for idx, job_id in enumerate(job_ids, 1):
+                try:
+                    job = client.batches.retrieve(batch_id=job_id)
+                    logging.info(f"      批次 {idx}/{len(job_ids)} 状态: {job.status}")
+
+                    if job.status == 'completed':
+                        batch_results = download_and_process_community_summary_results(client, job)
+                        if batch_results:
+                            level_reports.update(batch_results)
+                            logging.info(f"      ✅ 批次 {idx} 获取了 {len(batch_results)} 个报告")
+                        else:
+                            logging.warning(f"      ⚠️ 批次 {idx} 未获取到报告")
+                    elif job.status == 'in_progress':
+                        logging.warning(f"      ⏳ 批次 {idx} 仍在进行中")
+                    else:
+                        logging.error(f"      ❌ 批次 {idx} 状态异常: {job.status}")
+                except Exception as e:
+                    logging.error(f"      ❌ 批次 {idx} 下载失败: {e}")
+
+            if level_reports:
+                level_summaries[level] = level_reports
+                all_summaries.update(level_reports)
+                logging.info(f"   ✅ Level {level} 共获取 {len(level_reports)} 个报告")
+            else:
+                logging.warning(f"   ⚠️ Level {level} 未获取到任何报告")
+
+            # 4.5 保存层级检查点
+            level_checkpoint_path = community_requests_path.parent / f"community_summaries_checkpoint_level{level}.json"
+            try:
+                with open(level_checkpoint_path, 'w', encoding='utf-8') as f:
+                    json.dump({
+                        "level": level,
+                        "total_summaries": len(all_summaries),
+                        "summaries": all_summaries,
+                        "source": "cloud_download",
+                        "job_ids": job_ids
+                    }, f, ensure_ascii=False, indent=2)
+                logging.info(f"   💾 层级 {level} 检查点已保存: {level_checkpoint_path.name}")
+            except Exception as e:
+                logging.warning(f"   ⚠️ 保存层级检查点失败: {e}")
+
+        # 步骤5: 合并所有层级的ID映射并统一保存各层级报告文件
+        logging.info("\n步骤5: 合并所有层级的ID映射...")
+        merged_id_maps = {}
+        try:
+            merged_id_maps = merge_all_level_id_maps(community_requests_path)
+            logging.info(f"   ✅ 成功合并 ID 映射，共 {len(merged_id_maps)} 个社区有映射")
+
+            # 验证：检查哪些社区有ID映射
+            communities_with_maps = set(merged_id_maps.keys())
+            communities_with_reports = set(all_summaries.keys())
+
+            logging.info(f"\n   🔍 ID映射覆盖率验证:")
+            logging.info(f"   - 有报告的社区数: {len(communities_with_reports)}")
+            logging.info(f"   - 有ID映射的社区数: {len(communities_with_maps)}")
+            logging.info(f"   - 覆盖率: {len(communities_with_maps & communities_with_reports)}/{len(communities_with_reports)} ({len(communities_with_maps & communities_with_reports)/len(communities_with_reports)*100:.1f}%)")
+
+            # 按层级统计ID映射覆盖率
+            if communities_list:
+                for level in sorted(set(c['level'] for c in communities_list)):
+                    level_comms = [c for c in communities_list if c['level'] == level]
+                    level_comm_ids = set(c['community_id'] for c in level_comms)
+                    level_with_maps = level_comm_ids & communities_with_maps
+                    level_with_reports = level_comm_ids & communities_with_reports
+
+                    # 统计该层级的叶子社区和非叶子社区
+                    level_leaf = [c for c in level_comms if not c['children_ids']]
+                    level_nonleaf = [c for c in level_comms if c['children_ids']]
+
+                    logging.info(f"   Level {level}: {len(level_with_maps)}/{len(level_with_reports)} 有映射 (叶子:{len(level_leaf)}, 非叶子:{len(level_nonleaf)})")
+
+            # 5.1 使用合并后的ID映射生成各层级报告文件，并记录实际使用的映射
+            logging.info(f"\n   🔄 使用合并后的ID映射生成各层级报告文件...")
+            updated_level_id_maps = {}  # {level: {comm_id: id_map}} - 记录各层级实际使用的映射
+
+            for level in sorted(communities_by_level.keys(), reverse=True):
+                level_communities = communities_by_level[level]
+                level_reports_path = community_requests_path.parent / f"community_reports_level{level}.jsonl"
+                level_actual_maps = {}  # 该层级实际使用的ID映射
+
+                try:
+                    level_community_ids = set(c['community_id'] for c in level_communities)
+                    level_report_items = {cid: text for cid, text in all_summaries.items() if cid in level_community_ids}
+
+                    # 构建社区元数据映射
+                    community_metadata = {}
+                    for comm in level_communities:
+                        community_metadata[comm['community_id']] = {
+                            'level': comm['level'],
+                            'title': comm.get('title', ''),
+                            'parent_id': comm.get('parent_id'),
+                            'children_ids': comm.get('children_ids', []),
+                            'node_count': len(comm.get('node_ids', []))
+                        }
+
+                    with open(level_reports_path, 'w', encoding='utf-8') as f:
+                        for cid, text in level_report_items.items():
+                            try:
+                                if isinstance(text, str):
+                                    cleaned = text.strip()
+                                    if cleaned.startswith("```json"):
+                                        cleaned = cleaned[7:]
+                                    elif cleaned.startswith("```"):
+                                        cleaned = cleaned[3:]
+                                    if cleaned.endswith("```"):
+                                        cleaned = cleaned[:-3]
+                                    report_obj = json.loads(cleaned.strip())
+                                else:
+                                    report_obj = text
+
+                                # 构建完整的记录结构
+                                record = {"community_id": cid}
+                                record["report"] = report_obj
+
+                                # 使用合并后的ID映射（如果该社区有映射）
+                                if cid in merged_id_maps:
+                                    record["local_id_map"] = merged_id_maps[cid]
+                                    # 记录该层级实际使用的映射
+                                    level_actual_maps[cid] = merged_id_maps[cid]
+
+                                # 添加层级元数据
+                                if cid in community_metadata:
+                                    metadata = community_metadata[cid]
+                                    record["level"] = metadata['level']
+                                    record["title"] = metadata['title']
+                                    record["parent_id"] = metadata['parent_id']
+                                    record["children_ids"] = metadata['children_ids']
+                                    record["node_count"] = metadata['node_count']
+
+                            except:
+                                record = {"community_id": cid, "level": level, "report_raw": text}
+                                # 即使解析失败，也尝试添加ID映射
+                                if cid in merged_id_maps:
+                                    record["local_id_map"] = merged_id_maps[cid]
+                                    level_actual_maps[cid] = merged_id_maps[cid]
+
+                            f.write(json.dumps(record, ensure_ascii=False) + "\n")
+
+                    # 保存该层级实际使用的映射
+                    updated_level_id_maps[level] = level_actual_maps
+
+                    # 统计该层级有ID映射的报告数量
+                    reports_with_maps = len(level_actual_maps)
+                    logging.info(f"      Level {level}: 生成了 {len(level_report_items)} 个报告，其中 {reports_with_maps} 个包含 local_id_map")
+
+                except Exception as e:
+                    logging.warning(f"      ⚠️ Level {level} 报告保存失败: {e}")
+                    updated_level_id_maps[level] = {}
+
+            # 5.2 反向更新各层级的detection_level_id_maps文件，使其与reports_level一致
+            logging.info(f"\n   🔄 反向更新各层级的 detection_level_id_maps 文件（与 reports_level 保持一致）...")
+            for level, level_maps in updated_level_id_maps.items():
+                level_id_map_path = community_requests_path.parent / f"{community_requests_path.stem}_level{level}_id_maps.json"
+
+                try:
+                    # 保存为该层级的ID映射文件
+                    with open(level_id_map_path, 'w', encoding='utf-8') as f:
+                        json.dump(level_maps, f, ensure_ascii=False, indent=2)
+
+                    # 统计映射条目数
+                    total_entries = sum(len(id_map) for id_map in level_maps.values())
+                    logging.info(f"      Level {level}: 已更新 {level_id_map_path.name} ({len(level_maps)} 个社区, {total_entries} 个ID条目)")
+
+                except Exception as e:
+                    logging.warning(f"      ⚠️ Level {level} ID映射文件更新失败: {e}")
+
+        except Exception as e:
+            logging.warning(f"   ⚠️ 合并ID映射失败: {e}")
+            import traceback
+            logging.warning(f"   详细错误: {traceback.format_exc()}")
+
+        # 步骤6: 汇总统计并验证与图谱的一致性
+        logging.info("\n步骤6: 汇总下载结果并验证与图谱的一致性...")
+        logging.info(f"📊 下载统计:")
+        total_reports = 0
+        for level in sorted(level_summaries.keys(), reverse=True):
+            count = len(level_summaries[level])
+            total_reports += count
+            logging.info(f"   Level {level}: {count} 个报告")
+        logging.info(f"   总计: {total_reports} 个报告")
+
+        if not all_summaries:
+            logging.error("❌ 未能从云端下载到任何社区报告")
+            return
+
+        # 验证报告与图谱社区的一致性
+        graph_community_ids = set(comm['community_id'] for comm in communities_list)
+        report_community_ids = set(all_summaries.keys())
+
+        matched_ids = graph_community_ids & report_community_ids
+        missing_in_reports = graph_community_ids - report_community_ids
+        extra_in_reports = report_community_ids - graph_community_ids
+
+        logging.info(f"\n🔍 社区ID一致性验证:")
+        logging.info(f"   图谱中的社区数: {len(graph_community_ids)}")
+        logging.info(f"   报告中的社区数: {len(report_community_ids)}")
+        logging.info(f"   匹配的社区数: {len(matched_ids)}")
+
+        if missing_in_reports:
+            logging.warning(f"   ⚠️ 图谱中有 {len(missing_in_reports)} 个社区在报告中缺失")
+            missing_by_level = {}
+            for comm in communities_list:
+                if comm['community_id'] in missing_in_reports:
+                    lvl = comm['level']
+                    missing_by_level[lvl] = missing_by_level.get(lvl, 0) + 1
+            for lvl in sorted(missing_by_level.keys()):
+                logging.warning(f"      Level {lvl}: {missing_by_level[lvl]} 个缺失")
+
+        if extra_in_reports:
+            logging.warning(f"   ⚠️ 报告中有 {len(extra_in_reports)} 个社区不在图谱中")
+
+        if not missing_in_reports and not extra_in_reports:
+            logging.info(f"   ✅ 报告与图谱社区完全一致！")
+
+        # 步骤7: 保存最终的社区报告
+        logging.info("\n步骤7: 保存最终的社区报告...")
+        id_map_path = community_requests_path.parent / f"{community_requests_path.stem}_id_maps.json"
+
+        # 验证ID映射文件是否存在
+        if not id_map_path.exists():
+            logging.warning(f"   ⚠️ ID映射文件不存在: {id_map_path}")
+            logging.warning(f"   将尝试直接使用合并后的映射数据")
+            # 如果合并映射文件不存在，尝试手动保存
+            if merged_id_maps:
+                try:
+                    with open(id_map_path, 'w', encoding='utf-8') as f:
+                        json.dump(merged_id_maps, f, ensure_ascii=False, indent=2)
+                    logging.info(f"   ✅ 已保存ID映射文件: {id_map_path.name}")
+                except Exception as e:
+                    logging.error(f"   ❌ 保存ID映射文件失败: {e}")
+
+        gb.save_community_reports(all_summaries, reports_path, id_map_path, communities_list)
+        logging.info(f"✅ 社区报告已保存到: {reports_path}")
+
+        # 验证最终报告中的ID映射情况
+        logging.info(f"\n   🔍 验证最终报告中的 local_id_map 情况...")
+        try:
+            with open(reports_path, 'r', encoding='utf-8') as f:
+                report_lines = f.readlines()
+
+            total_reports = len(report_lines)
+            reports_with_maps = 0
+            reports_without_maps = 0
+
+            for line in report_lines:
+                try:
+                    record = json.loads(line)
+                    if 'local_id_map' in record and record['local_id_map']:
+                        reports_with_maps += 1
+                    else:
+                        reports_without_maps += 1
+                except:
+                    pass
+
+            logging.info(f"   - 总报告数: {total_reports}")
+            logging.info(f"   - 有 local_id_map: {reports_with_maps}")
+            logging.info(f"   - 无 local_id_map: {reports_without_maps}")
+            logging.info(f"   - 覆盖率: {reports_with_maps}/{total_reports} ({reports_with_maps/total_reports*100:.1f}%)")
+
+            # 按层级统计
+            if communities_list:
+                for level in sorted(set(c['level'] for c in communities_list)):
+                    level_comms = [c for c in communities_list if c['level'] == level]
+                    level_leaf = [c for c in level_comms if not c['children_ids']]
+                    level_nonleaf = [c for c in level_comms if c['children_ids']]
+
+                    logging.info(f"   Level {level}: 叶子社区 {len(level_leaf)} 个（应有ID映射）, 非叶子社区 {len(level_nonleaf)} 个（使用子报告者无需ID映射）")
+
+        except Exception as e:
+            logging.warning(f"   ⚠️ 验证最终报告失败: {e}")
+
+        logging.info(f"\n🎉 所有社区报告下载完成！")
+        logging.info(f"   生成的文件:")
+        logging.info(f"   - 社区报告: {reports_path}")
+        logging.info(f"   - 各层级检查点: community_summaries_checkpoint_level*.json")
+        logging.info(f"   - 各层级报告: community_reports_level*.jsonl")
+        logging.info(f"   - 各层级请求文件: {community_requests_path.stem}_level*.jsonl")
+        logging.info(f"   - ID映射文件: *_id_maps.json")
 
     logging.info("\n" + "=" * 80)
     logging.info("🎉🎉🎉 快速恢复流程完成！")

@@ -14,7 +14,7 @@ vlm_parser:
 
 llm:
   provider: QWEN                   # GEMINI
-  model: qwen3-max                 # gemini-2.5-pro
+  model: qwen3-max                 # gemini-2.5-pro  qwen-plus
   api_key: ${QWEN_API_KEY}         # ${GEMINI_API_KEY}
   batch_mode: true                 # 是否启用批处理
   temperature: 0.1                 # 控制生成的稳定性
@@ -86,8 +86,8 @@ graph_builder:
   input_path: "data/graphs/enriched/enriched_graph.jsonl"
   disambiguation_graph_path: "data/graphs/disambiguation_graph.json"
   merged_graph_path: "data/graphs/merged_graph.json"
-  output_graph_path: "data/graphs/final_graph.json"
-  community_reports_path: "data/reports/community_summaries.jsonl"
+  output_graph_path: "data/graphs/final_graph_develop.json"
+  community_reports_path: "data/reports/community_summaries_develop.jsonl"
   disambiguation_requests_path: "data/cache/disambiguation_requests.jsonl"
   embedding_requests_path: "data/cache/entities_embedding_requests.jsonl"
   merge_requests_path: "data/cache/entities_merge_requests.jsonl"
@@ -121,14 +121,11 @@ graph_builder:
 
 
   use_hierarchical_communities: true  # true: 使用递归分层Leiden算法，支持多层级社区结构   # false: 使用传统扁平化Leiden算法（向后兼容）
-  max_cluster_size: 300   # 当某个社区的节点数超过此值时，会对其进行进一步细分 小(<1000节点):50 中(1000-10000节点): 100 大(>10000节点): 200
-  max_community_level: 3  # 最大递归层级（从0开始算）
-  min_community_size: 5  # 当社区节点数少于此值时，不再进行细分
-  
-  # 分层社区信息保存路径
+  max_community_level: 3  # 最大递归层级（默认10，防止无限递归）
+  min_community_size: 10  # 当社区节点数少于此值时，不再进行细分（默认10）
+
   # 如果指定，会将完整的社区层级结构保存为CSV文件
-  # 包含：community_id, level, title, parent_id, children_ids, node_ids, node_count
-  # 注释掉此行则不保存
+  # 包含：community_id, level, title, parent_id, children_ids, node_ids, node_count, is_projected
   hierarchical_communities_path: "data/reports/hierarchical_communities.csv"
 
 
@@ -136,10 +133,10 @@ embedding:
   model: "text-embedding-v4"  #"gemini-embedding-001""text-embedding-v4"
   dimensionality: 1024
   input_text_units_path: "data/chunks/text_units.jsonl"
-  input_graph_path: "data/graphs/final_graph.json"
-  input_community_report_path: "data/reports/community_summaries.jsonl"
-  input_id_maps_path: "data/cache/community_detection_id_maps.json"
-  output_db_path: "data/embeddings/enriched.db"  #no_entities_merge embedding.db
+  input_graph_path: "data/graphs/final_graph_develop.json"
+  input_community_report_path: "data/reports/community_summaries_develop.jsonl"
+  input_id_maps_path: "data/cache/community_detection_id_maps_develop.json"
+  output_db_path: "data/embeddings/multicommunities.db"  #no_entities_merge embedding.db
   output_db_text_path: "data/embeddings/text.db"
   output_text_table_name: "text"
   requests_path: "data/cache"
@@ -151,12 +148,33 @@ query:
   generation_model: "qwen3-max"  #gemini-2.5-pro""qwen3-max"
   temperature: 0.1
   top_p: 0.9
-  search_config: false # allow_general_knowledge or not
+  search_config: true # allow_general_knowledge or not
   local_top_k: 20
   max_local_context_tokens: 30000
   k_hop: 1  # K-hop邻域扩展深度 (1或2)
   drift_k_followups: 2  # 当启用drift时，允许的后续问题数量
   drift_max_steps: 2 # 当启用drift时，最大漂移步数
+
+  # 全局查询社区层级配置
+  default_community_level: 3  # 默认查询 Level 1（未指定时使用）
+  enable_dynamic_level_selection: true  # 启用LLM动态层级选择
+
+  # 层级到top_k的映射（固定配置，不由LLM决定）
+  level_top_k_mapping:
+    0: 2      # Level 0: 全局主题总览，社区数量少
+    1: 10     # Level 1: 主要研究方向，中等数量
+    2: 20     # Level 2: 具体子主题，较多社区
+    3: 30    # Level 3: 细粒度概念，大量社区
+
+  # 可选：不同层级的最小质量评分阈值
+  min_rating_by_level:
+    0: null    # Level 0 要求高质量
+    1: null    # Level 1 中等质量
+    2: null    # Level 2 较低门槛
+    3: null   # Level 3 不限制
+
+  # 性能监控配置（记录到主日志文件）
+  enable_performance_monitoring: true
 
   text_db_path: "data/embeddings/text.db"
   text_table_name: "text"
@@ -166,13 +184,13 @@ query:
   sleep_interval: 60
   basic_rag_prompt: "config/prompts/basic_rag.md"
 
-  embedding_db_path: "data/embeddings/enriched.db"  #no_entities_merge   embedding.db  enriched.db
+  embedding_db_path: "data/embeddings/multicommunities.db"  #no_entities_merge   embedding.db  enriched.db
   global_table_name: "communities"
   local_table_name: "entities"
   prompt_dir: "config/prompts"
 
-  input_graph_path: "data/graphs/final_graph.json"
-  input_community_report_path: "data/reports/community_summaries.jsonl"
+  input_graph_path: "data/graphs/final_graph_develop.json"
+  input_community_report_path: "data/reports/community_summaries_develop.jsonl"
 
 database:
   graphdb:
@@ -223,9 +241,9 @@ evaluation:
 
   # 评判模型配置
   llm:
-    model: "gemini-2.5-flash"   # qwen-plus  gemini-3-flash-preview
-    api_key: "${GEMINI_API_KEY} " # ${GEMINI_API_KEY}  ${QWEN_API_KEY}
-    base_url: "https://generativelanguage.googleapis.com/v1beta/openai/"
+    model: "qwen-plus"   # qwen-plus  gemini-2.5-flash
+    api_key: "${QWEN_API_KEY} " # ${GEMINI_API_KEY}  ${QWEN_API_KEY}
+    base_url: "https://dashscope.aliyuncs.com/compatible-mode/v1"
               #https://generativelanguage.googleapis.com/v1beta/openai/   https://dashscope.aliyuncs.com/compatible-mode/v1
 
 reasoning:
@@ -282,8 +300,8 @@ reasoning:
 
   # Data paths
   data:
-    graph_path: "data/graphs/final_graph.json"
-    entity_embeddings_db: "data/embeddings/enriched.db"
+    graph_path: "data/graphs/final_graph_develop.json"
+    entity_embeddings_db: "data/embeddings/multicommunities.db"
     entity_table: "entities"
     relationship_table: "relationships"
     pseudo_queries_path: "data/reasoning/pseudo_queries.jsonl"
@@ -300,18 +318,18 @@ baseline:
       provider: "openai"
       api_key: "${QWEN_API_KEY}"
       base_url: "https://dashscope.aliyuncs.com/compatible-mode/v1"
-    - name: "kimi-k2-thinking"
+    - name: "Kimi-K2"         #kimi-k2-thinking
       provider: "openai"
-      api_key: "${QWEN_API_KEY}"
-      base_url: "https://dashscope.aliyuncs.com/compatible-mode/v1"
-    - name: "deepseek-v3.2"
+      api_key: "${QWEN_API_KEY_2}"
+      base_url: "https://llmapi.paratera.com/v1"
+    - name: "DeepSeek-V3.2"   #deepseek-v3.2
       provider: "openai"
-      api_key: "${QWEN_API_KEY}"
-      base_url: "https://dashscope.aliyuncs.com/compatible-mode/v1"
-    - name: "glm-4.6"
+      api_key: "${QWEN_API_KEY_2}"
+      base_url: "https://llmapi.paratera.com/v1"
+    - name: "GLM-4.6"         #glm-4.6
       provider: "openai"
-      api_key: "${QWEN_API_KEY}"
-      base_url: "https://dashscope.aliyuncs.com/compatible-mode/v1" 
+      api_key: "${QWEN_API_KEY_2}"
+      base_url: "https://llmapi.paratera.com/v1"
     - name: "MiniMax-M2"
       provider: "openai"
       api_key: "${QWEN_API_KEY_2}"

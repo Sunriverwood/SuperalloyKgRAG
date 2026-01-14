@@ -23,8 +23,7 @@ SuperalloyKgRAG 评测模块
 
 模块结构：
 - scoring.py: 分级评分器 (L1/L2/L3/L4)
-- auto_evaluator.py: 自动评测主模块
-- run_evaluation.py: 命令行入口
+- auto_evaluator.py: 自动评测主模块（已整合 run_evaluation 功能）
 """
 
 from .scoring import (
@@ -40,8 +39,7 @@ from .scoring import (
 
 from .auto_evaluator import (
     EvaluationDataLoader,
-    AutoEvaluator,
-    run_evaluation
+    AutoEvaluator
 )
 
 __all__ = [
@@ -56,8 +54,7 @@ __all__ = [
     "ScorerFactory",
     # 评测器
     "EvaluationDataLoader",
-    "AutoEvaluator",
-    "run_evaluation"
+    "AutoEvaluator"
 ]
 
 __version__ = "1.0.0"

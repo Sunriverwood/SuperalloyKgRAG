@@ -18,6 +18,7 @@ import json
 import logging
 import os
 import re
+import sys
 from pathlib import Path
 from string import Template
 import functools
@@ -140,8 +141,18 @@ class GlobalQueryHandler:
         self.map_prompt_template = self._load_prompt("global_map.md")
         self.reduce_prompt_template = self._load_prompt("global_reduce.md")
 
+        # 加载社区层级配置
+        self.default_community_level = self.config["query"].get("default_community_level", 1)
+        self.enable_dynamic_level_selection = self.config["query"].get("enable_dynamic_level_selection", True)
+        self.level_top_k_mapping = self.config["query"].get("level_top_k_mapping", {0: 2, 1: 20, 2: 50, 3: 200})
+        self.min_rating_by_level = self.config["query"].get("min_rating_by_level", {})
+        self.enable_performance_monitoring = self.config["query"].get("enable_performance_monitoring", True)
+
         # 加载 chunk ID 到源信息的映射
         self.chunk_id_map = self._load_chunk_id_map()
+
+        # 诊断社区层级分布
+        self._diagnose_level_distribution()
 
     def _load_prompt(self, filename: str) -> str:
         prompt_path = PROJECT_ROOT / self.prompt_dir / filename
@@ -214,6 +225,51 @@ class GlobalQueryHandler:
 
         return chunk_map
 
+    def _diagnose_level_distribution(self):
+        """诊断社区层级分布，输出统计信息"""
+        try:
+            # 查询所有社区以获取层级分布
+            all_communities = self.community_table.to_pandas()
+
+            # 检查是否有level字段（向后兼容）
+            if 'level' not in all_communities.columns:
+                logging.warning("⚠️ 数据库中无 'level' 字段，层级筛选功能将被禁用")
+                self.enable_dynamic_level_selection = False
+                return
+
+            # 统计各层级的社区数量
+            level_counts = all_communities['level'].value_counts().sort_index().to_dict()
+
+            logging.info("=" * 60)
+            logging.info("📊 社区层级分布统计:")
+            logging.info("=" * 60)
+
+            total_communities = len(all_communities)
+            for level in sorted(level_counts.keys()):
+                count = level_counts[level]
+                percentage = (count / total_communities) * 100
+                configured_top_k = self.level_top_k_mapping.get(level, "未配置")
+
+                # 计算该层级的平均rating和node_count（如果存在）
+                level_data = all_communities[all_communities['level'] == level]
+                avg_rating = level_data['rating'].mean() if 'rating' in level_data.columns else 0
+                avg_nodes = level_data['node_count'].mean() if 'node_count' in level_data.columns else 0
+
+                logging.info(f"  Level {level}: {count:4d} 个社区 ({percentage:5.1f}%) | "
+                           f"top_k={configured_top_k} | "
+                           f"avg_rating={avg_rating:.2f} | "
+                           f"avg_nodes={avg_nodes:.1f}")
+
+                # 警告：如果配置的top_k大于该层级的社区数量
+                if isinstance(configured_top_k, int) and count < configured_top_k:
+                    logging.warning(f"    ⚠️  Level {level} 仅有 {count} 个社区，少于配置的 top_k={configured_top_k}")
+
+            logging.info("=" * 60)
+            logging.info(f"✅ 层级诊断完成，总计 {total_communities} 个社区")
+
+        except Exception as e:
+            logging.warning(f"⚠️ 层级分布诊断失败: {e}，继续初始化...")
+
     def _resolve_chunk_citations(self, text: str) -> str:
         """
         将文本中的 chunk ID 引用转换为来源信息。
@@ -270,9 +326,17 @@ class GlobalQueryHandler:
             """根据一组 chunk IDs 构建来源字符串 (English style without brackets)"""
             sources_by_file: Dict[str, Dict[str, List]] = {}
             abstract_sources = []  # 单独处理abstract类型的引用
+            community_sources = []  # 单独处理社区ID引用
 
             for chunk_id_raw in chunk_ids_raw:
                 chunk_id = extract_base_chunk_id(chunk_id_raw)
+
+                # 检查是否是社区ID格式（如 0_32_8_0）
+                if re.match(r'^\d+(_\d+)+$', chunk_id):
+                    # 这是社区ID，直接引用
+                    community_sources.append(f"community {chunk_id}")
+                    continue
+
                 if chunk_id in self.chunk_id_map:
                     source_info = self.chunk_id_map[chunk_id]
                     chunk_type = source_info.get("chunk_type", "text")
@@ -293,10 +357,12 @@ class GlobalQueryHandler:
                         sources_by_file[filename]["blocks"].extend(blocks)
                 else:
                     logging.warning(f"⚠️ 未找到 chunk ID 的映射: {chunk_id} (原始ID: {chunk_id_raw})")
-                    if "unknown" not in sources_by_file:
-                        sources_by_file["unknown"] = {"pages": [], "blocks": []}
 
             source_parts = []
+
+            # 处理社区ID引用（优先显示）
+            if community_sources:
+                source_parts.extend(community_sources)
 
             # 处理abstract类型的引用
             if abstract_sources:
@@ -304,14 +370,12 @@ class GlobalQueryHandler:
 
             # 处理其他类型的引用
             for filename, info in sources_by_file.items():
-                if filename == "unknown":
-                    continue
                 page_str = merge_pages(info["pages"])
                 block_str = merge_blocks(info["blocks"])
                 source_parts.append(f"{filename} {page_str} {block_str}")
 
             if len(source_parts) == 0:
-                return "[source: unknown]"
+                return ""  # 如果没有有效引用，返回空字符串而不是unknown
             if len(source_parts) == 1:
                 return f"[source: {source_parts[0]}]"
             return f"[source: {'; '.join(source_parts)}]"
@@ -365,27 +429,118 @@ class GlobalQueryHandler:
             logging.error(f"❌ 查询向量化失败: {e}", exc_info=True)
             raise
 
-    def _build_context_chunks(self, query_vector: List[float]) -> list[dict] | list[Any]:
-        """步骤1: 上下文构建 (逻辑不变)"""
-        logging.info(f"上下文构建：正在搜索 Top {self.top_k} 相关社区...")
+    def _build_context_chunks(self, query_vector: List[float],
+                             community_level: int = None,
+                             min_level: int = None,
+                             max_level: int = None,
+                             min_rating: float = None,
+                             top_k: int = None) -> list[dict] | list[Any]:
+        """
+        步骤1: 上下文构建，支持层级筛选
+
+        Args:
+            query_vector: 查询向量
+            community_level: 指定社区层级（优先级最高）
+            min_level: 最小层级（与max_level配合使用）
+            max_level: 最大层级（与min_level配合使用）
+            min_rating: 最小质量评分
+            top_k: 返回的社区数量（覆盖默认配置）
+        """
+        # 确定使用的top_k
+        if top_k is None:
+            top_k = self.top_k
+
+        # 构建层级筛选条件
+        filter_conditions = []
+        level_desc = "全部层级"
+
         try:
-            results = self.community_table.search(query_vector).limit(self.top_k).to_list()
-            logging.info(f"Map阶段：找到 {len(results)} 个社区。")
+            # 优先使用 community_level
+            if community_level is not None:
+                filter_conditions.append(f"level = {community_level}")
+                level_desc = f"Level {community_level}"
+            elif min_level is not None or max_level is not None:
+                # 使用范围筛选
+                if min_level is not None and max_level is not None:
+                    filter_conditions.append(f"level >= {min_level} AND level <= {max_level}")
+                    level_desc = f"Level {min_level}-{max_level}"
+                elif min_level is not None:
+                    filter_conditions.append(f"level >= {min_level}")
+                    level_desc = f"Level >={min_level}"
+                else:
+                    filter_conditions.append(f"level <= {max_level}")
+                    level_desc = f"Level <={max_level}"
+
+            # 添加评分筛选
+            if min_rating is not None:
+                filter_conditions.append(f"rating >= {min_rating}")
+
+            # 执行查询
+            logging.info(f"上下文构建：正在搜索 {level_desc} 的 Top {top_k} 相关社区...")
+
+            query = self.community_table.search(query_vector)
+
+            # 应用筛选条件（向后兼容：如果字段不存在则降级）
+            if filter_conditions:
+                where_clause = " AND ".join(filter_conditions)
+                try:
+                    query = query.where(where_clause)
+                    logging.debug(f"应用筛选条件: {where_clause}")
+                except Exception as filter_error:
+                    logging.warning(f"⚠️ 筛选条件应用失败（可能是旧数据格式）: {filter_error}")
+                    logging.warning("   降级为全量查询（无层级筛选）")
+                    # 重新构建查询（不使用where）
+                    query = self.community_table.search(query_vector)
+
+            results = query.limit(top_k).to_list()
+
+            actual_count = len(results)
+            logging.info(f"Map阶段：找到 {actual_count} 个社区。")
+
+            # 警告：如果实际结果少于预期
+            if actual_count < top_k:
+                logging.warning(f"⚠️ 实际检索到 {actual_count} 个社区，少于请求的 {top_k} 个")
+
             return results
+
         except Exception as e:
             logging.error(f"❌ 在LanceDB中搜索社区失败: {e}", exc_info=True)
-            return []
+            # 降级：尝试不带筛选条件的查询
+            try:
+                logging.info("尝试降级为无筛选条件查询...")
+                results = self.community_table.search(query_vector).limit(top_k).to_list()
+                logging.info(f"降级查询成功：找到 {len(results)} 个社区。")
+                return results
+            except Exception as fallback_error:
+                logging.error(f"❌ 降级查询也失败: {fallback_error}", exc_info=True)
+                return []
 
     def _convert_local_ids_to_chunk_ids(self, report: Dict[str, Any], id_map: Dict[str, str]) -> Dict[str, Any]:
-        """将 report 中的局部 ID 转换为 chunk ID (逻辑不变)"""
+        """将 report 中的局部 ID 转换为 chunk ID"""
 
         def replace_ids_in_text(text: str) -> str:
             if not isinstance(text, str): return text
 
             def replace_in_brackets(match):
                 content = match.group(1)
-                for local_id, chunk_id in id_map.items():
-                    content = re.sub(r'\b' + re.escape(local_id) + r'\b', chunk_id, content)
+                original_content = content
+
+                # 按照ID长度排序，先替换长的ID，避免部分匹配
+                sorted_items = sorted(id_map.items(), key=lambda x: len(x[0]), reverse=True)
+
+                for local_id, chunk_id in sorted_items:
+                    # 使用单词边界匹配，确保完整匹配
+                    # 同时检查chunk_id是否有效（不是空字符串或只是部分ID）
+                    if chunk_id and not re.match(r'^(E|R|id)\d+$', chunk_id):
+                        # 使用更精确的正则，确保匹配整个ID
+                        pattern = r'\b' + re.escape(local_id) + r'\b'
+                        content = re.sub(pattern, chunk_id, content)
+
+                # 检查是否还有未转换的局部ID（E1, R1, id1等）
+                remaining_ids = re.findall(r'\b(E\d+|R\d+|id\d+)\b', content)
+                if remaining_ids:
+                    logging.warning(f"⚠️ 文本中仍有未转换的局部ID: {remaining_ids} (原文: {original_content[:100]})")
+
                 return f"[Data: {content}]"
 
             text = re.sub(r'\[Data: ([^]]+)]', replace_in_brackets, text)
@@ -510,12 +665,54 @@ class GlobalQueryHandler:
             logging.error(f"❌ Reduce阶段调用LLM失败: {e}", exc_info=True)
             return "抱歉，在综合信息生成最终答案时发生错误。"
 
-    async def answer_query(self, query: str) -> str:
-        """执行完整的全局搜索流程"""
+    async def answer_query(self, query: str,
+                          community_level: int = None,
+                          min_level: int = None,
+                          max_level: int = None,
+                          min_rating: float = None,
+                          top_k: int = None) -> str:
+        """
+        执行完整的全局搜索流程，支持层级筛选
+
+        Args:
+            query: 用户查询
+            community_level: 指定社区层级（默认使用配置的 default_community_level）
+            min_level: 最小层级
+            max_level: 最大层级
+            min_rating: 最小质量评分
+            top_k: 返回的社区数量（覆盖配置）
+        """
+        import time
+        start_time = time.time()
+
         try:
+            # 使用默认层级（如果未指定）
+            if community_level is None and min_level is None and max_level is None:
+                community_level = self.default_community_level
+                logging.info(f"使用默认社区层级: Level {community_level}")
+
+            # 根据层级自动选择top_k（如果未指定）
+            if top_k is None and community_level is not None:
+                top_k = self.level_top_k_mapping.get(community_level, self.top_k)
+                logging.info(f"根据 Level {community_level} 自动设置 top_k={top_k}")
+
+            # 根据层级设置最小评分（如果未指定且配置了）
+            if min_rating is None and community_level is not None:
+                min_rating = self.min_rating_by_level.get(community_level)
+                if min_rating:
+                    logging.info(f"根据 Level {community_level} 自动设置 min_rating={min_rating}")
+
             query_vector = self._embed_query(query)
 
-            context_chunks = self._build_context_chunks(query_vector)
+            context_chunks = self._build_context_chunks(
+                query_vector,
+                community_level=community_level,
+                min_level=min_level,
+                max_level=max_level,
+                min_rating=min_rating,
+                top_k=top_k
+            )
+
             if not context_chunks:
                 return "抱歉，我没有在知识库中找到与您的问题相关的社区信息。"
 
@@ -526,6 +723,23 @@ class GlobalQueryHandler:
             all_points = [point for sublist in map_results_list for point in sublist]
 
             final_answer = await self._reduce_response(query, all_points)
+
+            # 性能监控 - 记录到日志系统
+            if self.enable_performance_monitoring:
+                end_time = time.time()
+                total_time_ms = (end_time - start_time) * 1000
+
+                # 使用日志系统记录性能数据
+                logging.info(
+                    f"📊 [性能监控] 查询完成 | "
+                    f"Level={community_level} | "
+                    f"top_k={top_k} | "
+                    f"检索={len(context_chunks)}个社区 | "
+                    f"关键点={len(all_points)}个 | "
+                    f"耗时={total_time_ms:.2f}ms | "
+                    f"查询=\"{query[:50]}...\""
+                )
+
             return final_answer
 
         except Exception as e:
@@ -535,6 +749,13 @@ class GlobalQueryHandler:
 
 async def main():
     """主执行函数"""
+    # 设置Windows控制台编码
+    if sys.platform == 'win32':
+        import io
+        sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+        sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
+        sys.stdin = io.TextIOWrapper(sys.stdin.buffer, encoding='utf-8')
+
     parser = argparse.ArgumentParser(description="使用全局搜索(Map-Reduce)回答问题。")
     parser.add_argument("query", type=str, nargs='?', default="", help="您要提出的问题。")
     args = parser.parse_args()
@@ -564,6 +785,10 @@ async def main():
                     print("\n--------------------------\n")
                 except (KeyboardInterrupt, EOFError):
                     print("\n再见！")
+                    break
+                except UnicodeDecodeError as e:
+                    print(f"\n编码错误: {e}")
+                    print("请确保终端支持UTF-8编码，或使用命令行参数直接传入查询")
                     break
 
     except (FileNotFoundError, Exception) as e:

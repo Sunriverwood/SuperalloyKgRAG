@@ -166,46 +166,57 @@ class GraphStatistics:
         self._save_figure(fig, 'degree_distribution')
 
     def plot_node_type_distribution(self):
-        """节点类型分布饼图"""
+        """节点类型分布柱状图（前10类型）"""
         logger.info("绘制节点类型分布...")
 
         node_types = [data.get('type', 'Unknown') for n, data in self.G.nodes(data=True)]
         type_count = Counter(node_types)
 
-        # 取最小的前 n 个类型，使其计数和占比达到总数的 10\%
+        # 获取总节点数
         total = sum(type_count.values())
         if total == 0:
             logger.warning("未找到节点类型，跳过节点类型分布图")
             return
 
-        most_common = type_count.most_common()
-        cum = 0
-        top_types = []
-        for t, cnt in most_common:
-            top_types.append((t, cnt))
-            cum += cnt
-            if cum / total >= 0.25:
-                break
+        # 获取前10个最常见的类型
+        top_10 = type_count.most_common(10)
 
-        labels = [t[0] for t in top_types]
-        sizes = [t[1] for t in top_types]
+        labels = [t[0] for t in top_10]
+        counts = [t[1] for t in top_10]
 
-        fig, ax = plt.subplots(figsize=(10, 8))
+        # 计算比例
+        proportions = [count / total for count in counts]
+
+        # 设置字体为 Arial，字号 18（全局生效，便于图中文字一致）
+        plt.rcParams.update({"font.size": 18, "font.family": "Arial"})
+
+        fig, ax = plt.subplots(figsize=(12, 10))
 
         # 使用科学配色
         colors = plt.cm.Set3(np.linspace(0, 1, len(labels)))
 
-        wedges, texts, autotexts = ax.pie(
-            sizes, labels=labels, autopct='%1.1f%%',
-            startangle=90, colors=colors,
-            textprops={'fontsize': 18, 'fontfamily': 'Arial'}
-        )
+        # 绘制柱状图
+        bars = ax.bar(range(len(labels)), proportions, color=colors,
+                      edgecolor='black', linewidth=0.8, alpha=0.8)
 
-        # 美化文本
-        for autotext in autotexts:
-            autotext.set_color('black')
-            autotext.set_fontweight('bold')
-            autotext.set_fontsize(18)
+        # 在每个柱子上方显示比例
+        for i, (bar, prop) in enumerate(zip(bars, proportions)):
+            height = bar.get_height()
+            ax.text(bar.get_x() + bar.get_width()/2., height,
+                    f'{prop*100:.1f}%',
+                    ha='center', va='bottom', fontsize=18, fontweight='bold')
+
+        # 设置x轴标签
+        ax.set_xticks(range(len(labels)))
+        ax.set_xticklabels(labels, rotation=45, ha='right', fontsize=18)
+
+        # 设置y轴标签和标题
+        ax.set_ylabel('Proportion', fontsize=18, fontweight='bold')
+        ax.set_xlabel('Node Type', fontsize=18, fontweight='bold')
+
+        # 设置y轴范围和网格
+        ax.set_ylim(0, max(proportions) * 1.15)
+        ax.grid(True, alpha=0.3, axis='y')
 
         plt.tight_layout()
         self._save_figure(fig, 'node_type_distribution')

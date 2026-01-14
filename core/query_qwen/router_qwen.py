@@ -239,6 +239,23 @@ class GraphRouter:
 
         self.model_name = config["query"]["generation_model"]  # 复用生成模型进行分类
 
+        # 加载全局查询参数选择配置
+        self.enable_dynamic_level_selection = config["query"].get("enable_dynamic_level_selection", True)
+        self.params_selection_prompt = None
+        if self.enable_dynamic_level_selection:
+            try:
+                params_prompt_path = PROJECT_ROOT / "config" / "prompts" / "global_query_params_selection.md"
+                if params_prompt_path.exists():
+                    with open(params_prompt_path, 'r', encoding='utf-8') as f:
+                        self.params_selection_prompt = f.read()
+                    logging.info("✅ 已加载全局查询参数选择提示词")
+                else:
+                    logging.warning(f"⚠️ 未找到参数选择提示词文件: {params_prompt_path}")
+                    self.enable_dynamic_level_selection = False
+            except Exception as e:
+                logging.warning(f"⚠️ 加载参数选择提示词失败: {e}")
+                self.enable_dynamic_level_selection = False
+
         # 内存优化：使用共享的 DriftSearchHandler，避免重复加载数据
         # DriftSearchHandler 继承自 LocalQueryHandler，已包含所有局部查询功能
         logging.info("💡 [内存优化] 使用共享数据加载器初始化处理器...")
@@ -309,7 +326,22 @@ class GraphRouter:
         # 2. 分发执行
         if intent == "GLOBAL":
             logging.info(f"路由判定: 全局查询 (Global) -> '{query}'")
-            return await self.global_handler.answer_query(query)
+
+            # LLM动态参数选择
+            if self.enable_dynamic_level_selection and self.params_selection_prompt:
+                try:
+                    params = await self._select_global_query_params(query)
+                    logging.info(f"LLM参数选择结果: Level={params['level']}, Reasoning={params['reasoning']}")
+                    return await self.global_handler.answer_query(
+                        query,
+                        community_level=params['level']
+                    )
+                except Exception as e:
+                    logging.warning(f"⚠️ LLM参数选择失败: {e}，使用默认配置")
+                    return await self.global_handler.answer_query(query)
+            else:
+                # 使用默认配置
+                return await self.global_handler.answer_query(query)
 
         elif intent == "REASONING":
             if not self.reasoning_enabled:
@@ -449,6 +481,76 @@ METHOD: <ppr/gnn> (only if REASONING)
             logging.error(f"CoT 意图分类失败: {e}，使用简单分类降级")
             # 降级为简单分类
             return await self._simple_classify_intent(query)
+
+    async def _select_global_query_params(self, query: str) -> Dict[str, Any]:
+        """
+        使用 LLM 选择全局查询的最优参数（社区层级）
+
+        Returns:
+            Dict with keys: 'level', 'reasoning'
+        """
+        import time
+        start_time = time.time()
+
+        try:
+            # 使用 Template 替换查询
+            from string import Template
+            prompt_template = Template(self.params_selection_prompt)
+            prompt = prompt_template.safe_substitute(query=query)
+
+            logging.debug(f"正在调用LLM进行参数选择...")
+
+            loop = asyncio.get_running_loop()
+
+            def call_llm():
+                response = self.client.chat.completions.create(
+                    model=self.model_name,
+                    messages=[{"role": "user", "content": prompt}],
+                    temperature=0.1  # 适中的温度，保证一定稳定性
+                )
+                return response.choices[0].message.content
+
+            result_text = await loop.run_in_executor(None, call_llm)
+
+            # 解析JSON响应
+            result_text = result_text.strip()
+
+            # 尝试提取JSON
+            json_match = re.search(r'\{[^}]*"level"[^}]*\}', result_text, re.DOTALL)
+            if json_match:
+                json_str = json_match.group(0)
+                params = json.loads(json_str)
+
+                level = params.get('level')
+                reasoning = params.get('reasoning', 'No reasoning provided')
+
+                # 验证level的有效性
+                if level not in [0, 1, 2, 3]:
+                    logging.warning(f"⚠️ LLM返回的层级 {level} 无效，使用默认 Level 1")
+                    level = 1
+
+                end_time = time.time()
+                selection_time_ms = (end_time - start_time) * 1000
+
+                logging.info(f"✅ LLM参数选择成功 (耗时: {selection_time_ms:.2f}ms)")
+                logging.info(f"   选择层级: Level {level}")
+                logging.info(f"   推理过程: {reasoning}")
+
+                return {
+                    'level': level,
+                    'reasoning': reasoning,
+                    'selection_time_ms': selection_time_ms
+                }
+            else:
+                logging.warning(f"⚠️ 无法从LLM响应中提取JSON: {result_text[:200]}")
+                return {'level': 1, 'reasoning': 'Failed to parse, using default'}
+
+        except json.JSONDecodeError as e:
+            logging.error(f"❌ JSON解析失败: {e}")
+            return {'level': 1, 'reasoning': 'JSON parse error, using default'}
+        except Exception as e:
+            logging.error(f"❌ LLM参数选择失败: {e}", exc_info=True)
+            return {'level': 1, 'reasoning': 'Error occurred, using default'}
 
     async def _simple_classify_intent(self, query: str) -> Dict[str, Any]:
         """

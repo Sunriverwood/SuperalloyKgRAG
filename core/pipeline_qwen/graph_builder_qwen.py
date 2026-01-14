@@ -35,6 +35,15 @@ import leidenalg as la
 import igraph as ig
 
 import utils.community_importance as ci
+from utils.hnsw_params import compute_hnsw_params, get_quality_level_from_config
+from utils.recursive_leiden import (
+    recursive_leiden_community_detection,
+    apply_hierarchical_communities_to_graph,
+    communities_to_dataframe,
+    save_hierarchical_communities
+)
+# 导入社区报告生成模块
+from utils import community_reports
 
 # --- 动态计算项目根目录 ---
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -757,6 +766,246 @@ def _process_embedding_results(batch_job: Any, client: OpenAI, id_order: List[st
     return np.vstack(vecs)
 
 
+# =========================
+# 实体合并相似度搜索策略
+# =========================
+
+class SimilaritySearcher:
+    """相似度搜索器接口（策略模式）"""
+    
+    def build_index(self, vectors: np.ndarray, ids: List[str]) -> None:
+        """构建索引"""
+        raise NotImplementedError
+    
+    def find_topk_neighbors(self, topk: int, min_sim: float) -> Dict[int, List[Tuple[int, float]]]:
+        """
+        为每个实体找到 topk 个最相似邻居
+        
+        Returns:
+            Dict[entity_idx, List[(neighbor_idx, similarity_score)]]
+        """
+        raise NotImplementedError
+
+
+class BruteForceSearcher(SimilaritySearcher):
+    """暴力计算方法（当前实现的分块矩阵计算）"""
+    
+    def __init__(self):
+        self.vectors = None
+        self.ids = None
+        self.n = 0
+    
+    def build_index(self, vectors: np.ndarray, ids: List[str]) -> None:
+        """直接存储向量，不需要构建索引"""
+        self.vectors = vectors
+        self.ids = ids
+        self.n = vectors.shape[0]
+        logging.info(f"🔧 使用 Brute Force 算法（分块矩阵计算）")
+    
+    def find_topk_neighbors(self, topk: int, min_sim: float) -> Dict[int, List[Tuple[int, float]]]:
+        """使用分块计算或完整矩阵计算查找邻居"""
+        n = self.n
+        matrix_size_gb = (n * n * 8) / (1024 ** 3)
+        chunk_size = 5000
+        
+        entity_topk_neighbors = {}
+        
+        if matrix_size_gb > 10.0:  # 大规模数据：分块计算
+            logging.warning(f"⚠️ 实体数量 {n} 较大，完整相似度矩阵需要 {matrix_size_gb:.1f} GB 内存")
+            logging.info(f"💡 使用分块计算方式，每块 {chunk_size} 个实体，避免内存溢出")
+            
+            for i in range(0, n, chunk_size):
+                end_i = min(i + chunk_size, n)
+                chunk_vecs = self.vectors[i:end_i]
+                
+                if i % (chunk_size * 5) == 0 or i == 0:
+                    logging.info(f"      处理实体 {i+1}-{end_i}/{n}...")
+                
+                sims_chunk = np.clip(chunk_vecs @ self.vectors.T, -1.0, 1.0)
+                
+                for j in range(sims_chunk.shape[0]):
+                    global_idx = i + j
+                    row = sims_chunk[j]
+                    
+                    sorted_indices = np.argsort(row)[::-1]
+                    neighbors = []
+                    count = 0
+                    
+                    for neighbor_idx in sorted_indices:
+                        if neighbor_idx == global_idx:
+                            continue
+                        if row[neighbor_idx] >= min_sim:
+                            neighbors.append((neighbor_idx, float(row[neighbor_idx])))
+                            count += 1
+                            if count >= topk:
+                                break
+                        else:
+                            break
+                    
+                    entity_topk_neighbors[global_idx] = neighbors
+                
+                del sims_chunk
+        
+        else:  # 小规模：直接计算完整矩阵
+            logging.info(f"实体数量 {n}，相似度矩阵需要 {matrix_size_gb:.2f} GB，直接计算")
+            sims = np.clip(self.vectors @ self.vectors.T, -1.0, 1.0)
+            np.fill_diagonal(sims, -1.0)
+            
+            for i in range(n):
+                row = sims[i]
+                idx = np.argpartition(row, -topk)[-topk:] if n > topk else np.arange(n)
+                neighbors = []
+                for j in idx:
+                    if i != j and row[j] >= min_sim:
+                        neighbors.append((j, float(row[j])))
+                neighbors.sort(key=lambda x: x[1], reverse=True)
+                entity_topk_neighbors[i] = neighbors
+        
+        return entity_topk_neighbors
+
+
+class HNSWSearcher(SimilaritySearcher):
+    """HNSW 近似最近邻搜索"""
+    
+    def __init__(self, config: Dict[str, Any]):
+        self.config = config
+        self.index = None
+        self.vectors = None
+        self.ids = None
+        self.params = None
+        self.n = 0
+    
+    def build_index(self, vectors: np.ndarray, ids: List[str]) -> None:
+        """构建 HNSW 索引"""
+        try:
+            import hnswlib
+        except ImportError:
+            raise ImportError(
+                "hnswlib 未安装。请运行: pip install hnswlib>=0.8.0"
+            )
+        
+        self.vectors = vectors
+        self.ids = ids
+        self.n, dim = vectors.shape
+        
+        # 获取或计算 HNSW 参数
+        hnsw_cfg = self.config.get("hnsw_params", {})
+        
+        start_time = time.time()
+        
+        if hnsw_cfg.get("auto_tune", True):
+            # 自动计算参数
+            quality_level = get_quality_level_from_config(self.config)
+            topk = self.config.get("entity_merge_topk", 10)
+            
+            self.params = compute_hnsw_params(
+                num_entities=self.n,
+                topk=topk,
+                quality_level=quality_level
+            )
+            logging.info(f"🎯 HNSW 自动调优参数（质量级别: {quality_level}）:")
+            logging.info(f"   - M (连接度): {self.params['M']}")
+            logging.info(f"   - ef_construction (构建质量): {self.params['ef_construction']}")
+            logging.info(f"   - ef_search (查询质量): {self.params['ef_search']}")
+        else:
+            # 使用手动配置
+            self.params = {
+                "M": hnsw_cfg.get("M", 16),
+                "ef_construction": hnsw_cfg.get("ef_construction", 200),
+                "ef_search": max(hnsw_cfg.get("ef_search", 100), 100),  # 最小值100
+                "max_elements": self.n + 1000
+            }
+            logging.info(f"🔧 使用手动配置的 HNSW 参数: {self.params}")
+        
+        # 构建索引
+        logging.info(f"📐 开始构建 HNSW 索引（{self.n} 个实体，维度 {dim}）...")
+        self.index = hnswlib.Index(space='cosine', dim=dim)
+        self.index.init_index(
+            max_elements=self.params["max_elements"],
+            M=self.params["M"],
+            ef_construction=self.params["ef_construction"]
+        )
+        self.index.add_items(self.vectors, np.arange(self.n))
+        self.index.set_ef(self.params["ef_search"])
+        
+        build_time = time.time() - start_time
+        logging.info(f"✅ HNSW 索引构建完成，耗时: {build_time:.2f} 秒")
+    
+    def find_topk_neighbors(self, topk: int, min_sim: float) -> Dict[int, List[Tuple[int, float]]]:
+        """使用 HNSW 索引查找邻居"""
+        logging.info(f"🔍 使用 HNSW 查询 top-{topk} 邻居（阈值={min_sim}）...")
+        
+        start_time = time.time()
+        
+        # 批量查询（+1 因为会包含自己）
+        labels, distances = self.index.knn_query(self.vectors, k=topk + 1)
+        
+        query_time = time.time() - start_time
+        logging.info(f"✅ HNSW 查询完成，耗时: {query_time:.2f} 秒")
+        
+        # 转换为邻居字典
+        entity_topk_neighbors = {}
+        filtered_count = 0
+        total_neighbors = 0
+        
+        for i in range(self.n):
+            neighbors = []
+            for j, dist in zip(labels[i], distances[i]):
+                if j == i:  # 跳过自己
+                    continue
+                similarity = 1.0 - dist  # 余弦距离转相似度
+                if similarity >= min_sim:
+                    neighbors.append((int(j), float(similarity)))
+                    total_neighbors += 1
+            entity_topk_neighbors[i] = neighbors
+            if len(neighbors) == 0:
+                filtered_count += 1
+        
+        logging.info(f"   找到 {total_neighbors} 个有效邻居关系")
+        logging.info(f"   {filtered_count} 个实体无满足阈值的邻居")
+        
+        return entity_topk_neighbors
+
+
+def create_similarity_searcher(config: Dict[str, Any], num_entities: int) -> SimilaritySearcher:
+    """
+    根据配置创建相似度搜索器（工厂函数）
+    
+    Args:
+        config: 完整配置字典
+        num_entities: 实体数量
+    
+    Returns:
+        SimilaritySearcher 实例
+    """
+    graph_config = config.get("graph_builder", {})
+    algorithm = graph_config.get("similarity_algorithm", "auto")
+    auto_threshold = graph_config.get("auto_algorithm_threshold", 5000)
+    
+    # 自动选择算法
+    if algorithm == "auto":
+        if num_entities < auto_threshold:
+            algorithm = "brute_force"
+            logging.info(f"🤖 自动选择算法: 实体数量 {num_entities} < {auto_threshold}，使用 Brute Force")
+        else:
+            algorithm = "hnsw"
+            logging.info(f"🤖 自动选择算法: 实体数量 {num_entities} >= {auto_threshold}，使用 HNSW")
+    
+    # 创建搜索器
+    if algorithm == "hnsw":
+        try:
+            import hnswlib
+            return HNSWSearcher(graph_config)
+        except ImportError:
+            logging.warning("⚠️ hnswlib 未安装，回退到 Brute Force 算法")
+            logging.warning("   安装方法: pip install hnswlib>=0.8.0")
+            return BruteForceSearcher()
+    elif algorithm == "brute_force":
+        return BruteForceSearcher()
+    else:
+        raise ValueError(f"未知的相似度算法: {algorithm}，可选值: hnsw, brute_force, auto")
+
+
 # --- B) 候选簇发现（互为近邻 + 相似度阈值） ---
 # (此部分逻辑是纯数学计算，不需要修改)
 
@@ -764,115 +1013,112 @@ def _cosine_sim_matrix(A: np.ndarray) -> np.ndarray:
     return np.clip(A @ A.T, -1.0, 1.0)
 
 
-def build_candidate_clusters(vecs: np.ndarray, ids: List[str], topk: int = 10, min_sim: float = 0.9) -> List[
-    List[str]]:
+def build_candidate_clusters(
+    vecs: np.ndarray, 
+    ids: List[str], 
+    topk: int = 10, 
+    min_sim: float = 0.9,
+    config: Dict[str, Any] = None
+) -> List[List[str]]:
     """
-    构建候选同义簇（优化版：分块计算避免内存溢出）
+    构建候选同义簇（支持 HNSW 和 Brute Force 算法）
+    
+    Args:
+        vecs: 归一化的实体嵌入向量矩阵
+        ids: 实体 ID 列表
+        topk: 每个实体保留的最相似邻居数量
+        min_sim: 相似度阈值（余弦相似度）
+        config: 完整配置字典（包含 graph_builder 配置）
+    
+    Returns:
+        候选簇列表，每个簇是实体 ID 的列表
     """
     n = vecs.shape[0]
     if n == 0:
         return []
-
-    # 估算完整相似度矩阵需要的内存（float64 = 8 bytes）
-    matrix_size_gb = (n * n * 8) / (1024 ** 3)
-    chunk_size = 5000  # 每次处理5000个实体
-
-    if matrix_size_gb > 10.0:  # 如果超过10GB，使用分块计算
-        logging.warning(f"⚠️ 实体数量 {n} 较大，完整相似度矩阵需要 {matrix_size_gb:.1f} GB 内存")
-        logging.info(f"💡 使用分块计算方式，每块 {chunk_size} 个实体，避免内存溢出")
-
-        # 第一遍：构建每个实体的 topk 邻居集合
-        logging.info(f"   第一遍：计算每个实体的 top-{topk} 邻居...")
-        entity_topk_neighbors = {}  # {entity_id: set of neighbor_ids}
-
-        for i in range(0, n, chunk_size):
-            end_i = min(i + chunk_size, n)
-            chunk_vecs = vecs[i:end_i]
-
-            if i % (chunk_size * 5) == 0 or i == 0:
-                logging.info(f"      处理实体 {i+1}-{end_i}/{n}...")
-
-            # 计算当前块与所有实体的相似度
-            sims_chunk = np.clip(chunk_vecs @ vecs.T, -1.0, 1.0)
-
-            # 对当前块的每个实体，找到 top-k 邻居
-            for j in range(sims_chunk.shape[0]):
-                global_idx = i + j
-                row = sims_chunk[j]
-
-                # 找到 top-k 最相似的邻居（排除自己）
-                # 使用 argsort 而不是 argpartition 以确保获取真正的 topk
-                sorted_indices = np.argsort(row)[::-1]
-                neighbors = set()
-                count = 0
-
-                for neighbor_idx in sorted_indices:
-                    if neighbor_idx == global_idx:
-                        continue
-                    if row[neighbor_idx] >= min_sim:
-                        neighbors.add(neighbor_idx)
-                        count += 1
-                        if count >= topk:
-                            break
-                    else:
-                        break  # 相似度已经低于阈值，后面的更低
-
-                entity_topk_neighbors[global_idx] = neighbors
-
-            del sims_chunk
-
-        # 第二遍：构建互为近邻的边
-        logging.info(f"   第二遍：验证互为近邻关系...")
-        nn_graph = nx.Graph()
-        added_edges = 0
-
-        for i in range(n):
-            if i % (chunk_size * 5) == 0 and i > 0:
-                logging.info(f"      验证实体 {i+1}/{n}的邻居关系...")
-
-            i_neighbors = entity_topk_neighbors.get(i, set())
-
-            for j in i_neighbors:
-                # 检查 i 是否也在 j 的 topk 邻居中（互为近邻）
-                j_neighbors = entity_topk_neighbors.get(j, set())
-
-                if i in j_neighbors:
-                    # 避免重复添加边 (i,j) 和 (j,i)
-                    if not nn_graph.has_edge(i, j):
-                        # 计算相似度（用于边权重）
-                        sim = float(np.dot(vecs[i], vecs[j]))
-                        nn_graph.add_edge(i, j, sim=sim)
-                        added_edges += 1
-
-        logging.info(f"✅ 分块计算完成，添加了 {added_edges} 条互为近邻的边")
-        logging.info(f"   （从 {len(entity_topk_neighbors)} 个实体的邻居关系中筛选）")
+    
+    logging.info("\n" + "="*80)
+    logging.info("🔍 开始候选簇发现")
+    logging.info("="*80)
+    
+    overall_start_time = time.time()
+    
+    # 创建搜索器
+    if config is None:
+        # 向后兼容：如果没有传入 config，使用 brute force
+        logging.warning("⚠️ 未传入 config 参数，使用默认 Brute Force 算法")
+        searcher = BruteForceSearcher()
     else:
-        # 原有逻辑：实体数量不大时，直接计算完整相似度矩阵
-        logging.info(f"实体数量 {n}，相似度矩阵需要 {matrix_size_gb:.2f} GB，直接计算")
-        sims = _cosine_sim_matrix(vecs)
-        np.fill_diagonal(sims, -1.0)
-        nn_graph = nx.Graph()
-        for i in range(n):
-            row = sims[i]
-            idx = np.argpartition(row, -topk)[-topk:]
-            for j in idx:
-                if row[j] >= min_sim:
-                    nn_graph.add_edge(i, j, sim=float(row[j]))
-        to_remove = []
-        for u, v in nn_graph.edges():
-            if not (sims[u, v] >= min_sim and sims[v, u] >= min_sim):
-                to_remove.append((u, v))
-        nn_graph.remove_edges_from(to_remove)
-
+        searcher = create_similarity_searcher(config, n)
+    
+    # 构建索引
+    build_start = time.time()
+    searcher.build_index(vecs, ids)
+    build_time = time.time() - build_start
+    logging.info(f"⏱️  索引构建时间: {build_time:.2f} 秒")
+    
+    # 查找每个实体的 topk 邻居
+    query_start = time.time()
+    entity_topk_neighbors = searcher.find_topk_neighbors(topk, min_sim)
+    query_time = time.time() - query_start
+    logging.info(f"⏱️  邻居查询时间: {query_time:.2f} 秒")
+    
+    # 构建互为近邻图
+    logging.info(f"🔗 验证互为近邻关系并构建图...")
+    graph_start = time.time()
+    nn_graph = nx.Graph()
+    added_edges = 0
+    mutual_neighbor_checks = 0
+    
+    for i in range(n):
+        for j, sim in entity_topk_neighbors.get(i, []):
+            mutual_neighbor_checks += 1
+            
+            # 检查互为近邻
+            j_neighbors = {k for k, _ in entity_topk_neighbors.get(j, [])}
+            
+            if i in j_neighbors:
+                # 避免重复添加边
+                if not nn_graph.has_edge(i, j):
+                    nn_graph.add_edge(i, j, sim=sim)
+                    added_edges += 1
+    
+    graph_time = time.time() - graph_start
+    logging.info(f"✅ 添加了 {added_edges} 条互为近邻的边")
+    logging.info(f"   （从 {mutual_neighbor_checks} 次邻居关系检查中筛选）")
+    logging.info(f"⏱️  图构建时间: {graph_time:.2f} 秒")
+    
     # 提取连通分量作为候选簇
+    logging.info(f"🔍 提取连通分量作为候选簇...")
+    cluster_start = time.time()
     clusters: List[List[str]] = []
-    for comp in nx.connected_components(nn_graph):
+    connected_components = list(nx.connected_components(nn_graph))
+    
+    for comp in connected_components:
         c = sorted(list(comp))
-        if len(c) > 12:
+        if len(c) > 15:
+            # 大簇进一步拆分
             sub = _split_large_component(vecs[c], [ids[i] for i in c], base_threshold=min_sim + 0.03)
             clusters.extend(sub)
         elif len(c) >= 2:
             clusters.append([ids[i] for i in c])
+    
+    cluster_time = time.time() - cluster_start
+    overall_time = time.time() - overall_start_time
+    
+    # 统计信息
+    cluster_sizes = [len(c) for c in clusters]
+    avg_size = np.mean(cluster_sizes) if cluster_sizes else 0
+    max_size = max(cluster_sizes) if cluster_sizes else 0
+    
+    logging.info(f"✅ 候选簇提取完成:")
+    logging.info(f"   - 簇数量: {len(clusters)}")
+    logging.info(f"   - 平均簇大小: {avg_size:.2f}")
+    logging.info(f"   - 最大簇大小: {max_size}")
+    logging.info(f"⏱️  簇提取时间: {cluster_time:.2f} 秒")
+    logging.info(f"⏱️  总耗时: {overall_time:.2f} 秒")
+    logging.info("="*80 + "\n")
+    
     return clusters
 
 
@@ -1220,7 +1466,9 @@ def build_community_context(graph: nx.Graph, member_ids: List[str], max_entities
                 local_id_map[node_id] = f"E{entity_counter}"
                 entity_counter += 1
         entity_lines = [f"- {graph.nodes[n].get('name') or str(n)} ({local_id_map[n]})" for n in selected_nodes]
-        return "Entities:\n" + "\n".join(entity_lines) + "\n\nRelationships:\n", local_id_map
+        # 返回反转后的映射: {local_id: global_id}
+        reverse_id_map = {v: k for k, v in local_id_map.items()}
+        return "Entities:\n" + "\n".join(entity_lines) + "\n\nRelationships:\n", reverse_id_map
 
     def edge_sort_key(item):
         a, b, rel, imp, _ = item
@@ -1278,30 +1526,121 @@ def build_community_context(graph: nx.Graph, member_ids: List[str], max_entities
     return "\n".join(parts), reverse_id_map
 
 
-def detect_communities(graph: nx.DiGraph, weight_alpha: float) -> nx.DiGraph:
-    logging.info("开始执行社区发现 (Leiden 算法)...")
+def detect_communities(graph: nx.DiGraph, weight_alpha: float, 
+                       use_hierarchical: bool = True,
+                       max_level: int = 10,
+                       min_community_size: int = 10) -> Tuple[nx.DiGraph, List[Dict[str, Any]]]:
+    """
+    执行社区发现
+    
+    Args:
+        graph: 输入图
+        weight_alpha: 权重参数
+        use_hierarchical: 是否使用递归分层社区发现（默认True）
+        max_level: 最大递归层级（分层模式，默认10）
+        min_community_size: 最小社区节点数（分层模式，默认10）
+
+    Returns:
+        (图对象, 社区列表)
+
+    注意：
+        - 已移除 max_cluster_size 参数
+        - 社区分割现在完全由 Leiden 算法自动决定，直到无法进一步分割为止
+        - 投影机制确保每个层级都覆盖所有节点（集体穷尽原则）
+    """
+    logging.info("开始执行社区发现...")
     if not graph.edges:
         logging.warning("图中没有边，无法进行社区发现。")
-        return graph
+        return graph, []
+    
     UG = graph.to_undirected()
-    ig_graph = ig.Graph.from_networkx(UG)
-    partition = la.find_partition(ig_graph, la.ModularityVertexPartition)
-    logging.info(f"社区发现完成！共发现 {len(partition)} 个社区。")
-    node_mapping = {i: name for i, name in enumerate(ig_graph.vs["_nx_name"])}
-    community_map = {node_mapping[node_index]: str(community_id) for community_id, community in enumerate(partition) for
-                     node_index in community}
-    nx.set_node_attributes(graph, community_map, "community")
-    for community in partition:
-        nodes = [node_mapping[idx] for idx in community]
-        sub = UG.subgraph(nodes)
-        for nid in nodes: graph.nodes[nid]["degree"] = sub.degree(nid)
-    communities = [[node_mapping[idx] for idx in c] for c in partition]
-    ci.calculate_community_importance(graph, communities, weight_alpha=weight_alpha)
-    logging.info("已将社区ID、节点degree和关系重要性分数标注到图谱。")
-    return graph
+    
+    if use_hierarchical:
+        # 使用递归分层社区发现
+        logging.info("使用递归分层 Leiden 算法...")
+        communities_list, node_community_map = recursive_leiden_community_detection(
+            G=UG,
+            max_level=max_level,
+            min_community_size=min_community_size
+        )
+        
+        # 应用到原图
+        graph = apply_hierarchical_communities_to_graph(graph, node_community_map)
+        
+        # 计算每个节点的度
+        for node in graph.nodes():
+            graph.nodes[node]["degree"] = UG.degree(node)
+        
+        # 构建社区列表用于计算重要性（使用最底层社区）
+        communities_by_id = {}
+        for comm_info in communities_list:
+            communities_by_id[comm_info['community_id']] = comm_info['node_ids']
+        
+        # 获取最底层社区（叶子节点社区）
+        leaf_communities = []
+        for comm_info in communities_list:
+            if not comm_info['children_ids']:  # 没有子社区
+                leaf_communities.append(comm_info['node_ids'])
+        
+        # 计算社区重要性
+        if leaf_communities:
+            ci.calculate_community_importance(graph, leaf_communities, weight_alpha=weight_alpha)
+        
+        logging.info(f"递归分层社区发现完成！共生成 {len(communities_list)} 个社区（所有层级）")
+        logging.info(f"最底层社区数量: {len(leaf_communities)}")
+        
+        return graph, communities_list
+    else:
+        # 使用传统的扁平化 Leiden 算法
+        logging.info("使用传统扁平化 Leiden 算法...")
+        ig_graph = ig.Graph.from_networkx(UG)
+        partition = la.find_partition(ig_graph, la.ModularityVertexPartition)
+        logging.info(f"社区发现完成！共发现 {len(partition)} 个社区。")
+        
+        node_mapping = {i: name for i, name in enumerate(ig_graph.vs["_nx_name"])}
+        community_map = {node_mapping[node_index]: str(community_id) 
+                        for community_id, community in enumerate(partition) 
+                        for node_index in community}
+        nx.set_node_attributes(graph, community_map, "community")
+        
+        for community in partition:
+            nodes = [node_mapping[idx] for idx in community]
+            sub = UG.subgraph(nodes)
+            for nid in nodes: 
+                graph.nodes[nid]["degree"] = sub.degree(nid)
+        
+        communities = [[node_mapping[idx] for idx in c] for c in partition]
+        ci.calculate_community_importance(graph, communities, weight_alpha=weight_alpha)
+        logging.info("已将社区ID、节点degree和关系重要性分数标注到图谱。")
+        
+        # 构建扁平社区列表（与分层格式兼容）
+        communities_list = []
+        for idx, nodes in enumerate(communities):
+            communities_list.append({
+                "community_id": str(idx),
+                "level": 0,
+                "title": f"Community {idx}",
+                "parent_id": None,
+                "children_ids": [],
+                "node_ids": nodes
+            })
+        
+        return graph, communities_list
 
 
-def save_community_reports(reports: Dict[str, str], output_path: Path, id_map_path: Path = None):
+def save_community_reports(reports: Dict[str, str], output_path: Path, id_map_path: Path = None,
+                          communities_list: List[Dict[str, Any]] = None,
+                          reverse_sync_level_maps: bool = True):
+    """
+    保存社区报告到JSONL文件，并支持反向同步ID映射到各层级文件
+
+    Args:
+        reports: 社区ID到报告文本的映射
+        output_path: 输出文件路径
+        id_map_path: ID映射文件路径（合并的映射文件）
+        communities_list: 社区列表（包含层级信息），用于添加层级元数据并排序
+        reverse_sync_level_maps: 是否反向同步ID映射到各层级文件（默认True）
+    """
     output_path.parent.mkdir(exist_ok=True, parents=True)
     id_maps: Dict[str, Dict[str, str]] = {}
     if id_map_path and id_map_path.exists():
@@ -1311,17 +1650,80 @@ def save_community_reports(reports: Dict[str, str], output_path: Path, id_map_pa
             logging.info(f"已加载 {len(id_maps)} 个社区的ID映射")
         except Exception as e:
             logging.warning(f"加载ID映射失败: {e}")
+
+    # 构建社区ID到层级信息的映射
+    community_metadata = {}
+    if communities_list:
+        for comm in communities_list:
+            community_metadata[comm['community_id']] = {
+                'level': comm['level'],
+                'title': comm.get('title', ''),
+                'parent_id': comm.get('parent_id'),
+                'children_ids': comm.get('children_ids', []),
+                'node_count': len(comm.get('node_ids', []))
+            }
+
+    # 准备记录列表，按层级排序（从0到max_level，确保顶层在前）
+    records = []
+    level_id_maps = {}  # 记录各层级实际使用的ID映射 {level: {comm_id: id_map}}
+
+    for cid, text in reports.items():
+        obj = _safe_json_loads(text) if isinstance(text, str) else None
+        record = {"community_id": str(cid)}
+        if obj is None:
+            record["report_raw"] = text
+        else:
+            record["report"] = obj
+
+        # 添加ID映射
+        if str(cid) in id_maps:
+            record["local_id_map"] = id_maps[str(cid)]
+            # 记录该社区的层级和ID映射（用于反向同步）
+            if str(cid) in community_metadata:
+                level = community_metadata[str(cid)]['level']
+                if level not in level_id_maps:
+                    level_id_maps[level] = {}
+                level_id_maps[level][str(cid)] = id_maps[str(cid)]
+
+        # 添加层级信息
+        if str(cid) in community_metadata:
+            metadata = community_metadata[str(cid)]
+            record["level"] = metadata['level']
+            record["title"] = metadata['title']
+            record["parent_id"] = metadata['parent_id']
+            record["children_ids"] = metadata['children_ids']
+            record["node_count"] = metadata['node_count']
+
+        records.append(record)
+
+    # 按层级排序（level从小到大，即从顶层到底层）
+    if communities_list:
+        records.sort(key=lambda x: (x.get('level', 999), x.get('community_id', '')))
+        max_level = max(community_metadata.values(), key=lambda x: x['level'])['level']
+        logging.info(f"   按层级排序保存：Level 0（顶层）→ Level {max_level}（底层）")
+
+    # 写入主报告文件
     with open(output_path, 'w', encoding='utf-8') as f:
-        for cid, text in reports.items():
-            obj = _safe_json_loads(text) if isinstance(text, str) else None
-            record = {"community_id": str(cid)}
-            if obj is None:
-                record["report_raw"] = text
-            else:
-                record["report"] = obj
-            if str(cid) in id_maps: record["local_id_map"] = id_maps[str(cid)]
+        for record in records:
             f.write(json.dumps(record, ensure_ascii=False) + "\n")
+
     logging.info(f"💾 社区报告(JSONL)已保存至: {output_path}")
+
+    # 反向同步：将实际使用的ID映射保存到各层级的ID映射文件
+    if reverse_sync_level_maps and level_id_maps and id_map_path:
+        logging.info(f"\n   🔄 反向同步ID映射到各层级文件...")
+        base_name = id_map_path.stem.replace('_id_maps', '')  # 去掉 _id_maps 后缀
+
+        for level, maps in level_id_maps.items():
+            level_map_path = id_map_path.parent / f"{base_name}_level{level}_id_maps.json"
+            try:
+                with open(level_map_path, 'w', encoding='utf-8') as f:
+                    json.dump(maps, f, ensure_ascii=False, indent=2)
+
+                total_entries = sum(len(m) for m in maps.values())
+                logging.info(f"      Level {level}: 已保存 {len(maps)} 个社区的ID映射 ({total_entries} 个条目) → {level_map_path.name}")
+            except Exception as e:
+                logging.warning(f"      ⚠️ Level {level} ID映射保存失败: {e}")
 
 
 def save_graph(graph: nx.DiGraph, output_path: Path):
@@ -1522,7 +1924,7 @@ def run_entity_merge_stage(client: OpenAI, graph: nx.DiGraph, config: Dict[str, 
         logging.error("❌ 所有批次均未获得有效嵌入向量")
         V = np.zeros((0, embed_dim), dtype=float)
 
-    clusters = build_candidate_clusters(V, ent_ids, topk=entity_topk, min_sim=entity_min_sim)
+    clusters = build_candidate_clusters(V, ent_ids, topk=entity_topk, min_sim=entity_min_sim, config=config)
     logging.info(f"候选同义簇数量: {len(clusters)}")
     if not clusters:
         logging.info("未发现候选合并簇，跳过 LLM 仲裁。")
@@ -1604,38 +2006,160 @@ def run_entity_merge_stage(client: OpenAI, graph: nx.DiGraph, config: Dict[str, 
     return graph
 
 
-def run_community_detection_and_importance(graph: nx.DiGraph, weight_alpha: float) -> nx.DiGraph:
-    logging.info("--- 阶段3: 社区发现 ---")
-    return detect_communities(graph, weight_alpha)
+def run_community_detection_and_importance(
+    graph: nx.DiGraph, 
+    weight_alpha: float,
+    use_hierarchical: bool = True,
+    max_level: int = 10,
+    min_community_size: int = 10,
+    save_communities_path: Path = None
+) -> Tuple[nx.DiGraph, List[Dict[str, Any]]]:
+    """
+    执行社区发现和重要性计算
+    
+    Args:
+        graph: 输入图
+        weight_alpha: 权重参数
+        use_hierarchical: 是否使用递归分层
+        max_level: 最大递归层级（默认10）
+        min_community_size: 最小社区节点数（默认10）
+        save_communities_path: 保存社区信息的路径（可选）
+    
+    Returns:
+        (图对象, 社区列表)
 
+    注意：
+        - 已移除 max_cluster_size 参数
+        - 社区分割由 Leiden 算法自动决定
+    """
+    logging.info("--- 阶段3: 社区发现 ---")
+    graph, communities_list = detect_communities(
+        graph=graph, 
+        weight_alpha=weight_alpha,
+        use_hierarchical=use_hierarchical,
+        max_level=max_level,
+        min_community_size=min_community_size
+    )
+    
+    # 如果指定了保存路径，保存分层社区信息
+    if save_communities_path and use_hierarchical:
+        save_hierarchical_communities(communities_list, str(save_communities_path))
+    
+    return graph, communities_list
+
+
+# =========================================================================
+# 社区报告生成（已移至 utils/community_reports.py）
+# =========================================================================
 
 def run_community_summaries(client: OpenAI, graph: nx.DiGraph, model_name: str, prompt_dir: str, config: Dict[str, Any],
-                            sleep_interval: int, community_requests_path: Path) -> Dict[str, str]:
-    max_report_words = str(config["graph_builder"].get("community_summary_max_report_words", 800))
-    max_entities = int(config["graph_builder"].get("community_summary_used_entities_num", 25))
-    max_relationships = int(config["graph_builder"].get("community_summary_used_relationships_num", 50))
+                            sleep_interval: int, community_requests_path: Path,
+                            communities_list: List[Dict[str, Any]] = None,
+                            resume_from_level: int = None,
+                            preloaded_summaries: Dict[str, str] = None) -> Dict[str, str]:
+    """
+    生成社区摘要，支持分层社区和层级恢复
 
-    num_comms = create_batch_requests(
+    本函数是对 utils.community_reports 模块的封装，提供向后兼容的接口。
+    新增功能：
+    - 每个层级完成后立即保存检查点和层级报告
+    - 支持从指定层级恢复
+
+    Args:
+        client: OpenAI客户端
+        graph: 图对象
+        model_name: 模型名称
+        prompt_dir: prompt目录
+        config: 配置
+        sleep_interval: 轮询间隔
+        community_requests_path: 请求文件路径
+        communities_list: 社区列表（包含层级信息），如果为None则使用传统扁平方式
+        resume_from_level: 从哪个层级开始恢复（None表示从头开始）
+        preloaded_summaries: 预加载的报告字典（用于恢复时）
+
+    Returns:
+        社区摘要字典
+    """
+    # 如果指定了恢复参数，使用带恢复功能的版本
+    if resume_from_level is not None or preloaded_summaries is not None:
+        max_report_words = str(config["graph_builder"].get("community_summary_max_report_words", 800))
+        max_entities = int(config["graph_builder"].get("community_summary_used_entities_num", 25))
+        max_relationships = int(config["graph_builder"].get("community_summary_used_relationships_num", 50))
+
+        return community_reports.run_hierarchical_community_summaries_with_resume(
+            client=client,
+            graph=graph,
+            model_name=model_name,
+            prompt_dir=prompt_dir,
+            config=config,
+            sleep_interval=sleep_interval,
+            community_requests_path=community_requests_path,
+            communities_list=communities_list,
+            max_report_words=max_report_words,
+            max_entities=max_entities,
+            max_relationships=max_relationships,
+            load_prompt_func=load_prompt,
+            build_context_func=build_community_context,
+            submit_job_func=submit_and_monitor_job,
+            process_results_func=process_results,
+            resume_from_level=resume_from_level,
+            preloaded_summaries=preloaded_summaries
+        )
+
+    # 否则使用标准流程
+    return community_reports.run_community_summaries(
+        client=client,
         graph=graph,
         model_name=model_name,
-        output_path=community_requests_path,
-        request_type="community_summary",
         prompt_dir=prompt_dir,
-        max_report_words=max_report_words,
-        max_relationships=max_relationships,
-        max_entities=max_entities,
+        config=config,
+        sleep_interval=sleep_interval,
+        community_requests_path=community_requests_path,
+        communities_list=communities_list,
+        load_prompt_func=load_prompt,
+        build_context_func=build_community_context,
+        create_batch_requests_func=create_batch_requests,
+        submit_job_func=submit_and_monitor_job,
+        process_results_func=process_results
     )
 
-    if num_comms <= 0:
-        logging.warning("图中未发现社区，跳过摘要生成步骤。")
-        return {}
 
-    job = submit_and_monitor_job(client, community_requests_path, model_name, sleep_interval, "CommunitySummary")
-    summaries = process_results(job, client)
-    return summaries
+def load_community_checkpoint(community_requests_path: Path, target_level: int) -> Tuple[Dict[str, str], int]:
+    """
+    从检查点文件加载已完成的层级报告
+
+    Args:
+        community_requests_path: 社区请求文件路径（用于定位检查点目录）
+        target_level: 目标恢复层级（从这个层级开始继续）
+
+    Returns:
+        Tuple[已加载的报告字典, 实际恢复的层级]
+    """
+    return community_reports.load_level_checkpoint(community_requests_path, target_level)
 
 
-def build_pipeline_from_config(config: Dict[str, Any]) -> Tuple[nx.DiGraph, Dict[str, str]]:
+def merge_all_level_id_maps(community_requests_path: Path, output_path: Path = None) -> Dict[str, Dict[str, str]]:
+    """
+    合并所有层级的 ID 映射文件为统一的映射文件
+
+    在多层社区结构中，每个层级的 ID 映射会单独保存。
+    此函数将它们合并为一个统一的文件，供 embedding 阶段使用。
+
+    Args:
+        community_requests_path: 社区请求文件路径（用于定位映射文件目录）
+        output_path: 输出文件路径（默认为 community_detection_id_maps.json）
+
+    Returns:
+        合并后的 ID 映射字典 {community_id: {local_id: global_id}}
+    """
+    return community_reports.merge_all_level_id_maps(community_requests_path, output_path)
+
+
+# =========================================================================
+# Pipeline 构建
+# =========================================================================
+
+def build_pipeline_from_config(config: Dict[str, Any]) -> Tuple[nx.DiGraph, Dict[str, str], List[Dict[str, Any]]]:
     api_key = os.getenv("QWEN_API_KEY") or os.getenv("GEMINI_API_KEY") or config["llm"]["api_key"]
     if not api_key:
         raise ValueError("请设置 QWEN_API_KEY")
@@ -1667,10 +2191,37 @@ def build_pipeline_from_config(config: Dict[str, Any]) -> Tuple[nx.DiGraph, Dict
                              save_path=disambiguation_graph_path)
     graph = run_entity_merge_stage(client, graph, config, model_name, prompt_dir, sleep_interval, tmp_emb_req_path,
                                    merge_req_path, save_path=merge_graph_path)
-    graph = run_community_detection_and_importance(graph, weight_alpha)
-    summaries = run_community_summaries(client, graph, model_name, prompt_dir, config, sleep_interval,
-                                        community_requests_path)
-    return graph, summaries
+    
+    # 社区发现配置
+    use_hierarchical = config["graph_builder"].get("use_hierarchical_communities", True)
+    max_level = int(config["graph_builder"].get("max_community_level", 10))
+    min_community_size = int(config["graph_builder"].get("min_community_size", 10))  # 默认值10
+
+    # 社区信息保存路径
+    communities_info_path = None
+    if use_hierarchical and "hierarchical_communities_path" in config["graph_builder"]:
+        communities_info_path = PROJECT_ROOT / config["graph_builder"]["hierarchical_communities_path"]
+    
+    graph, communities_list = run_community_detection_and_importance(
+        graph=graph, 
+        weight_alpha=weight_alpha,
+        use_hierarchical=use_hierarchical,
+        max_level=max_level,
+        min_community_size=min_community_size,
+        save_communities_path=communities_info_path
+    )
+    
+    summaries = run_community_summaries(
+        client=client,
+        graph=graph,
+        model_name=model_name,
+        prompt_dir=prompt_dir,
+        config=config,
+        sleep_interval=sleep_interval,
+        community_requests_path=community_requests_path,
+        communities_list=communities_list  # 传入社区列表以支持分层报告
+    )
+    return graph, summaries, communities_list
 
 
 # =========================
@@ -1681,7 +2232,7 @@ def main():
     config = load_config()
     setup_logging(config)
 
-    graph, summaries = build_pipeline_from_config(config)
+    graph, summaries, communities_list = build_pipeline_from_config(config)
 
     reports_path = PROJECT_ROOT / config["graph_builder"]["community_reports_path"]
     final_graph_path = PROJECT_ROOT / config["graph_builder"]["output_graph_path"]
@@ -1691,7 +2242,7 @@ def main():
     id_map_path = community_requests_path.parent / f"{community_requests_path.stem}_id_maps.json"
 
     if summaries:
-        save_community_reports(summaries, reports_path, id_map_path)
+        save_community_reports(summaries, reports_path, id_map_path, communities_list)
     save_graph(graph, final_graph_path)
 
     logging.info("🎉🎉🎉 全流程完成：消歧 → 实体合并 → 社区发现/摘要 → 保存 🎉🎉🎉")
