@@ -148,7 +148,7 @@ query:
   generation_model: "qwen3-max"  #gemini-2.5-pro""qwen3-max"
   temperature: 0.1
   top_p: 0.9
-  search_config: true # allow_general_knowledge or not
+  search_config: false # allow_general_knowledge or not
   local_top_k: 20
   max_local_context_tokens: 30000
   k_hop: 1  # K-hop邻域扩展深度 (1或2)
@@ -156,8 +156,8 @@ query:
   drift_max_steps: 2 # 当启用drift时，最大漂移步数
 
   # 全局查询社区层级配置
-  default_community_level: 3  # 默认查询 Level 1（未指定时使用）
-  enable_dynamic_level_selection: true  # 启用LLM动态层级选择
+  default_community_level: 2  # 默认查询 Level
+  enable_dynamic_level_selection: false  # 启用LLM动态层级选择
 
   # 层级到top_k的映射（固定配置，不由LLM决定）
   level_top_k_mapping:
@@ -241,7 +241,7 @@ evaluation:
 
   # 评判模型配置
   llm:
-    model: "qwen-plus"   # qwen-plus  gemini-2.5-flash
+    model: "qwen3-max"   # qwen-plus  gemini-2.5-flash  qwen3-max
     api_key: "${QWEN_API_KEY} " # ${GEMINI_API_KEY}  ${QWEN_API_KEY}
     base_url: "https://dashscope.aliyuncs.com/compatible-mode/v1"
               #https://generativelanguage.googleapis.com/v1beta/openai/   https://dashscope.aliyuncs.com/compatible-mode/v1
@@ -289,6 +289,18 @@ reasoning:
     ppr_alpha: 0.15  # Personalized PageRank restart probability
     ppr_max_iter: 100
     ppr_tol: 1.0e-6
+    default_method: "ppr"  # 默认推理方法: "ppr" 或 "gnn"
+
+    # 节点评分策略
+    # use_direct_similarity: true - 仅使用余弦相似度
+    # use_direct_similarity: false - 使用混合评分（余弦相似度 + GNN + QueryMatcher）
+    use_direct_similarity: true
+
+    # 混合评分权重 (仅当 use_direct_similarity=false 时有效)
+    # direct_similarity_weight: 余弦相似度的权重（确保查询相关性）
+    # gnn_matcher_weight: GNN + QueryMatcher 的权重（利用图结构）
+    direct_similarity_weight: 0.7
+    gnn_matcher_weight: 0.3
 
     # Path extraction
     max_path_length: 5
@@ -297,6 +309,24 @@ reasoning:
 
     # Query encoding
     use_cached_embeddings: true
+
+    # 关键词增强配置
+    keyword_enhancement:
+      enabled: true  # 是否启用关键词提取增强
+      max_keywords: 5  # 最大提取关键词数量
+      cache_enabled: true  # 是否缓存关键词提取结果
+
+      # PPR 方法的融合策略 (目标: 高召回率，广覆盖)
+      ppr_strategy:
+        fusion_method: "max_pool"  # max_pool: 取各embedding的逐维度最大值
+        original_query_weight: 0.4  # 原始query的权重
+        keyword_weight: 0.6  # 关键词的权重
+
+      # GNN 方法的融合策略 (目标: 语义一致性)
+      gnn_strategy:
+        fusion_method: "weighted_avg"  # weighted_avg: 加权平均
+        original_query_weight: 0.7  # 原始query的权重
+        keyword_weight: 0.3  # 关键词的权重
 
   # Data paths
   data:
@@ -314,23 +344,56 @@ reasoning:
 
 baseline:
   models:
-    - name: "qwen3-max-2025-09-23"
+    - name: "qwen3-max"
       provider: "openai"
       api_key: "${QWEN_API_KEY}"
       base_url: "https://dashscope.aliyuncs.com/compatible-mode/v1"
-    - name: "Kimi-K2"         #kimi-k2-thinking
+    - name: "kimi-k2-thinking"         #kimi-k2-thinking  Kimi-K2
       provider: "openai"
-      api_key: "${QWEN_API_KEY_2}"
-      base_url: "https://llmapi.paratera.com/v1"
-    - name: "DeepSeek-V3.2"   #deepseek-v3.2
+      api_key: "${QWEN_API_KEY}"
+      base_url: "https://dashscope.aliyuncs.com/compatible-mode/v1"
+    - name: "deepseek-v3.2"   #deepseek-v3.2  DeepSeek-V3.2
       provider: "openai"
-      api_key: "${QWEN_API_KEY_2}"
-      base_url: "https://llmapi.paratera.com/v1"
-    - name: "GLM-4.6"         #glm-4.6
+      api_key: "${QWEN_API_KEY}"
+      base_url: "https://dashscope.aliyuncs.com/compatible-mode/v1"
+    - name: "glm-4.7"         #glm-4.6  GLM-4.6
       provider: "openai"
-      api_key: "${QWEN_API_KEY_2}"
-      base_url: "https://llmapi.paratera.com/v1"
+      api_key: "${QWEN_API_KEY}"
+      base_url: "https://dashscope.aliyuncs.com/compatible-mode/v1"
     - name: "MiniMax-M2"
       provider: "openai"
       api_key: "${QWEN_API_KEY_2}"
       base_url: "https://llmapi.paratera.com/v1"
+    - name: "ERNIE-4.5-Turbo-128K"
+      provider: "openai"
+      api_key: "${QWEN_API_KEY_2}"
+      base_url: "https://llmapi.paratera.com/v1"
+
+# 多维度评测配置
+multidimensional_evaluation:
+  # 启用的评测方法（留空表示全部启用）
+  # Baseline 模型: qwen3-max, kimi-k2-thinking, deepseek-v3.2, glm-4.7, MiniMax-M2, ERNIE-4.5-Turbo-128K
+  # RAG 方法: basic_rag, global, local, reasoning, router
+  enabled_methods: []
+
+  # 评判 Prompt 路径
+  judge_prompt_path: "config/prompts/multidimensional_judge.md"
+
+  # 输出目录配置
+  answers_output_dir: "data/answers/multidimensional_evaluation"
+  reports_output_dir: "data/reports/multidimensional_evaluation"
+
+  # 断点续传
+  enable_checkpoint: true
+
+  # 并发控制
+  max_concurrency: 1
+
+  # API 请求间隔（秒），用于避免限流
+  request_interval: 1.0
+
+  # LLM 调用失败重试次数
+  retry_count: 2
+
+  # 评判模型（复用 evaluation.llm 配置）
+  # 使用 qwen3-max 作为评分器

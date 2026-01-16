@@ -153,13 +153,15 @@ class ReasoningQueryHandler:
         else:
             self._initialize_models()
 
-        # Create reasoner
+        # Create reasoner with LLM client for keyword extraction
         self.reasoner = GraphReasoner(
             config=config,
             graph_data=self.graph_data,
             gnn_model=self.gnn,
             query_matcher=self.query_matcher,
-            device=self.device
+            device=self.device,
+            llm_client=self.client,
+            embedding_model=self.embedding_model_name
         )
 
         logging.info("ReasoningQueryHandler initialized successfully")
@@ -406,7 +408,11 @@ class ReasoningQueryHandler:
         model_path = PROJECT_ROOT / self.reasoning_config.get('output', {}).get('model_path', 'data/reasoning/model.pt')
 
         if not model_path.exists():
-            logging.warning(f"Trained model not found at {model_path}, initializing new models")
+            logging.warning("=" * 60)
+            logging.warning(f"⚠️ TRAINED MODEL NOT FOUND at {model_path}")
+            logging.warning("⚠️ Using RANDOMLY INITIALIZED models - results will be poor!")
+            logging.warning("⚠️ Please train the model first using handler.train()")
+            logging.warning("=" * 60)
             self._initialize_models()
             return
 
@@ -424,7 +430,7 @@ class ReasoningQueryHandler:
         self.gnn.eval()
         self.query_matcher.eval()
 
-        logging.info(f"Loaded trained model from epoch {checkpoint.get('epoch', 'unknown')}")
+        logging.info(f"✓ Loaded trained model from epoch {checkpoint.get('epoch', 'unknown')}")
 
     def encode_query(self, query_text: str) -> np.ndarray:
         """
@@ -467,14 +473,34 @@ class ReasoningQueryHandler:
         # Format reasoning paths as context
         context_parts = []
 
-        # Add top nodes with source references
+        # Add top nodes with source references and descriptions
         context_parts.append("## Relevant Entities:")
         relevant_chunks = set()
-        for node_info in reasoning_results['top_nodes'][:5]:
+        for node_info in reasoning_results['top_nodes'][:10]:  # Increase to top 10
             node_id = node_info['id']
-            # Get chunk_id from graph node
+            node_name = node_info['name']
+            node_score = node_info['score']
+
+            # Get node data from graph
+            entity_info_parts = [f"- **{node_name}** (relevance: {node_score:.3f})"]
+
             if node_id in self.graph_data.G.nodes:
                 node_data = self.graph_data.G.nodes[node_id]
+
+                # Add description if available
+                description = node_data.get('description', '')
+                if description and len(description) > 10:
+                    # Truncate long descriptions
+                    if len(description) > 300:
+                        description = description[:300] + "..."
+                    entity_info_parts.append(f"  Description: {description}")
+
+                # Add entity type if available
+                entity_type = node_data.get('type', '') or node_data.get('entity_type', '')
+                if entity_type:
+                    entity_info_parts.append(f"  Type: {entity_type}")
+
+                # Get chunk_ids for source reference
                 chunk_ids = node_data.get('chunk_id') or node_data.get('text_unit_ids', [])
                 if isinstance(chunk_ids, str):
                     chunk_ids = [chunk_ids]
@@ -483,17 +509,31 @@ class ReasoningQueryHandler:
 
                 if chunk_ids:
                     source_ref = self._format_source_reference(chunk_ids)
-                    context_parts.append(f"- {node_info['name']} (relevance: {node_info['score']:.3f}) {source_ref}")
+                    entity_info_parts.append(f"  {source_ref}")
                     relevant_chunks.update(chunk_ids)
-                else:
-                    context_parts.append(f"- {node_info['name']} (relevance: {node_info['score']:.3f})")
-            else:
-                context_parts.append(f"- {node_info['name']} (relevance: {node_info['score']:.3f})")
+
+                # Add related relationships (neighbors in graph)
+                neighbors = list(self.graph_data.G.successors(node_id))[:5]
+                if neighbors:
+                    neighbor_names = []
+                    for n in neighbors:
+                        if n in self.graph_data.G.nodes:
+                            n_name = self.graph_data.G.nodes[n].get('name', n)
+                            edge_data = self.graph_data.G.edges.get((node_id, n), {})
+                            edge_type = edge_data.get('type', edge_data.get('relationship', ''))
+                            if edge_type:
+                                neighbor_names.append(f"{n_name} ({edge_type})")
+                            else:
+                                neighbor_names.append(n_name)
+                    if neighbor_names:
+                        entity_info_parts.append(f"  Related to: {', '.join(neighbor_names)}")
+
+            context_parts.append('\n'.join(entity_info_parts))
 
         # Add reasoning paths with source references
         if reasoning_results['paths']:
             context_parts.append("\n## Reasoning Paths:")
-            for i, path_info in enumerate(reasoning_results['paths'][:3], 1):
+            for i, path_info in enumerate(reasoning_results['paths'][:5], 1):  # Increase to top 5
                 context_parts.append(f"\nPath {i} (confidence: {path_info['score']:.4f}):")
                 context_parts.append(path_info['explanation'])
 
@@ -514,6 +554,9 @@ class ReasoningQueryHandler:
                 if path_chunks:
                     source_ref = self._format_source_reference(path_chunks)
                     context_parts.append(f"  {source_ref}")
+        else:
+            context_parts.append("\n## Reasoning Paths:")
+            context_parts.append("No explicit reasoning paths found. Answer based on the relevant entities and their relationships above.")
 
         # Add source text snippets
         if relevant_chunks and self.text_units:
@@ -537,22 +580,27 @@ class ReasoningQueryHandler:
 
         # Create prompt based on mode
         if strict_mode:
-            system_prompt = """You are a knowledge graph reasoning assistant. 
+            system_prompt = """You are a knowledge graph reasoning assistant specializing in materials science and superalloys.
 
 CRITICAL CONSTRAINTS:
-1. You MUST ONLY use information from the provided knowledge graph reasoning results and source text snippets
-2. You MUST NOT use your own training data or general knowledge
-3. If the provided reasoning results don't contain enough information to answer, say "Based on the available knowledge graph data, I cannot find sufficient information to answer this question."
-4. Every statement in your answer must be traceable to the provided entities, reasoning paths, and source texts
-5. Do not make assumptions or inferences beyond what is explicitly stated in the reasoning results
-6. When making claims, reference the sources using the format to support your statements"""
+1. You MUST ONLY use information from the provided knowledge graph entities, their descriptions, relationships, and source texts
+2. You MUST NOT use your own training data or general knowledge  
+3. If the entities are highly relevant to the question (high relevance scores), synthesize an answer from their descriptions and relationships
+4. Every statement in your answer must be traceable to the provided entities, paths, or source texts
+5. When making claims, reference the entity names or sources to support your statements
+6. If truly no relevant information is found, state that clearly"""
 
             prompt = f"""Question: {query}
 
 Knowledge Graph Reasoning Results:
 {context}
 
-IMPORTANT: Answer ONLY based on the above reasoning results and source texts. Do NOT use any external knowledge or your training data. If the reasoning results are insufficient, explicitly state that. When possible, cite the sources using the [source: ...] format shown above to support your answer."""
+Instructions:
+1. Analyze the relevant entities and their descriptions above
+2. Consider the relationships between entities
+3. Use reasoning paths if available, or synthesize from entity information
+4. Provide a comprehensive answer based on the knowledge graph data
+5. Cite entity names and sources when making claims"""
 
         else:
             system_prompt = "You are a helpful assistant that answers questions based on knowledge graph reasoning."
@@ -563,8 +611,8 @@ Question: {query}
 
 {context}
 
-Please provide a comprehensive answer based on the reasoning paths, entities, and source texts above. 
-Explain how the paths support your answer and cite source chunks when relevant."""
+Please provide a comprehensive answer based on the entities, reasoning paths, and source texts above. 
+Explain how the information supports your answer and cite sources when relevant."""
 
         try:
             response = self.client.chat.completions.create(
@@ -590,7 +638,7 @@ Explain how the paths support your answer and cite source chunks when relevant."
 
         Args:
             query_text: Natural language query
-            method: Reasoning method ('ppr' or 'gnn')
+            method: Reasoning method ('ppr' or 'gnn'), default is 'ppr'
             include_llm_answer: Whether to generate final answer with LLM
             strict_mode: If True, LLM only uses knowledge graph data (no external knowledge)
 
@@ -700,13 +748,15 @@ Explain how the paths support your answer and cite source chunks when relevant."
         self.gnn = trainer.gnn
         self.query_matcher = trainer.query_matcher
 
-        # Recreate reasoner with trained models
+        # Recreate reasoner with trained models and LLM client for keyword extraction
         self.reasoner = GraphReasoner(
             config=self.config,
             graph_data=self.graph_data,
             gnn_model=self.gnn,
             query_matcher=self.query_matcher,
-            device=self.device
+            device=self.device,
+            llm_client=self.client,
+            embedding_model=self.embedding_model_name
         )
 
         return history
