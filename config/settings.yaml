@@ -86,8 +86,8 @@ graph_builder:
   input_path: "data/graphs/enriched/enriched_graph.jsonl"
   disambiguation_graph_path: "data/graphs/disambiguation_graph.json"
   merged_graph_path: "data/graphs/merged_graph.json"
-  output_graph_path: "data/graphs/final_graph_develop.json"
-  community_reports_path: "data/reports/community_summaries_develop.jsonl"
+  output_graph_path: "data/graphs/final_graph.json"
+  community_reports_path: "data/reports/community_summaries.jsonl"
   disambiguation_requests_path: "data/cache/disambiguation_requests.jsonl"
   embedding_requests_path: "data/cache/entities_embedding_requests.jsonl"
   merge_requests_path: "data/cache/entities_merge_requests.jsonl"
@@ -133,10 +133,10 @@ embedding:
   model: "text-embedding-v4"  #"gemini-embedding-001""text-embedding-v4"
   dimensionality: 1024
   input_text_units_path: "data/chunks/text_units.jsonl"
-  input_graph_path: "data/graphs/final_graph_develop.json"
-  input_community_report_path: "data/reports/community_summaries_develop.jsonl"
-  input_id_maps_path: "data/cache/community_detection_id_maps_develop.json"
-  output_db_path: "data/embeddings/multicommunities.db"  #no_entities_merge embedding.db
+  input_graph_path: "data/graphs/final_graph.json"
+  input_community_report_path: "data/reports/community_summaries.jsonl"
+  input_id_maps_path: "data/cache/community_detection_id_maps.json"
+  output_db_path: "data/embeddings/enriched.db"  #no_entities_merge embedding.db  multicommunities.db
   output_db_text_path: "data/embeddings/text.db"
   output_text_table_name: "text"
   requests_path: "data/cache"
@@ -184,13 +184,13 @@ query:
   sleep_interval: 60
   basic_rag_prompt: "config/prompts/basic_rag.md"
   global_db_path: "data/embeddings/enriched.db"  #no_entities_merge   embedding.db  enriched.db
-  embedding_db_path: "data/embeddings/multicommunities.db"  #no_entities_merge   embedding.db  enriched.db
+  embedding_db_path: "data/embeddings/enriched.db"  #no_entities_merge   embedding.db  enriched.db
   global_table_name: "communities"
   local_table_name: "entities"
   prompt_dir: "config/prompts"
 
-  input_graph_path: "data/graphs/final_graph_develop.json"
-  input_community_report_path: "data/reports/community_summaries_develop.jsonl"
+  input_graph_path: "data/graphs/final_graph.json"
+  input_community_report_path: "data/reports/community_summaries.jsonl"
 
 database:
   graphdb:
@@ -330,8 +330,8 @@ reasoning:
 
   # Data paths
   data:
-    graph_path: "data/graphs/final_graph_develop.json"
-    entity_embeddings_db: "data/embeddings/multicommunities.db"
+    graph_path: "data/graphs/final_graph.json"
+    entity_embeddings_db: "data/embeddings/enriched.db"
     entity_table: "entities"
     relationship_table: "relationships"
     pseudo_queries_path: "data/reasoning/pseudo_queries.jsonl"
