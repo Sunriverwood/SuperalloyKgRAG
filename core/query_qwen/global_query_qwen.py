@@ -127,7 +127,7 @@ class GlobalQueryHandler:
         self.generation_model_name = self.config["query"]["generation_model"]
 
         self.prompt_dir = self.config["query"]["prompt_dir"]
-        db_path = PROJECT_ROOT / self.config["query"]["embedding_db_path"]
+        db_path = PROJECT_ROOT / self.config["query"]["global_db_path"]
         table_name = self.config["query"]["global_table_name"]
 
         try:
@@ -141,11 +141,27 @@ class GlobalQueryHandler:
         self.map_prompt_template = self._load_prompt("global_map.md")
         self.reduce_prompt_template = self._load_prompt("global_reduce.md")
 
-        # 加载社区层级配置
-        self.default_community_level = self.config["query"].get("default_community_level", 1)
-        self.enable_dynamic_level_selection = self.config["query"].get("enable_dynamic_level_selection", True)
-        self.level_top_k_mapping = self.config["query"].get("level_top_k_mapping", {0: 2, 1: 20, 2: 50, 3: 200})
-        self.min_rating_by_level = self.config["query"].get("min_rating_by_level", {})
+        # 检测是否使用单层社区模式（基于 graph_builder 配置）
+        self.use_single_layer = not self.config.get("graph_builder", {}).get("use_hierarchical_communities", False)
+
+        if self.use_single_layer:
+            logging.info("=" * 60)
+            logging.info("🔧 单层社区模式已启用")
+            logging.info("   数据库: %s", db_path)
+            logging.info("   层级筛选功能: 已禁用")
+            logging.info("=" * 60)
+            # 单层模式下禁用层级相关配置
+            self.default_community_level = None
+            self.enable_dynamic_level_selection = False
+            self.level_top_k_mapping = {}
+            self.min_rating_by_level = {}
+        else:
+            # 加载社区层级配置（多层模式）
+            self.default_community_level = self.config["query"].get("default_community_level", 1)
+            self.enable_dynamic_level_selection = self.config["query"].get("enable_dynamic_level_selection", True)
+            self.level_top_k_mapping = self.config["query"].get("level_top_k_mapping", {0: 2, 1: 20, 2: 50, 3: 200})
+            self.min_rating_by_level = self.config["query"].get("min_rating_by_level", {})
+
         self.enable_performance_monitoring = self.config["query"].get("enable_performance_monitoring", True)
 
         # 加载 chunk ID 到源信息的映射
@@ -227,6 +243,16 @@ class GlobalQueryHandler:
 
     def _diagnose_level_distribution(self):
         """诊断社区层级分布，输出统计信息"""
+        # 单层社区模式下跳过诊断
+        if self.use_single_layer:
+            try:
+                all_communities = self.community_table.to_pandas()
+                total_communities = len(all_communities)
+                logging.info(f"📊 单层社区模式：共 {total_communities} 个社区")
+            except Exception as e:
+                logging.warning(f"⚠️ 获取社区数量失败: {e}")
+            return
+
         try:
             # 查询所有社区以获取层级分布
             all_communities = self.community_table.to_pandas()
@@ -450,7 +476,21 @@ class GlobalQueryHandler:
         if top_k is None:
             top_k = self.top_k
 
-        # 构建层级筛选条件
+        # 单层社区模式：直接执行向量检索，跳过层级筛选
+        if self.use_single_layer:
+            try:
+                logging.info(f"上下文构建（单层模式）：正在搜索 Top {top_k} 相关社区...")
+                results = self.community_table.search(query_vector).limit(top_k).to_list()
+                actual_count = len(results)
+                logging.info(f"Map阶段：找到 {actual_count} 个社区。")
+                if actual_count < top_k:
+                    logging.warning(f"⚠️ 实际检索到 {actual_count} 个社区，少于请求的 {top_k} 个")
+                return results
+            except Exception as e:
+                logging.error(f"❌ 在LanceDB中搜索社区失败: {e}", exc_info=True)
+                return []
+
+        # 多层社区模式：构建层级筛选条件
         filter_conditions = []
         level_desc = "全部层级"
 
@@ -686,21 +726,33 @@ class GlobalQueryHandler:
         start_time = time.time()
 
         try:
-            # 使用默认层级（如果未指定）
-            if community_level is None and min_level is None and max_level is None:
-                community_level = self.default_community_level
-                logging.info(f"使用默认社区层级: Level {community_level}")
+            # 单层社区模式：跳过层级相关逻辑
+            if self.use_single_layer:
+                logging.info("使用单层社区模式，跳过层级筛选")
+                # 单层模式下强制清空层级参数
+                community_level = None
+                min_level = None
+                max_level = None
+                min_rating = None
+                # 使用配置的默认 top_k
+                if top_k is None:
+                    top_k = self.top_k
+            else:
+                # 多层社区模式：使用默认层级（如果未指定）
+                if community_level is None and min_level is None and max_level is None:
+                    community_level = self.default_community_level
+                    logging.info(f"使用默认社区层级: Level {community_level}")
 
-            # 根据层级自动选择top_k（如果未指定）
-            if top_k is None and community_level is not None:
-                top_k = self.level_top_k_mapping.get(community_level, self.top_k)
-                logging.info(f"根据 Level {community_level} 自动设置 top_k={top_k}")
+                # 根据层级自动选择top_k（如果未指定）
+                if top_k is None and community_level is not None:
+                    top_k = self.level_top_k_mapping.get(community_level, self.top_k)
+                    logging.info(f"根据 Level {community_level} 自动设置 top_k={top_k}")
 
-            # 根据层级设置最小评分（如果未指定且配置了）
-            if min_rating is None and community_level is not None:
-                min_rating = self.min_rating_by_level.get(community_level)
-                if min_rating:
-                    logging.info(f"根据 Level {community_level} 自动设置 min_rating={min_rating}")
+                # 根据层级设置最小评分（如果未指定且配置了）
+                if min_rating is None and community_level is not None:
+                    min_rating = self.min_rating_by_level.get(community_level)
+                    if min_rating:
+                        logging.info(f"根据 Level {community_level} 自动设置 min_rating={min_rating}")
 
             query_vector = self._embed_query(query)
 

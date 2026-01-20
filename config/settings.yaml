@@ -120,7 +120,7 @@ graph_builder:
   manual_review_output_dir: "data/reports/manual_review" # 人工审核输出目录
 
 
-  use_hierarchical_communities: true  # true: 使用递归分层Leiden算法，支持多层级社区结构   # false: 使用传统扁平化Leiden算法（向后兼容）
+  use_hierarchical_communities: false  # true: 使用递归分层Leiden算法，支持多层级社区结构   # false: 使用传统扁平化Leiden算法（向后兼容）
   max_community_level: 3  # 最大递归层级（默认10，防止无限递归）
   min_community_size: 10  # 当社区节点数少于此值时，不再进行细分（默认10）
 
@@ -144,7 +144,7 @@ embedding:
   batch_size: 10000  # 每批次处理的嵌入数量，避免API配额错误
 
 query:
-  top_k: 20
+  top_k: 50
   generation_model: "qwen3-max"  #gemini-2.5-pro""qwen3-max"
   temperature: 0.1
   top_p: 0.9
@@ -183,7 +183,7 @@ query:
   requests_path: "data/cache"
   sleep_interval: 60
   basic_rag_prompt: "config/prompts/basic_rag.md"
-
+  global_db_path: "data/embeddings/enriched.db"  #no_entities_merge   embedding.db  enriched.db
   embedding_db_path: "data/embeddings/multicommunities.db"  #no_entities_merge   embedding.db  enriched.db
   global_table_name: "communities"
   local_table_name: "entities"
