@@ -500,6 +500,20 @@ class ReasoningQueryHandler:
                 if entity_type:
                     entity_info_parts.append(f"  Type: {entity_type}")
 
+                # Add attributes if available
+                attributes = node_data.get('attributes', {})
+                if attributes and isinstance(attributes, dict):
+                    attr_items = []
+                    for key, value in attributes.items():
+                        if value:  # 只显示非空的属性
+                            attr_items.append(f"{key}: {value}")
+                    if attr_items:
+                        # 截断过长的属性信息
+                        attr_str = ', '.join(attr_items)
+                        if len(attr_str) > 200:
+                            attr_str = attr_str[:200] + "..."
+                        entity_info_parts.append(f"  Attributes: {{{attr_str}}}")
+
                 # Get chunk_ids for source reference
                 chunk_ids = node_data.get('chunk_id') or node_data.get('text_unit_ids', [])
                 if isinstance(chunk_ids, str):

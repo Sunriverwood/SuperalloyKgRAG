@@ -157,6 +157,7 @@ class LocalSearchContextBuilder:
             name = node.get("name", "Unk")
             desc = node.get("description", "No desc")
             entity_type = node.get("type", "")
+            attributes = node.get("attributes", {})
 
             # 收集实体名称
             entities_info.append(name)
@@ -173,11 +174,23 @@ class LocalSearchContextBuilder:
 
             # 构建实体条目
             type_str = f" ({entity_type})" if entity_type else ""
+
+            # 格式化 attributes
+            attrs_str = ""
+            if attributes and isinstance(attributes, dict):
+                # 将 attributes 转换为易读格式
+                attr_items = []
+                for key, value in attributes.items():
+                    if value:  # 只显示非空的属性
+                        attr_items.append(f"{key}: {value}")
+                if attr_items:
+                    attrs_str = f" | Attributes: {{{', '.join(attr_items)}}}"
+
             if c_id:
                 source_str = ", ".join(c_id)
-                lines.append(f"{marker}- **{name}**{type_str}: {desc} [cite: {source_str}]")
+                lines.append(f"{marker}- **{name}**{type_str}{attrs_str}: {desc} [cite: {source_str}]")
             else:
-                lines.append(f"{marker}- **{name}**{type_str}: {desc}")
+                lines.append(f"{marker}- **{name}**{type_str}{attrs_str}: {desc}")
 
         # 将实体名称存储到实例变量中供后续使用
         self.entities_info = entities_info
