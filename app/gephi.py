@@ -16,8 +16,8 @@ import json
 import math
 import networkx as nx
 
-json_path = "../data/graphs/final_graph.json"  # 输入 JSON
-gexf_path = "../data/graphs/final_graph.gexf"  # 输出 GEXF
+json_path = "../data/graphs/final_graph_develop.json"  # 输入 JSON
+gexf_path = "../data/graphs/final_graph_develop.gexf"  # 输出 GEXF
 
 
 def clean_value(v):
@@ -60,6 +60,13 @@ for n in data["nodes"]:
     attrs = {}
     for k, v in n.items():
         if k == "id":
+            continue
+        # 将 community_levels 展开为独立的属性字段，便于在 Gephi 中按层级筛选
+        if k == "community_levels" and isinstance(v, dict):
+            for level_key, level_value in v.items():
+                # 将 level_0, level_1 等转换为 community_level_0, community_level_1 等
+                new_key = f"community_{level_key}"
+                attrs[new_key] = clean_value(level_value)
             continue
         attrs[k] = clean_value(v)
 

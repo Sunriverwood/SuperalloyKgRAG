@@ -17,9 +17,9 @@
 
 功能：
 1. 调用 6 个 Baseline 模型和 5 种 RAG 方法获取回答
-2. 使用 LLM 作为评判官，基于五个维度（全面性、多样性、直接性、赋能性、忠实性）进行排序评分
+2. 使用 LLM 作为评判官，基于六个维度（正确性、全面性、多样性、直接性、赋能性、忠实性）进行排序评分
 3. 支持断点续传
-4. 生成详细的评测报告和对比矩阵
+4. 生成详细的评测报告和对比矩阵（所有输出文件带时间戳）
 """
 
 import argparse
@@ -96,9 +96,10 @@ def resolve_api_key(api_key_str: str) -> str:
     return api_key_str
 
 
-# 五个评价维度
-DIMENSIONS = ["comprehensiveness", "diversity", "directness", "empowerment", "faithfulness"]
+# 六个评价维度（新增 correctness 作为最重要维度）
+DIMENSIONS = ["correctness", "comprehensiveness", "diversity", "directness", "empowerment", "faithfulness"]
 DIMENSION_NAMES_CN = {
+    "correctness": "正确性",
     "comprehensiveness": "全面性",
     "diversity": "多样性",
     "directness": "直接性",
@@ -250,6 +251,9 @@ class MultidimensionalEvaluator:
         self.config = config
         self.max_concurrency = max_concurrency
         self.semaphore = asyncio.Semaphore(max_concurrency)
+
+        # 运行时间戳（用于输出文件命名）
+        self.run_timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
         # 数据加载器
         self.data_loader = EvaluationDataLoader()
@@ -673,7 +677,7 @@ class MultidimensionalEvaluator:
 
     def _save_answer(self, method: str, question_id: int, question: str, answer: str, latency: float):
         """保存单个回答到文件"""
-        answer_file = self.answers_dir / f"{method}_answers.jsonl"
+        answer_file = self.answers_dir / f"{method}_answers_{self.run_timestamp}.jsonl"
         record = {
             "question_id": question_id,
             "question": question,
@@ -686,7 +690,7 @@ class MultidimensionalEvaluator:
 
     def _save_detailed_result(self, result: Dict[str, Any]):
         """保存详细结果"""
-        result_file = self.reports_dir / "detailed_results.jsonl"
+        result_file = self.reports_dir / f"detailed_results_{self.run_timestamp}.jsonl"
         with open(result_file, 'a', encoding='utf-8') as f:
             f.write(json.dumps(result, ensure_ascii=False) + '\n')
 
@@ -832,7 +836,7 @@ class MultidimensionalEvaluator:
 
     def generate_comparison_matrix(self, results: List[Dict[str, Any]]) -> str:
         """生成对比矩阵 CSV"""
-        csv_file = self.reports_dir / "comparison_matrix.csv"
+        csv_file = self.reports_dir / f"comparison_matrix_{self.run_timestamp}.csv"
 
         # 构建数据
         headers = ["Method"] + [DIMENSION_NAMES_CN[d] for d in DIMENSIONS] + ["Overall"]
@@ -877,7 +881,8 @@ class MultidimensionalEvaluator:
             self,
             difficulty: Optional[str] = None,
             question_ids: Optional[List[int]] = None,
-            resume: bool = True
+            resume: bool = True,
+            filename: Optional[str] = None
     ) -> Dict[str, Any]:
         """
         运行完整评测
@@ -886,9 +891,10 @@ class MultidimensionalEvaluator:
             difficulty: 指定难度级别 (L12/L3/L4)，None 表示全部
             question_ids: 指定题目 ID 列表
             resume: 是否从断点继续
+            filename: 指定评测文件名 (如 'hard.json')
         """
         # 加载题目
-        questions = self.data_loader.load_questions(difficulty=difficulty, question_ids=question_ids)
+        questions = self.data_loader.load_questions(difficulty=difficulty, question_ids=question_ids, filename=filename)
         self.stats["total_questions"] = len(questions)
 
         logging.info(f"共加载 {len(questions)} 道题目")
@@ -937,7 +943,7 @@ class MultidimensionalEvaluator:
 
         # 加载已有的详细结果（用于生成完整报告）
         all_results = []
-        detailed_file = self.reports_dir / "detailed_results.jsonl"
+        detailed_file = self.reports_dir / f"detailed_results_{self.run_timestamp}.jsonl"
         if detailed_file.exists():
             with open(detailed_file, 'r', encoding='utf-8') as f:
                 for line in f:
@@ -946,7 +952,7 @@ class MultidimensionalEvaluator:
 
         # 生成汇总报告
         summary = self.generate_summary(all_results)
-        summary_file = self.reports_dir / "evaluation_summary.json"
+        summary_file = self.reports_dir / f"evaluation_summary_{self.run_timestamp}.json"
         with open(summary_file, 'w', encoding='utf-8') as f:
             json.dump(summary, f, ensure_ascii=False, indent=2)
         logging.info(f"汇总报告已保存: {summary_file}")
@@ -1009,6 +1015,12 @@ async def main():
         default=None,
         help="最大并发数（默认从配置文件读取）"
     )
+    parser.add_argument(
+        "--filename",
+        type=str,
+        default=None,
+        help="指定评测文件名 (如 hard.json)"
+    )
 
     args = parser.parse_args()
 
@@ -1044,7 +1056,8 @@ async def main():
     await evaluator.run(
         difficulty=args.difficulty,
         question_ids=question_ids,
-        resume=resume
+        resume=resume,
+        filename=args.filename
     )
 
 

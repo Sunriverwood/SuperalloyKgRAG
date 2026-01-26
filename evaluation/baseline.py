@@ -322,7 +322,8 @@ class BaselineEvaluator:
             self, 
             difficulty: Optional[str] = None, 
             question_ids: Optional[List[int]] = None,
-            model_names: Optional[List[str]] = None
+            model_names: Optional[List[str]] = None,
+            filename: Optional[str] = None
     ) -> Dict[str, Any]:
         """
         运行完整基线评测流程的主入口
@@ -331,6 +332,7 @@ class BaselineEvaluator:
             difficulty: 难度过滤
             question_ids: ID 过滤
             model_names: 模型名称过滤 (None 表示全部)
+            filename: 指定评测文件名 (如 'hard.json')
 
         Returns:
             对比报告
@@ -338,7 +340,8 @@ class BaselineEvaluator:
         # 1. 加载题目
         questions = self.data_loader.load_questions(
             difficulty=difficulty,
-            question_ids=question_ids
+            question_ids=question_ids,
+            filename=filename
         )
 
         if not questions:
@@ -383,6 +386,7 @@ async def main():
     parser.add_argument("--models", type=str, default=None, help="模型名称列表，逗号分隔")
     parser.add_argument("--concurrency", type=int, default=5, help="最大并发数")
     parser.add_argument("--settings", type=str, default="settings.yaml", help="配置文件名")
+    parser.add_argument("--filename", type=str, default=None, help="指定评测文件名 (如 hard.json)")
 
     args = parser.parse_args()
 
@@ -406,7 +410,8 @@ async def main():
     report = await evaluator.run(
         difficulty=args.difficulty,
         question_ids=question_ids,
-        model_names=model_names
+        model_names=model_names,
+        filename=args.filename
     )
 
     # 打印摘要

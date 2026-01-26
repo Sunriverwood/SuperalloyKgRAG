@@ -83,7 +83,8 @@ class EvaluationDataLoader:
     def load_questions(
             self,
             difficulty: Optional[str] = None,
-            question_ids: Optional[List[int]] = None
+            question_ids: Optional[List[int]] = None,
+            filename: Optional[str] = None
     ) -> List[Dict[str, Any]]:
         """
         加载评测题目
@@ -91,6 +92,7 @@ class EvaluationDataLoader:
         Args:
             difficulty: 指定难度级别 (L1/L2/L3/L4)，None 表示加载全部
             question_ids: 指定题目 ID 列表，None 表示加载全部
+            filename: 指定文件名 (如 'hard.json')，优先级最高
 
         Returns:
             题目列表
@@ -98,7 +100,10 @@ class EvaluationDataLoader:
         questions = []
 
         # 确定要加载的文件
-        if difficulty:
+        if filename:
+            # 如果指定了文件名，只加载该文件
+            files = [filename]
+        elif difficulty:
             difficulty = difficulty.upper()
             if difficulty in ["L1", "L2"]:
                 files = ["L12.json"]
@@ -505,7 +510,8 @@ class AutoEvaluator:
             self,
             difficulty: Optional[str] = None,
             question_ids: Optional[List[int]] = None,
-            save_intermediate: bool = True
+            save_intermediate: bool = True,
+            filename: Optional[str] = None
     ) -> Dict[str, Any]:
         """
         运行完整评测流程的主入口方法
@@ -514,6 +520,7 @@ class AutoEvaluator:
             difficulty: 指定难度级别 (L1/L2/L3/L4)，None 表示全部
             question_ids: 指定题目 ID 列表，None 表示全部
             save_intermediate: 是否保存中间结果
+            filename: 指定评测文件名 (如 'hard.json')
 
         Returns:
             评测报告字典
@@ -525,7 +532,8 @@ class AutoEvaluator:
         # 加载题目
         questions = self.data_loader.load_questions(
             difficulty=difficulty,
-            question_ids=question_ids
+            question_ids=question_ids,
+            filename=filename
         )
 
         if not questions:
@@ -557,6 +565,7 @@ if __name__ == "__main__":
     parser.add_argument("--mode", type=str, default=None,
                        choices=['local', 'global', 'reasoning', 'drift'],
                        help="指定查询模式 (local/global/reasoning/drift)，不指定则使用自动路由")
+    parser.add_argument("--filename", type=str, default=None, help="指定评测文件名 (如 hard.json)")
 
     args = parser.parse_args()
 
@@ -574,7 +583,8 @@ if __name__ == "__main__":
 
     report = asyncio.run(evaluator.run(
         difficulty=args.difficulty,
-        question_ids=question_ids
+        question_ids=question_ids,
+        filename=args.filename
     ))
 
     print("\n" + "=" * 80)
