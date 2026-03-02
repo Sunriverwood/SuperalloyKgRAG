@@ -98,8 +98,9 @@ Overall Score = 0.6 × Keyword_F1 + 0.4 × Semantic_Similarity
 #### 2. 语义相似度 (40% 权重)
 
 - **方法**: 使用 Embedding 模型计算余弦相似度
-- **模型**: `text-embedding-v4` (768 维)
+- **模型**: `text-embedding-v4` (1024维)
 - **计算公式**:
+  
   ```
   Semantic_Score = cosine_similarity(embedding(answer), embedding(ground_truth))
   ```
