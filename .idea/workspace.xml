@@ -4,10 +4,318 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="1356365c-4e55-45c5-8e65-a4f6e3ed1df4" name="更改" comment="feat: update configuration and enhance data handling; improve file management and compatibility for various data structures">
+    <list default="true" id="1356365c-4e55-45c5-8e65-a4f6e3ed1df4" name="更改" comment="feat: add various document parsing and analysis modules; implement structured outputs for academic papers, community summaries, and knowledge graph extraction">
       <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/SuperalloyKgRAG.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/SuperalloyKgRAG.iml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/answers/baseline/baseline_ERNIE-4.5-Turbo-128K_20260126_173635.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/answers/baseline/baseline_MiniMax-M2_20251223_221112.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/answers/baseline/baseline_MiniMax-M2_20251229_012308.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/answers/baseline/baseline_MiniMax-M2_20260126_172857.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/answers/baseline/baseline_deepseek-v3.2_20251223_214541.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/answers/baseline/baseline_deepseek-v3.2_20251229_004441.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/answers/baseline/baseline_deepseek-v3.2_20260126_171230.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/answers/baseline/baseline_glm-4.6_20251223_214652.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/answers/baseline/baseline_glm-4.6_20251229_010502.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/answers/baseline/baseline_glm-4.7_20260126_172126.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/answers/baseline/baseline_kimi-k2-thinking_20251223_214413.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/answers/baseline/baseline_kimi-k2-thinking_20251228_235814.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/answers/baseline/baseline_kimi-k2-thinking_20260126_163716.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/answers/baseline/baseline_qwen-max_20251223_190633.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/answers/baseline/baseline_qwen-plus_20251223_191540.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/answers/baseline/baseline_qwen3-max-2025-09-23_20251223_214313.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/answers/baseline/baseline_qwen3-max-2025-09-23_20251228_232736.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/answers/baseline/baseline_qwen3-max-2025-09-23_20251228_234247.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/answers/baseline/baseline_qwen3-max_20260126_163050.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/answers/evaluation_20251205_104914.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/answers/evaluation_20251215_200009.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/answers/evaluation_20251223_180220.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/answers/evaluation_20251223_182648.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/answers/evaluation_20251229_110133.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/answers/evaluation_20251229_112718.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/answers/evaluation_20251229_114829.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/answers/evaluation_20251229_121416.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/answers/evaluation_20251229_134231.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/answers/evaluation_20260114_222043.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/answers/evaluation_20260126_161303.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/answers/evaluation_20260126_175308.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/answers/evaluation_20260126_191344.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/answers/multidimensional_evaluation/5dimensionals/ERNIE-4.5-Turbo-128K_answers.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/answers/multidimensional_evaluation/5dimensionals/MiniMax-M2_answers.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/answers/multidimensional_evaluation/5dimensionals/basic_rag_answers.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/answers/multidimensional_evaluation/5dimensionals/deepseek-v3.2_answers.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/answers/multidimensional_evaluation/5dimensionals/glm-4.7_answers.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/answers/multidimensional_evaluation/5dimensionals/global_answers.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/answers/multidimensional_evaluation/5dimensionals/kimi-k2-thinking_answers.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/answers/multidimensional_evaluation/5dimensionals/local_answers.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/answers/multidimensional_evaluation/5dimensionals/qwen3-max_answers.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/answers/multidimensional_evaluation/5dimensionals/reasoning_answers.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/answers/multidimensional_evaluation/5dimensionals/router_answers.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/answers/multidimensional_evaluation/ERNIE-4.5-Turbo-128K_answers_20260126_165002.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/answers/multidimensional_evaluation/MiniMax-M2_answers_20260126_165002.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/answers/multidimensional_evaluation/basic_rag_answers_20260126_165002.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/answers/multidimensional_evaluation/deepseek-v3.2_answers_20260126_165002.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/answers/multidimensional_evaluation/glm-4.7_answers_20260126_165002.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/answers/multidimensional_evaluation/global_answers_20260126_165002.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/answers/multidimensional_evaluation/kimi-k2-thinking_answers_20260126_165002.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/answers/multidimensional_evaluation/local_answers_20260126_165002.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/answers/multidimensional_evaluation/qwen3-max_answers_20260126_165002.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/answers/multidimensional_evaluation/reasoning_answers_20260126_165002.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/answers/multidimensional_evaluation/router_answers_20260126_165002.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/cache/community_detection.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/cache/community_detection_id_maps.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/cache/community_detection_id_maps_develop.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/cache/community_detection_level0.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/cache/community_detection_level0_id_maps.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/cache/community_detection_level1.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/cache/community_detection_level1_id_maps.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/cache/community_detection_level2.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/cache/community_detection_level2_id_maps.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/cache/community_detection_level3.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/cache/community_detection_level3_id_maps.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/cache/community_reports_level0.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/cache/community_reports_level1.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/cache/community_reports_level2.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/cache/community_reports_level3.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/cache/community_summaries_checkpoint_level0.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/cache/community_summaries_checkpoint_level1.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/cache/community_summaries_checkpoint_level2.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/cache/community_summaries_checkpoint_level3.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/cache/disambiguation_requests_batch_1.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/cache/disambiguation_requests_batch_2.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/cache/disambiguation_requests_batch_3.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/cache/disambiguation_requests_batch_4.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/cache/disambiguation_requests_batch_5.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/cache/disambiguation_requests_batch_6.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/cache/disambiguation_requests_batch_7.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/cache/disambiguation_requests_batch_8.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/cache/disambiguation_requests_batch_9.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/cache/embedding_communities_requests.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/cache/embedding_communities_requests_batch_1.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/cache/embedding_communities_requests_batch_2.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/cache/embedding_entities_requests.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/cache/embedding_entities_requests_batch_1.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/cache/embedding_entities_requests_batch_2.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/cache/embedding_entities_requests_batch_3.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/cache/embedding_entities_requests_batch_4.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/cache/embedding_entities_requests_batch_5.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/cache/embedding_entities_requests_batch_6.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/cache/embedding_relationships_requests.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/cache/embedding_relationships_requests_batch_1.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/cache/embedding_relationships_requests_batch_2.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/cache/embedding_relationships_requests_batch_3.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/cache/embedding_relationships_requests_batch_4.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/cache/embedding_relationships_requests_batch_5.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/cache/embedding_relationships_requests_batch_6.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/cache/embedding_relationships_requests_batch_7.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/cache/embedding_relationships_requests_batch_8.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/cache/embedding_text_units_requests.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/cache/entities_embedding_requests.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/cache/entities_embedding_requests_batch_1.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/cache/entities_embedding_requests_batch_2.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/cache/entities_embedding_requests_batch_3.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/cache/entities_embedding_requests_batch_4.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/cache/entities_embedding_requests_batch_5.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/cache/entities_embedding_requests_batch_6.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/cache/entities_embedding_requests_batch_7.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/cache/entities_embedding_requests_batch_8.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/cache/entities_embedding_requests_batch_9.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/cache/entities_merge_requests.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/cache/extraction_abstract_requests.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/cache/extraction_image_requests.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/cache/extraction_requests.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/cache/extraction_table_requests.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/cache/pdf_parsing_requests.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/cache/processing_state.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/chunks/abstract_units.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/chunks/image_units.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/chunks/table_units.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/chunks/text_units.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/embeddings/embedding.db/communities.lance/_transactions/0-f09a6cb2-ad68-466a-a14b-94a109640d2b.txn" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/embeddings/embedding.db/communities.lance/_transactions/1-1b46149f-9417-4243-a7a1-bc1caf57ec6b.txn" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/embeddings/embedding.db/communities.lance/_versions/1.manifest" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/embeddings/embedding.db/communities.lance/_versions/2.manifest" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/embeddings/embedding.db/communities.lance/data/69a3fe89-3ae7-4483-8e83-bcc475c02443.lance" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/embeddings/embedding.db/entities.lance/_transactions/0-fc39cc4a-cb1a-4617-a964-b10e020c8461.txn" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/embeddings/embedding.db/entities.lance/_transactions/1-eb41d16b-8d5a-43d7-acd0-6d8559c3b72f.txn" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/embeddings/embedding.db/entities.lance/_versions/1.manifest" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/embeddings/embedding.db/entities.lance/_versions/2.manifest" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/embeddings/embedding.db/entities.lance/data/b7056c7c-66f8-4664-8394-b80103a4746f.lance" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/embeddings/embedding.db/relationships.lance/_transactions/0-7a26a0a4-a861-4a46-a56e-f144389dc49f.txn" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/embeddings/embedding.db/relationships.lance/_transactions/1-adda1a74-c411-4efe-befa-4ae209a115ab.txn" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/embeddings/embedding.db/relationships.lance/_versions/1.manifest" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/embeddings/embedding.db/relationships.lance/_versions/2.manifest" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/embeddings/embedding.db/relationships.lance/data/3d681f85-1350-4431-9d63-4774d12238f9.lance" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/embeddings/enriched.db/communities.lance/_transactions/0-d6eb8a31-b40e-49c7-b129-e57284f75b4b.txn" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/embeddings/enriched.db/communities.lance/_transactions/1-6bdfe8c1-f552-45c2-9b30-b3e310668aa6.txn" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/embeddings/enriched.db/communities.lance/_versions/1.manifest" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/embeddings/enriched.db/communities.lance/_versions/2.manifest" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/embeddings/enriched.db/communities.lance/data/27d8d96b-641a-4825-ac47-e4b09c3ac3eb.lance" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/embeddings/enriched.db/entities.lance/_transactions/0-c7a473f3-06f9-4339-9ff9-218ee4911dec.txn" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/embeddings/enriched.db/entities.lance/_transactions/1-a794652a-baa1-4b12-803a-e9b567974a7f.txn" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/embeddings/enriched.db/entities.lance/_versions/1.manifest" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/embeddings/enriched.db/entities.lance/_versions/2.manifest" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/embeddings/enriched.db/entities.lance/data/8e41e3ce-4ae0-49f8-a114-ec6af17bb2c4.lance" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/embeddings/enriched.db/relationships.lance/_transactions/0-42295816-d9b7-4a5c-a6e1-eac089e40839.txn" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/embeddings/enriched.db/relationships.lance/_transactions/1-d587f331-e8a6-4ee7-90fd-12f004cb9327.txn" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/embeddings/enriched.db/relationships.lance/_versions/1.manifest" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/embeddings/enriched.db/relationships.lance/_versions/2.manifest" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/embeddings/enriched.db/relationships.lance/data/9af9a395-0465-4709-ba42-03d3d1856c74.lance" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/embeddings/multicommunities.db/communities.lance/_transactions/0-68589f8a-4f1e-4a96-9d8d-2ca7789b6ec3.txn" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/embeddings/multicommunities.db/communities.lance/_transactions/1-1eaf2a78-7021-4f6c-83a1-ff5a5a598c7c.txn" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/embeddings/multicommunities.db/communities.lance/_versions/1.manifest" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/embeddings/multicommunities.db/communities.lance/_versions/2.manifest" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/embeddings/multicommunities.db/communities.lance/data/b2a07144-eeec-46c1-99c6-483eab5438ce.lance" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/embeddings/multicommunities.db/entities.lance/_transactions/0-fe53cb3a-0fbf-4d81-9090-6014ece386ad.txn" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/embeddings/multicommunities.db/entities.lance/_transactions/1-4a32cf98-ca6f-4b5b-a059-8334db86a784.txn" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/embeddings/multicommunities.db/entities.lance/_versions/1.manifest" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/embeddings/multicommunities.db/entities.lance/_versions/2.manifest" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/embeddings/multicommunities.db/entities.lance/data/d1b7a0b9-3bf3-4673-ad09-46fd5216094e.lance" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/embeddings/multicommunities.db/relationships.lance/_transactions/0-ca22c28d-e7f1-4545-b50b-25e171d90530.txn" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/embeddings/multicommunities.db/relationships.lance/_transactions/1-bd7b552e-ef99-40bb-a176-9b62829f315b.txn" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/embeddings/multicommunities.db/relationships.lance/_versions/1.manifest" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/embeddings/multicommunities.db/relationships.lance/_versions/2.manifest" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/embeddings/multicommunities.db/relationships.lance/data/421dd74f-c2bc-44d6-83ab-7e86e7381b0c.lance" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/embeddings/no_entities_merge.db/communities.lance/_transactions/0-586a5868-bf26-4e22-a224-47f96e7856a0.txn" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/embeddings/no_entities_merge.db/communities.lance/_transactions/1-e30a1cc6-333b-4e9b-8f06-935ac122c5c1.txn" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/embeddings/no_entities_merge.db/communities.lance/_versions/1.manifest" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/embeddings/no_entities_merge.db/communities.lance/_versions/2.manifest" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/embeddings/no_entities_merge.db/communities.lance/data/1073e3d8-830e-4a0d-84ad-179a55b8722b.lance" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/embeddings/no_entities_merge.db/entities.lance/_transactions/0-32e097f4-0cf5-4a7a-abcc-ec4a32400d9e.txn" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/embeddings/no_entities_merge.db/entities.lance/_transactions/1-c296a127-98d2-4fa1-98a3-3fbd49e16c29.txn" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/embeddings/no_entities_merge.db/entities.lance/_versions/1.manifest" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/embeddings/no_entities_merge.db/entities.lance/_versions/2.manifest" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/embeddings/no_entities_merge.db/entities.lance/data/27df72bc-f728-42ab-894e-88d6ab8183dc.lance" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/embeddings/no_entities_merge.db/relationships.lance/_transactions/0-333d3a82-6e5f-4404-be8e-a319d21a4241.txn" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/embeddings/no_entities_merge.db/relationships.lance/_transactions/1-29c46395-7c9e-424b-8860-89e8546d0eb4.txn" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/embeddings/no_entities_merge.db/relationships.lance/_versions/1.manifest" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/embeddings/no_entities_merge.db/relationships.lance/_versions/2.manifest" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/embeddings/no_entities_merge.db/relationships.lance/data/dea3b72b-7a17-4480-a329-f4795c4b262d.lance" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/embeddings/text.db/text.lance/_transactions/0-6ef02d32-1059-4f93-8af5-6ce7e16acfec.txn" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/embeddings/text.db/text.lance/_transactions/1-9536c914-f964-4d95-a6fe-8da6f79fe1a1.txn" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/embeddings/text.db/text.lance/_versions/1.manifest" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/embeddings/text.db/text.lance/_versions/2.manifest" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/embeddings/text.db/text.lance/data/476db097-b551-4708-ac20-310ad930f405.lance" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/evaluation_sets/L12.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/evaluation_sets/L3.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/evaluation_sets/L4.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/evaluation_sets/hard.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/full_paper/1-s2.0-S1359645424008711-main.pdf" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/graphs/clustering/agglomerative/community_graph.gexf" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/graphs/clustering/agglomerative/community_graph.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/graphs/clustering/hdbscan/community_graph.gexf" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/graphs/clustering/hdbscan/community_graph.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/graphs/clustering/hdbscan_leiden/res_2/community_graph.gexf" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/graphs/clustering/hdbscan_leiden/res_2/community_graph.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/graphs/clustering/hdbscan_leiden/res_4/community_graph.gexf" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/graphs/clustering/hdbscan_leiden/res_4/community_graph.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/graphs/clustering/hdbscan_leiden/res_8/community_graph.gexf" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/graphs/clustering/hdbscan_leiden/res_8/community_graph.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/graphs/clustering/infomap/community_graph.gexf" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/graphs/clustering/infomap/community_graph.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/graphs/clustering/kmeans/community_graph.gexf" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/graphs/clustering/kmeans/community_graph.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/graphs/clustering/label_propagation/community_graph.gexf" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/graphs/clustering/label_propagation/community_graph.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/graphs/clustering/leiden/res_0.01/community_graph.gexf" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/graphs/clustering/leiden/res_0.01/community_graph.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/graphs/clustering/leiden/res_0.05/community_graph.gexf" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/graphs/clustering/leiden/res_0.05/community_graph.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/graphs/clustering/leiden/res_0.1/community_graph.gexf" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/graphs/clustering/leiden/res_0.1/community_graph.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/graphs/clustering/leiden/res_0.25/community_graph.gexf" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/graphs/clustering/leiden/res_0.25/community_graph.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/graphs/clustering/leiden/res_0.5/community_graph.gexf" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/graphs/clustering/leiden/res_0.5/community_graph.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/graphs/clustering/leiden/res_1/community_graph.gexf" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/graphs/clustering/leiden/res_1/community_graph.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/graphs/clustering/leiden/res_2/community_graph.gexf" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/graphs/clustering/leiden/res_2/community_graph.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/graphs/clustering/leiden/res_4/community_graph.gexf" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/graphs/clustering/leiden/res_4/community_graph.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/graphs/clustering/leiden/res_8/community_graph.gexf" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/graphs/clustering/leiden/res_8/community_graph.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/graphs/clustering/louvain/res_0.01/community_graph.gexf" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/graphs/clustering/louvain/res_0.01/community_graph.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/graphs/clustering/louvain/res_0.05/community_graph.gexf" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/graphs/clustering/louvain/res_0.05/community_graph.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/graphs/clustering/louvain/res_0.1/community_graph.gexf" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/graphs/clustering/louvain/res_0.1/community_graph.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/graphs/clustering/louvain/res_0.25/community_graph.gexf" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/graphs/clustering/louvain/res_0.25/community_graph.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/graphs/clustering/louvain/res_0.5/community_graph.gexf" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/graphs/clustering/louvain/res_0.5/community_graph.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/graphs/clustering/louvain/res_1/community_graph.gexf" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/graphs/clustering/louvain/res_1/community_graph.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/graphs/clustering/louvain/res_2/community_graph.gexf" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/graphs/clustering/louvain/res_2/community_graph.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/graphs/clustering/louvain/res_4/community_graph.gexf" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/graphs/clustering/louvain/res_4/community_graph.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/graphs/clustering/louvain/res_8/community_graph.gexf" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/graphs/clustering/louvain/res_8/community_graph.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/graphs/clustering/spectral/community_graph.gexf" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/graphs/clustering/spectral/community_graph.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/graphs/clustering/summary.csv" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/graphs/disambiguation_graph.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/graphs/enriched/enriched_graph.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/graphs/extracted/extracted_abstract_graph.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/graphs/extracted/extracted_graph.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/graphs/extracted/extracted_image_graph.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/graphs/extracted/extracted_table_graph.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/graphs/final_graph.gexf" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/graphs/final_graph.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/graphs/final_graph_develop.gexf" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/graphs/final_graph_develop.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/graphs/final_graph_no_merge.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/graphs/merged_graph.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/graphs/merged_graph_brute_force.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/graphs/neo4j_import_data.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/papers/superalloy_research.xlsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/processed_jsons/The-Superalloys-Fundumentals-and-Applications-1-40.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/processed_jsons/The-Superalloys-Fundumentals-and-Applications-121-160.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/processed_jsons/The-Superalloys-Fundumentals-and-Applications-161-200.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/processed_jsons/The-Superalloys-Fundumentals-and-Applications-201-240.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/processed_jsons/The-Superalloys-Fundumentals-and-Applications-241-280.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/processed_jsons/The-Superalloys-Fundumentals-and-Applications-281-320.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/processed_jsons/The-Superalloys-Fundumentals-and-Applications-321-360.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/processed_jsons/The-Superalloys-Fundumentals-and-Applications-361-390.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/processed_jsons/The-Superalloys-Fundumentals-and-Applications-41-80.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/processed_jsons/The-Superalloys-Fundumentals-and-Applications-81-120.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/processed_papers/1-s2.0-S1359645424008711-main.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/raw_pdfs/The-Superalloys-Fundumentals-and-Applications-1-40.pdf" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/raw_pdfs/The-Superalloys-Fundumentals-and-Applications-121-160.pdf" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/raw_pdfs/The-Superalloys-Fundumentals-and-Applications-161-200.pdf" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/raw_pdfs/The-Superalloys-Fundumentals-and-Applications-201-240.pdf" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/raw_pdfs/The-Superalloys-Fundumentals-and-Applications-241-280.pdf" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/raw_pdfs/The-Superalloys-Fundumentals-and-Applications-281-320.pdf" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/raw_pdfs/The-Superalloys-Fundumentals-and-Applications-321-360.pdf" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/raw_pdfs/The-Superalloys-Fundumentals-and-Applications-361-390.pdf" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/raw_pdfs/The-Superalloys-Fundumentals-and-Applications-41-80.pdf" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/raw_pdfs/The-Superalloys-Fundumentals-and-Applications-81-120.pdf" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/reasoning/develop.pt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/reports/baseline/baseline_comparison_20251223_214749.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/reports/baseline/baseline_comparison_20251223_221214.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/reports/baseline/baseline_comparison_20251229_014021.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/reports/baseline/baseline_comparison_20260126_174503.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/reports/community_summaries.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/reports/community_summaries_develop.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/reports/community_summaries_no_merge.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/reports/evaluation_report_20251229_111544_router.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/reports/evaluation_report_20251229_113957_local.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/reports/evaluation_report_20251229_120428_drift.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/reports/evaluation_report_20251229_125639_global.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/reports/evaluation_report_20251229_135925_drift_llm.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/reports/evaluation_report_20260115_040943_reasoning.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/reports/evaluation_report_20260126_162151_router.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/reports/evaluation_report_20260126_180102_drift.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/reports/evaluation_report_20260126_194937_reasoning.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/reports/multidimensional_evaluation/5dimensions/checkpoint.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/reports/multidimensional_evaluation/5dimensions/comparison_matrix.csv" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/reports/multidimensional_evaluation/5dimensions/detailed_results.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/reports/multidimensional_evaluation/5dimensions/evaluation_summary.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/reports/multidimensional_evaluation/checkpoint.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/reports/multidimensional_evaluation/comparison_matrix_20260126_165002.csv" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/reports/multidimensional_evaluation/detailed_results_20260126_165002.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/reports/multidimensional_evaluation/evaluation_summary_20260126_165002.json" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -39,6 +347,11 @@
     </option>
   </component>
   <component name="Git.Settings">
+    <option name="RECENT_BRANCH_BY_REPOSITORY">
+      <map>
+        <entry key="$PROJECT_DIR$" value="develop" />
+      </map>
+    </option>
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
   <component name="GitHubPullRequestSearchHistory">{
@@ -99,7 +412,7 @@
     "RunOnceActivity.git.unshallow": "true",
     "SHARE_PROJECT_CONFIGURATION_FILES": "true",
     "datagrid.heatmap.switchedByDefault": "false",
-    "git-widget-placeholder": "develop2",
+    "git-widget-placeholder": "feature/full__amount",
     "ignore.virus.scanning.warn.message": "true",
     "last_opened_file_path": "D:/Pycharm/Projects/SuperalloyKgRAG/data/graphs/graph_history_versions",
     "settings.editor.selected.configurable": "preferences.pluginManager"
@@ -134,14 +447,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1758197478087</updated>
-    </task>
-    <task id="LOCAL-00015" summary="feat: implement embedding workflow with data loading, processing, and storage in LanceDB">
-      <option name="closed" value="true" />
-      <created>1758976504482</created>
-      <option name="number" value="00015" />
-      <option name="presentableId" value="LOCAL-00015" />
-      <option name="project" value="LOCAL" />
-      <updated>1758976504482</updated>
     </task>
     <task id="LOCAL-00016" summary="feat: add RAG query handler and embedding workflow with logging and configuration management">
       <option name="closed" value="true" />
@@ -527,7 +832,15 @@
       <option name="project" value="LOCAL" />
       <updated>1773476429292</updated>
     </task>
-    <option name="localTasksCounter" value="64" />
+    <task id="LOCAL-00064" summary="feat: add various document parsing and analysis modules; implement structured outputs for academic papers, community summaries, and knowledge graph extraction">
+      <option name="closed" value="true" />
+      <created>1773480194822</created>
+      <option name="number" value="00064" />
+      <option name="presentableId" value="LOCAL-00064" />
+      <option name="project" value="LOCAL" />
+      <updated>1773480194822</updated>
+    </task>
+    <option name="localTasksCounter" value="65" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -557,7 +870,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="feat: add RAG query handler and embedding workflow with logging and configuration management" />
     <MESSAGE value="feat: implement global query handler with logging and configuration management" />
     <MESSAGE value="feat: enhance global query handler with JSON parsing, async processing, and context building" />
     <MESSAGE value="ceshi" />
@@ -582,7 +894,8 @@
     <MESSAGE value="feat: implement end-to-end indexing pipeline from PDF to knowledge graph vector storage" />
     <MESSAGE value="feat: update prompt structures for improved clarity and consistency in knowledge extraction tasks" />
     <MESSAGE value="feat: update configuration and enhance data handling; improve file management and compatibility for various data structures" />
-    <option name="LAST_COMMIT_MESSAGE" value="feat: update configuration and enhance data handling; improve file management and compatibility for various data structures" />
+    <MESSAGE value="feat: add various document parsing and analysis modules; implement structured outputs for academic papers, community summaries, and knowledge graph extraction" />
+    <option name="LAST_COMMIT_MESSAGE" value="feat: add various document parsing and analysis modules; implement structured outputs for academic papers, community summaries, and knowledge graph extraction" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
