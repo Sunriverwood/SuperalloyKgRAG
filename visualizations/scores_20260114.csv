@@ -1,0 +1,102 @@
+﻿question_id,difficulty,type,domain,reasoning
+1,L3,Global Summary,Process,0.6744482989841093
+2,L1,Fact Retrieval,Structure,0.0
+3,L2,Reasoning,Property,0.0
+4,L2,Reasoning,Process,0.0
+5,L2,Reasoning,Comparison,0.0
+6,L2,Reasoning,Structure,0.0
+7,L1,Fact Retrieval,Property,0.0
+8,L1,Fact Retrieval,Property,0.0
+9,L2,Reasoning,Composition,0.0
+10,L2,Reasoning,Process,0.0
+11,L2,Reasoning,Structure,0.0
+12,L2,Numerical,Property,0.34629349583542435
+13,L2,Numerical,Application,0.31616249692897724
+14,L1,Numerical,Application,0.2779662720311087
+15,L2,Numerical,Design,0.30070485398301416
+16,L2,Numerical,Comparison,0.29684139436579166
+17,L1,Numerical,Theory,0.28821279315406834
+18,L1,Numerical,Structure,0.37014797915005215
+19,L1,Numerical,Property,0.3075690011394626
+20,L3,Global Summary,Property,0.1928362976947856
+21,L2,Numerical,Defect,0.32189932218670575
+22,L2,Reasoning,Design,0.12246371471794298
+23,L2,Numerical,Process,0.42733690359231047
+24,L1,Fact Retrieval,Coating,0.10396206319952728
+25,L2,Numerical,Property,0.1694579459712066
+26,L1,Numerical,Design,0.43436537699323235
+27,L1,Reasoning,Theory,0.4546913729144598
+28,L2,Reasoning,Theory,0.5702096896359249
+29,L2,Reasoning,Structure,0.32705567662559354
+30,L2,Reasoning,Defect,0.41695651821548374
+31,L2,Reasoning,Application,0.1867810483325622
+32,L2,Reasoning,Design,0.6351395306951311
+33,L2,Reasoning,Design,0.3654903168053292
+34,L1,Fact Retrieval,Composition,0.32226706503409874
+35,L2,Reasoning,Coating,0.30687781483740395
+36,L2,Reasoning,Defect,0.3690947808669992
+37,L1,Numerical,Composition,0.34228114652913916
+38,L1,Numerical,Composition,0.3434536971692705
+39,L1,Numerical,Composition,0.3435123660490266
+40,L1,Numerical,Property,0.4510625472529231
+41,L2,Numerical,Comparison,0.42796977723895546
+42,L1,Numerical,Process,0.45176250940047924
+43,L2,Numerical,Design,0.451568116247293
+44,L1,Numerical,Theory,0.47072345119226744
+45,L1,Numerical,Coating,0.3369398812238523
+46,L1,Numerical,Property,0.3458498141073269
+47,L1,Numerical,Coating,0.43936878765283527
+48,L2,Reasoning,Structure,0.3973000164405346
+49,L2,Reasoning,Structure,0.11528566110587923
+50,L1,Fact Retrieval,Application,0.41017681166424286
+51,L2,Numerical,Structure,0.4392249154922905
+52,L2,Numerical,Property,0.4319183972678473
+53,L2,Numerical,Process,0.43631891562755437
+54,L2,Numerical,Process,0.44970798344473983
+55,L1,Numerical,Property,0.44746653198646236
+56,L1,Numerical,Theory,0.4651047522588956
+57,L1,Numerical,Theory,0.5075907029428135
+58,L2,Numerical,Application,0.4703824804457743
+59,L1,Numerical,Property,0.34700490720195926
+60,L2,Numerical,Design,0.44416576122352125
+61,L1,Numerical,Structure,0.44301616263136157
+62,L2,Numerical,Defect,0.43569840360182593
+63,L1,Numerical,Process,0.46306344019599244
+64,L1,Numerical,Process,0.4471723022505181
+65,L1,Numerical,Coating,0.4495677766289021
+66,L2,Numerical,Property,0.45728891069012634
+67,L1,Fact Retrieval,Coating,0.5614408838462875
+68,L2,Numerical,Structure,0.4660744191302462
+69,L1,Numerical,Structure,0.513170547981009
+70,L2,Numerical,Structure,0.45472691429577183
+71,L1,Numerical,Property,0.49664628849021253
+72,L2,Numerical,Structure,0.43836713560280355
+73,L2,Numerical,Structure,0.4472001804519158
+74,L1,Fact Retrieval,Process,0.6713703700257928
+75,L2,Reasoning,Coating,0.6394749889314228
+76,L2,Reasoning,Property,0.1870757025781899
+77,L1,Fact Retrieval,Process,0.390789706145903
+78,L2,Reasoning,Coating,0.4205031458566832
+79,L1,Fact Retrieval,Defect,0.6575621387458312
+80,L2,Reasoning,Structure,0.09605636569768379
+81,L2,Reasoning,Structure,0.12295287322308339
+82,L2,Fact Retrieval,Theory,0.1859818393474708
+83,L1,Fact Retrieval,Structure,0.34828004553124453
+84,L1,Fact Retrieval,Structure,0.1321810181623629
+85,L1,Fact Retrieval,Defect,0.3778387166918125
+86,L2,Reasoning,Application,0.671840163662666
+87,L1,Fact Retrieval,Coating,0.4221903597451743
+88,L1,Fact Retrieval,Property,0.40959237121819814
+89,L1,Fact Retrieval,Defect,0.8370437033341472
+90,L1,Numerical,Property,0.45889368514750595
+91,L1,Numerical,Property,0.45668741437156646
+92,L2,Fact Retrieval,Structure,0.17756496926403148
+93,L1,Fact Retrieval,Theory,0.42185137690509866
+94,L2,Numerical,Application,0.4844061185483075
+95,L1,Numerical,Application,0.4476589297093935
+96,L2,Fact Retrieval,Theory,0.4205794180468936
+97,L1,Numerical,Comparison,0.45494648265418597
+98,L1,Numerical,Property,0.44509659395948115
+99,L1,Numerical,Property,0.49209996045305493
+100,L2,Fact Retrieval,Structure,0.4329395280258782
+101,L1,Numerical,Composition,0.3408080510712671
