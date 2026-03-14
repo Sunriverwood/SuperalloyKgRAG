@@ -165,7 +165,7 @@ class ImageProcessor:
             y_axis = content.get("y_axis_label", "")
             legend = content.get("legend", [])
             trend = content.get("trend_description", "")
-            data = content.get("extracted_data", [])
+            data = content.get("extracted_data", "")
 
             if title:
                 context_parts.append(f"Title: {title}")

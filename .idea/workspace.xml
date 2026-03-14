@@ -4,16 +4,31 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="1356365c-4e55-45c5-8e65-a4f6e3ed1df4" name="更改" comment="feat: update prompt structures for improved clarity and consistency in knowledge extraction tasks">
+    <list default="true" id="1356365c-4e55-45c5-8e65-a4f6e3ed1df4" name="更改" comment="feat: update configuration and enhance data handling; improve file management and compatibility for various data structures">
+      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/SuperalloyKgRAG.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/SuperalloyKgRAG.iml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/pipeline/graph_builder.py" beforeDir="false" afterPath="$PROJECT_DIR$/core/pipeline/graph_builder.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/data/chunks/text_units.jsonl" beforeDir="false" afterPath="$PROJECT_DIR$/data/chunks/text_units.jsonl" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/data/graphs/final_graph.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/graphs/final_graph.json" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="CopilotPersistence">
+    <persistenceIdMap>
+      <entry key="_D:/Pycharm/Projects/SuperalloyKgRAG" value="32s7Z0HUizjOnYAUS2xDpBLPnb1" />
+    </persistenceIdMap>
+  </component>
+  <component name="CopilotUserSelectedChatMode">
+    <option name="chatModeId" value="Agent" />
+  </component>
+  <component name="CopilotUserSelectedModel">
+    <selectedModels>
+      <entry key="inline" value="Auto" />
+      <entry key="edit-panel" value="Claude Sonnet 4.5" />
+      <entry key="chat-panel" value="Claude Opus 4.5" />
+      <entry key="agent-panel" value="Claude Opus 4.5" />
+    </selectedModels>
   </component>
   <component name="FileTemplateManagerImpl">
     <option name="RECENT_TEMPLATES">
@@ -52,44 +67,44 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
-    &quot;Python.1.executor&quot;: &quot;Run&quot;,
-    &quot;Python.API_test.executor&quot;: &quot;Run&quot;,
-    &quot;Python.basic_rag.executor&quot;: &quot;Run&quot;,
-    &quot;Python.clean_embedding_text.executor&quot;: &quot;Run&quot;,
-    &quot;Python.cloud_manager.executor&quot;: &quot;Run&quot;,
-    &quot;Python.embedding.executor&quot;: &quot;Run&quot;,
-    &quot;Python.embedding_basic.executor&quot;: &quot;Run&quot;,
-    &quot;Python.extraction.executor&quot;: &quot;Debug&quot;,
-    &quot;Python.global_query.executor&quot;: &quot;Run&quot;,
-    &quot;Python.graph_builder.executor&quot;: &quot;Run&quot;,
-    &quot;Python.graph_builder_1.executor&quot;: &quot;Run&quot;,
-    &quot;Python.graph_builder_2.executor&quot;: &quot;Run&quot;,
-    &quot;Python.graph_builder_2_quick_resume.executor&quot;: &quot;Run&quot;,
-    &quot;Python.graph_builder_2_resume.executor&quot;: &quot;Run&quot;,
-    &quot;Python.list_all_jobs.executor&quot;: &quot;Run&quot;,
-    &quot;Python.loader.executor&quot;: &quot;Run&quot;,
-    &quot;Python.local_query.executor&quot;: &quot;Run&quot;,
-    &quot;Python.router.executor&quot;: &quot;Run&quot;,
-    &quot;Python.run_indexing.executor&quot;: &quot;Run&quot;,
-    &quot;Python.test_citation_format.executor&quot;: &quot;Run&quot;,
-    &quot;Python.test_json_parsing.executor&quot;: &quot;Run&quot;,
-    &quot;Python.test_no_local_id.executor&quot;: &quot;Run&quot;,
-    &quot;Python.vlm_pdf_parser.executor&quot;: &quot;Run&quot;,
-    &quot;Python.样品分布热力图.executor&quot;: &quot;Run&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
-    &quot;SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
-    &quot;datagrid.heatmap.switchedByDefault&quot;: &quot;false&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;master&quot;,
-    &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
-    &quot;last_opened_file_path&quot;: &quot;D:/Pycharm/Projects/SuperalloyKgRAG/data/graphs/graph_history_versions&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;reference.settings.ide.settings.web.browsers&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "Python.1.executor": "Run",
+    "Python.API_test.executor": "Run",
+    "Python.basic_rag.executor": "Run",
+    "Python.clean_embedding_text.executor": "Run",
+    "Python.cloud_manager.executor": "Run",
+    "Python.embedding.executor": "Run",
+    "Python.embedding_basic.executor": "Run",
+    "Python.extraction.executor": "Debug",
+    "Python.global_query.executor": "Run",
+    "Python.graph_builder.executor": "Run",
+    "Python.graph_builder_1.executor": "Run",
+    "Python.graph_builder_2.executor": "Run",
+    "Python.graph_builder_2_quick_resume.executor": "Run",
+    "Python.graph_builder_2_resume.executor": "Run",
+    "Python.list_all_jobs.executor": "Run",
+    "Python.loader.executor": "Run",
+    "Python.local_query.executor": "Run",
+    "Python.router.executor": "Run",
+    "Python.run_indexing.executor": "Run",
+    "Python.test_citation_format.executor": "Run",
+    "Python.test_json_parsing.executor": "Run",
+    "Python.test_no_local_id.executor": "Run",
+    "Python.vlm_pdf_parser.executor": "Run",
+    "Python.样品分布热力图.executor": "Run",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "SHARE_PROJECT_CONFIGURATION_FILES": "true",
+    "datagrid.heatmap.switchedByDefault": "false",
+    "git-widget-placeholder": "develop2",
+    "ignore.virus.scanning.warn.message": "true",
+    "last_opened_file_path": "D:/Pycharm/Projects/SuperalloyKgRAG/data/graphs/graph_history_versions",
+    "settings.editor.selected.configurable": "preferences.pluginManager"
   }
-}</component>
+}]]></component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
       <recent name="D:\Pycharm\Projects\SuperalloyKgRAG\data\graphs\graph_history_versions" />
@@ -108,7 +123,7 @@
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
-        <option value="bundled-python-sdk-f69e5c277ee4-cbfc7b97e6b2-com.jetbrains.pycharm.community.sharedIndexes.bundled-PC-252.27397.106" />
+        <option value="bundled-python-sdk-2653e85de345-6d6dccd035ac-com.jetbrains.pycharm.pro.sharedIndexes.bundled-PY-253.31033.139" />
       </set>
     </attachedChunks>
   </component>
@@ -119,14 +134,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1758197478087</updated>
-    </task>
-    <task id="LOCAL-00014" summary="feat: implement embedding workflow with data loading, processing, and storage in LanceDB">
-      <option name="closed" value="true" />
-      <created>1758972726958</created>
-      <option name="number" value="00014" />
-      <option name="presentableId" value="LOCAL-00014" />
-      <option name="project" value="LOCAL" />
-      <updated>1758972726958</updated>
     </task>
     <task id="LOCAL-00015" summary="feat: implement embedding workflow with data loading, processing, and storage in LanceDB">
       <option name="closed" value="true" />
@@ -512,7 +519,15 @@
       <option name="project" value="LOCAL" />
       <updated>1763562323017</updated>
     </task>
-    <option name="localTasksCounter" value="63" />
+    <task id="LOCAL-00063" summary="feat: update configuration and enhance data handling; improve file management and compatibility for various data structures">
+      <option name="closed" value="true" />
+      <created>1773476429292</created>
+      <option name="number" value="00063" />
+      <option name="presentableId" value="LOCAL-00063" />
+      <option name="project" value="LOCAL" />
+      <updated>1773476429292</updated>
+    </task>
+    <option name="localTasksCounter" value="64" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -542,7 +557,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="feat: add prompt template loading for RAG query handling and update configuration" />
     <MESSAGE value="feat: add RAG query handler and embedding workflow with logging and configuration management" />
     <MESSAGE value="feat: implement global query handler with logging and configuration management" />
     <MESSAGE value="feat: enhance global query handler with JSON parsing, async processing, and context building" />
@@ -567,7 +581,8 @@
     <MESSAGE value="feat: reconstructed vlm_pdf_parser" />
     <MESSAGE value="feat: implement end-to-end indexing pipeline from PDF to knowledge graph vector storage" />
     <MESSAGE value="feat: update prompt structures for improved clarity and consistency in knowledge extraction tasks" />
-    <option name="LAST_COMMIT_MESSAGE" value="feat: update prompt structures for improved clarity and consistency in knowledge extraction tasks" />
+    <MESSAGE value="feat: update configuration and enhance data handling; improve file management and compatibility for various data structures" />
+    <option name="LAST_COMMIT_MESSAGE" value="feat: update configuration and enhance data handling; improve file management and compatibility for various data structures" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>

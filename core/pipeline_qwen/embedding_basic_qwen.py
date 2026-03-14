@@ -112,6 +112,8 @@ def load_all_text_units(config: Dict[str, Any]) -> List[Dict[str, Any]]:
     units_files = [
         ("text_units.jsonl", "text", True),
         ("abstract_units.jsonl", "abstract", True),
+        ("image_units.jsonl", "image", True),
+        ("table_units.jsonl", "table", True),
     ]
 
     for filename, unit_type, required in units_files:

@@ -73,7 +73,7 @@ async def main():
     # 要测试的模型列表
     models_to_test = [
         "gemini-2.5-pro",
-        "gemini-2.5-flash",
+        "gemini-3.1-pro-preview",
         # config["query"]["generation_model"]  # 配置文件中的模型
     ]
 

@@ -16,8 +16,8 @@ import json
 import math
 import networkx as nx
 
-json_path = "../data/graphs/final_graph_develop.json"  # 输入 JSON
-gexf_path = "../data/graphs/final_graph_develop.gexf"  # 输出 GEXF
+json_path = "./data/graphs/final_graph.json"  # 输入 JSON
+gexf_path = "./data/graphs/final_graph.gexf"  # 输出 GEXF
 
 
 def clean_value(v):

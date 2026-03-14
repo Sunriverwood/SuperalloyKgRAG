@@ -40,6 +40,18 @@
   * 如果已有消歧图：加载消歧图 →【验证嵌入】→【下载并应用合并】→ 社区发现 → 社区摘要
   * 否则：【下载并应用消歧】→【验证嵌入】→【下载并应用合并】→ 社区发现 → 社区摘要
 
+- "RESUBMIT_MERGE": 重新提交已有的合并请求文件
+  * 用途：合并LLM仲裁批次因余额不足/API限流等原因失败后，直接重提交已有的请求文件
+  * 不重新下载嵌入向量，不重新构建候选簇
+  * 自动查找 data/cache/entities_merge_requests_batch_*.jsonl 文件并提交
+  * 提交完成后继续执行：合并 → 社区发现 → 社区摘要
+
+  使用方法：
+  1. 设置 START_MODE = "RESUBMIT_MERGE"
+  2. 确保已有 data/graphs/disambiguation_graph.json
+  3. 确保已有 data/cache/entities_merge_requests_batch_*.jsonl
+  4. 运行脚本
+
 - "COMMUNITY": 从社区发现开始
   * 如果已有合并图：直接加载 → 社区发现 →【下载并应用社区摘要或重新生成】
   * 如果已有消歧图：加载消歧图 →【应用前置步骤】→ 社区发现 →【下载并应用社区摘要或重新生成】
@@ -126,8 +138,8 @@ from utils.community_reports import (
 
 # ========== 配置区域 - 请根据实际情况修改 ==========
 # 恢复模式选择（必填）：
-# 可选值: "DISAMBIGUATION", "EMBEDDING", "MERGE", "COMMUNITY", "COMMUNITY_LEVEL_RESUME", "DOWNLOAD_COMMUNITY_REPORTS"
-START_MODE = "DOWNLOAD_COMMUNITY_REPORTS"
+# 可选值: "DISAMBIGUATION", "EMBEDDING", "MERGE", "RESUBMIT_MERGE", "COMMUNITY", "COMMUNITY_LEVEL_RESUME", "DOWNLOAD_COMMUNITY_REPORTS"
+START_MODE = "RESUBMIT_MERGE"
 
 # 层级恢复配置（仅在 START_MODE = "COMMUNITY_LEVEL_RESUME" 时使用）
 # 从哪个层级开始恢复（例如：如果Level 3已完成但Level 2失败，设置为2）
@@ -483,7 +495,7 @@ def main():
     logging.info("=" * 80)
 
     # 验证模式
-    valid_modes = ["DISAMBIGUATION", "EMBEDDING", "MERGE", "COMMUNITY", "COMMUNITY_LEVEL_RESUME", "DOWNLOAD_COMMUNITY_REPORTS"]
+    valid_modes = ["DISAMBIGUATION", "EMBEDDING", "MERGE", "RESUBMIT_MERGE", "COMMUNITY", "COMMUNITY_LEVEL_RESUME", "DOWNLOAD_COMMUNITY_REPORTS"]
     if START_MODE not in valid_modes:
         logging.error(f"❌ 无效的启动模式: {START_MODE}")
         logging.error(f"请选择以下模式之一: {', '.join(valid_modes)}")
@@ -2022,6 +2034,115 @@ def main():
         logging.info(f"   - 各层级报告: community_reports_level*.jsonl")
         logging.info(f"   - 各层级请求文件: {community_requests_path.stem}_level*.jsonl")
         logging.info(f"   - ID映射文件: *_id_maps.json")
+
+    # ========== 模式7: 重新提交合并请求文件 ==========
+    elif START_MODE == "RESUBMIT_MERGE":
+        logging.info("\n🚀 模式: 重新提交已有的合并请求文件")
+        logging.info("执行流程: 加载消歧图 → 重提交合并请求 → 应用合并 → 社区发现 → 社区摘要")
+
+        # 步骤1: 加载消歧图
+        disamb_graph_path = PROJECT_ROOT / config["graph_builder"]["disambiguation_graph_path"]
+        if not disamb_graph_path.exists():
+            logging.error(f"❌ 消歧图不存在: {disamb_graph_path}")
+            return
+        with open(disamb_graph_path, 'r', encoding='utf-8') as f:
+            graph = nx.node_link_graph(json.load(f), directed=True)
+        logging.info(f"✅ 加载消歧图: {graph.number_of_nodes()} 节点, {graph.number_of_edges()} 边")
+
+        # 步骤2: 查找并提交合并请求文件
+        cache_dir = PROJECT_ROOT / "data" / "cache"
+        batch_files = sorted(cache_dir.glob("entities_merge_requests_batch_*.jsonl"))
+        if not batch_files:
+            logging.error("❌ 未找到合并请求文件 entities_merge_requests_batch_*.jsonl")
+            return
+        logging.info(f"找到 {len(batch_files)} 个合并请求文件")
+
+        submitted_jobs = []
+        for idx, bf in enumerate(batch_files):
+            logging.info(f"📤 上传批次 {idx + 1}/{len(batch_files)}: {bf.name}")
+            try:
+                with open(bf, "rb") as fobj:
+                    uploaded = client.files.create(file=fobj, purpose="batch")
+                logging.info(f"   文件上传成功: {uploaded.id}")
+
+                job = client.batches.create(
+                    input_file_id=uploaded.id,
+                    endpoint="/v1/chat/completions",
+                    completion_window="24h",
+                    metadata={"description": f"entity-merge-resubmit-{bf.stem}"}
+                )
+                logging.info(f"   ✅ 作业已创建: {job.id}")
+                submitted_jobs.append((idx, job, bf.name))
+            except Exception as e:
+                logging.error(f"   ❌ 提交失败: {e}")
+
+        if not submitted_jobs:
+            logging.error("❌ 没有成功提交的作业")
+            return
+
+        # 步骤3: 监控所有作业
+        logging.info(f"⏳ 监控 {len(submitted_jobs)} 个作业...")
+        completed_jobs = gb._monitor_multiple_jobs_completion(
+            client, submitted_jobs, sleep_interval, job_type="EntityMerge-Resubmit"
+        )
+
+        # 步骤4: 下载并合并结果
+        all_merge_texts = {}
+        for batch_idx, completed_job, fname in sorted(completed_jobs, key=lambda x: x[0]):
+            batch_results = gb.process_results(completed_job, client)
+            all_merge_texts.update(batch_results)
+            logging.info(f"📊 批次 {batch_idx + 1} ({fname}) 返回 {len(batch_results)} 个结果")
+
+        logging.info(f"🎉 合计获得 {len(all_merge_texts)} 个合并仲裁结果")
+
+        if not all_merge_texts:
+            logging.error("❌ 没有获得任何合并结果，终止")
+            return
+
+        # 步骤5: 解析并应用合并
+        groups = gb.parse_entity_merge_results(all_merge_texts)
+        logging.info(f"LLM 确认的分组数量: {len(groups)}")
+
+        alias2canon, canon_name_map = gb.build_merge_map(graph, groups)
+        if alias2canon:
+            logging.info(f"应用实体合并: {len(alias2canon)} 个别名 → {len(canon_name_map)} 个规范名")
+            graph = gb.apply_entity_merge(graph, alias2canon, canon_name_map, edge_agg='max')
+        else:
+            logging.warning("⚠️ 未找到需要合并的实体")
+
+        merged_graph_path = PROJECT_ROOT / config["graph_builder"]["merged_graph_path"]
+        gb.save_graph(graph, merged_graph_path)
+        logging.info(f"✅ 合并图已保存: {merged_graph_path}")
+
+        # 步骤6: 社区发现
+        logging.info("\n步骤6: 执行社区发现...")
+        graph, communities_list = gb.detect_communities(
+            graph=graph,
+            weight_alpha=weight_alpha,
+            use_hierarchical=use_hierarchical,
+            max_level=max_level,
+            min_community_size=min_community_size
+        )
+
+        # 步骤7: 社区摘要
+        logging.info("\n步骤7: 生成社区摘要...")
+        summaries = gb.run_community_summaries(
+            client=client,
+            graph=graph,
+            model_name=model_name,
+            prompt_dir=prompt_dir,
+            config=config,
+            sleep_interval=sleep_interval,
+            community_requests_path=community_requests_path,
+            communities_list=communities_list
+        )
+
+        # 步骤8: 保存最终结果
+        logging.info("\n步骤8: 保存最终结果...")
+        id_map_path = community_requests_path.parent / f"{community_requests_path.stem}_id_maps.json"
+        if summaries:
+            gb.save_community_reports(summaries, reports_path, id_map_path, communities_list)
+        gb.save_graph(graph, final_graph_path)
 
     logging.info("\n" + "=" * 80)
     logging.info("🎉🎉🎉 快速恢复流程完成！")

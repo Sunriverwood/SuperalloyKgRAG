@@ -112,9 +112,9 @@ class EvaluationDataLoader:
             elif difficulty == "L4":
                 files = ["L4.json"]
             else:
-                files = ["L12.json", "L3.json", "L4.json"]
+                files = ["L12.json", "L3.json", "L4.json", "hard.json"]
         else:
-            files = ["L12.json", "L3.json", "L4.json"]
+            files = ["L12.json", "L3.json", "L4.json", "hard.json"]
 
         # 加载文件
         for filename in files:

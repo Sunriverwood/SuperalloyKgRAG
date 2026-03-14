@@ -290,8 +290,14 @@ class GraphReasoningDataLoader:
             edge_type_to_idx, edge_type_embeddings_dict, embed_dim
         )
 
-        # 6. Create adjacency mask
-        adjacency_mask_np = self.create_adjacency_mask(num_nodes, edge_index_np)
+        # 6. Create adjacency mask (skip for large graphs to avoid OOM)
+        MAX_NODES_FOR_DENSE_MASK = 50000
+        if num_nodes <= MAX_NODES_FOR_DENSE_MASK:
+            adjacency_mask_np = self.create_adjacency_mask(num_nodes, edge_index_np)
+        else:
+            logging.info(f"⚠️ 节点数 {num_nodes} 超过 {MAX_NODES_FOR_DENSE_MASK}，跳过稠密邻接矩阵"
+                         f"（需 {num_nodes**2 * 4 / 1024**3:.1f} GiB），使用 edge_index 替代")
+            adjacency_mask_np = None
 
         # 7. Convert to PyTorch tensors
         logging.info(f"Converting to PyTorch tensors on device: {device}")
@@ -301,7 +307,7 @@ class GraphReasoningDataLoader:
         edge_types = torch.from_numpy(edge_types_np).long().to(device)
         edge_weights = torch.from_numpy(edge_weights_np).float().to(device)
         edge_type_embeddings = torch.from_numpy(edge_type_embeddings_np).float().to(device)
-        adjacency_mask = torch.from_numpy(adjacency_mask_np).float().to(device)
+        adjacency_mask = torch.from_numpy(adjacency_mask_np).float().to(device) if adjacency_mask_np is not None else None
 
         # 8. Create GraphData object
         graph_data = GraphData(

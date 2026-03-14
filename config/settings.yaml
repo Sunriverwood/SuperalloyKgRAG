@@ -9,20 +9,30 @@ vlm_parser:
   parsing_prompt_path: "config/prompts/pdf_parsing.md"
   requests_path: "data/cache/pdf_parsing_requests.jsonl"
   state_file_path: "data/cache/processing_state.json"
-  input_dir: "data/raw_pdfs/"
+  input_dir: "data/original_data/books/"
+  output_dir: "data/processed_jsons/"
+
+paper_parser:
+  batch_size: 20
+  batch_polling_timeout_seconds: 28800
+  sleep_interval: 600
+  parsing_prompt_path: "config/prompts/paper_pdf_parsing.md"
+  requests_path: "data/cache/paper_parsing_requests.jsonl"
+  state_file_path: "data/cache/paper_processing_state.json"
+  input_dir: "data/original_data/full_text/"
   output_dir: "data/processed_jsons/"
 
 llm:
-  provider: QWEN                   # GEMINI
-  model: qwen3-max                 # gemini-2.5-pro  qwen-plus
-  api_key: ${QWEN_API_KEY}         # ${GEMINI_API_KEY}
+  provider: QWEN                   # GEMINI QWEN
+  model: qwen3-max                 # gemini-2.5-pro  qwen-plus  qwen3-max
+  api_key: ${QWEN_API_KEY}         # ${GEMINI_API_KEY} ${QWEN_API_KEY} 
   batch_mode: true                 # 是否启用批处理
   temperature: 0.1                 # 控制生成的稳定性
   top_p: 0.9
 
   pdf_parser:
-    input_dir: "data/raw_pdfs"
-    output_dir: "data/processed_jsons"
+    input_dir: "data/original_data/books/"
+    output_dir: "data/processed_jsons/"
 
 loader:
   source_json_dir: "data/processed_jsons/"
@@ -60,7 +70,7 @@ table_extraction:
   prompt_path: "config/prompts/table_to_graph.md"
 
 abstract_extraction:
-  input_excel: "data/papers/superalloy_research.xlsx"  # Excel 文件路径
+  input_excel: "data/original_data/abstract/superalloy_research.xlsx"  # Excel 文件路径
   output_dir: "data/chunks"  # abstract_units.jsonl 保存位置
   output_filename: "abstract_units.jsonl"  # 摘要 text units 文件
   graph_output_dir: "data/graphs/extracted"  # 图谱输出目录
@@ -137,7 +147,7 @@ embedding:
   input_community_report_path: "data/reports/community_summaries.jsonl"
   input_id_maps_path: "data/cache/community_detection_id_maps.json"
   output_db_path: "data/embeddings/enriched.db"  #no_entities_merge embedding.db  multicommunities.db
-  output_db_text_path: "data/embeddings/text.db"
+  output_db_text_path: "data/embeddings/basic_rag_multimodal.db"  #basic_rag_text.db
   output_text_table_name: "text"
   requests_path: "data/cache"
   sleep_interval: 60
@@ -176,7 +186,7 @@ query:
   # 性能监控配置（记录到主日志文件）
   enable_performance_monitoring: true
 
-  text_db_path: "data/embeddings/text.db"
+  text_db_path: "data/embeddings/basic_rag_multimodal.db"
   text_table_name: "text"
   output_dir: "data/answers"
   output_filename: "answers_text.jsonl"
@@ -264,7 +274,9 @@ reasoning:
     learning_rate: 0.001
     num_epochs: 100
     weight_decay: 0.0001
-    early_stopping_patience: 10
+    min_epochs: 30
+    early_stopping_patience: 20
+    early_stopping_min_delta: 1.0e-4
     contrastive_num_samples: 1024   # 建议 1024~4096 之间试
     contrastive_temperature: 0.2
     contrastive_noise_std: 0.1
@@ -344,7 +356,7 @@ reasoning:
 
 baseline:
   models:
-    - name: "qwen3-max"
+    - name: "qwen3-max-2025-09-23"
       provider: "openai"
       api_key: "${QWEN_API_KEY}"
       base_url: "https://dashscope.aliyuncs.com/compatible-mode/v1"
@@ -356,7 +368,7 @@ baseline:
       provider: "openai"
       api_key: "${QWEN_API_KEY}"
       base_url: "https://dashscope.aliyuncs.com/compatible-mode/v1"
-    - name: "glm-4.7"         #glm-4.6  GLM-4.6
+    - name: "glm-4.6"         #glm-4.6  GLM-4.6
       provider: "openai"
       api_key: "${QWEN_API_KEY}"
       base_url: "https://dashscope.aliyuncs.com/compatible-mode/v1"
@@ -372,7 +384,7 @@ baseline:
 # 多维度评测配置
 multidimensional_evaluation:
   # 启用的评测方法（留空表示全部启用）
-  # Baseline 模型: qwen3-max, kimi-k2-thinking, deepseek-v3.2, glm-4.7, MiniMax-M2, ERNIE-4.5-Turbo-128K
+  # Baseline 模型: qwen3-max, kimi-k2-thinking, deepseek-v3.2, glm-4.6, MiniMax-M2, ERNIE-4.5-Turbo-128K
   # RAG 方法: basic_rag, global, local, reasoning, router
   enabled_methods: []
 

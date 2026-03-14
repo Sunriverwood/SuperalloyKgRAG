@@ -155,11 +155,14 @@ class TableProcessor:
                         page_number = page.get("page_number", page_idx + 1)
 
                         for block in page.get("content_blocks", []):
-                            if block.get("type") != "table" or not block.get("data"):
+                            if block.get("type") != "table" or not (block.get("data") or block.get("csv_data")):
                                 continue
 
-                            data_field = block.get("data", [])
-                            if len(data_field) < 2:
+                            # 兼容新版 csv_data 和旧版 data
+                            data_field = block.get("csv_data") or block.get("data", [])
+                            if isinstance(data_field, list) and len(data_field) < 2:
+                                continue
+                            elif isinstance(data_field, str) and not data_field.strip():
                                 continue
 
                             block_id = block.get("block_id", "unknown-block")

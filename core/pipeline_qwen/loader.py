@@ -153,11 +153,20 @@ class DocumentLoader:
         text_segments = []
         current_position = 0
 
-        # 如果输入是字典，转换为列表进行处理
-        if isinstance(data, dict):
-            data = [data]
+        # 兼容三种 JSON 结构：
+        # 1. 顶层数组: [{page_number, content_blocks}, ...]  （书籍分批）
+        # 2. 顶层对象含 pages: {paper_metadata, pages: [{page_number, content_blocks}, ...]}  （论文）
+        # 3. 顶层单页对象: {page_number, content_blocks}  （单页）
+        if isinstance(data, list):
+            pages = data
+        elif isinstance(data, dict) and "pages" in data:
+            pages = data["pages"]
+        elif isinstance(data, dict):
+            pages = [data]
+        else:
+            pages = []
 
-        for page in data:
+        for page in pages:
             page_number = page.get("page_number", "N/A")
 
             # 遍历每个页面的内容块
