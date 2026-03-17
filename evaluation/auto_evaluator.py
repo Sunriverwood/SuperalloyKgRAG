@@ -268,7 +268,7 @@ class AutoEvaluator:
             logging.info("DriftSearchHandler 初始化完成")
         return self._drift_query
 
-    async def get_answer(self, question: str) -> str:
+    async def get_answer(self, question: str) -> Dict[str, Any]:
         """
         调用查询模块获取回答
 
@@ -276,35 +276,51 @@ class AutoEvaluator:
             question: 问题文本
 
         Returns:
-            模型回答
+            查询结果字典，包含 answer 和其他模式特有字段
+            - answer: 模型回答（始终存在）
+            - reasoning_info: 推理模式下的完整推理信息（推理模式时存在）
         """
         async with self.semaphore:
             try:
+                result = {}
                 if self.query_mode is None:
                     # 使用自动路由
                     answer = await self.router.route_and_answer(question)
+                    result['answer'] = answer
                 elif self.query_mode == 'local':
                     answer = await self.local_query.answer_query(question)
+                    result['answer'] = answer
                 elif self.query_mode == 'global':
                     answer = await self.global_query.answer_query(question)
+                    result['answer'] = answer
                 elif self.query_mode == 'reasoning':
                     # ReasoningQueryHandler.query 是同步方法，使用 to_thread 运行
-                    result = await asyncio.to_thread(
-                        self.reasoning_query.query, 
-                        question, 
-                        method='ppr', 
+                    # 返回完整的推理结果（包含 top_nodes, paths, explanations 等）
+                    reasoning_result = await asyncio.to_thread(
+                        self.reasoning_query.query,
+                        question,
+                        method='ppr',
                         include_llm_answer=True
                     )
-                    answer = result.get('answer', '未能生成推理答案')
+                    result['answer'] = reasoning_result.get('answer', '未能生成推理答案')
+                    # 保存完整的推理信息
+                    result['reasoning_info'] = {
+                        'top_nodes': reasoning_result.get('top_nodes', []),
+                        'paths': reasoning_result.get('paths', []),
+                        'explanations': reasoning_result.get('explanations', []),
+                        'keywords': reasoning_result.get('keywords', []),
+                        'num_paths': reasoning_result.get('num_paths', 0),
+                    }
                 elif self.query_mode == 'drift':
                     answer = await self.drift_query.perform_drift_search(question)
+                    result['answer'] = answer
                 else:
                     raise ValueError(f"未知的查询模式: {self.query_mode}")
 
-                return answer
+                return result
             except Exception as e:
                 logging.error(f"获取回答失败 (模式: {self.query_mode or '自动路由'}): {e}")
-                return f"[ERROR] {str(e)}"
+                return {'answer': f"[ERROR] {str(e)}"}
 
     async def evaluate_single(self, item: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -323,13 +339,15 @@ class AutoEvaluator:
         question_type = item.get("type", "")
         domain = item.get("domain", "")
         theme = item.get("theme", "")
+        source_file = item.get("source_file", "")
 
         logging.info(f"[{question_id}] 开始评测: {question[:50]}...")
 
         # 获取模型回答
         start_time = datetime.now()
-        answer = await self.get_answer(question)
+        query_result = await self.get_answer(question)
         answer_time = (datetime.now() - start_time).total_seconds()
+        answer = query_result.get('answer', '[ERROR] 未能获取回答')
 
         logging.info(f"[{question_id}] 获取回答耗时: {answer_time:.2f}s")
 
@@ -341,7 +359,8 @@ class AutoEvaluator:
             ground_truth=ground_truth,
             difficulty=difficulty,
             question_type=question_type,
-            domain=domain
+            domain=domain,
+            source_file=source_file
         )
         score_time = (datetime.now() - score_start).total_seconds()
 
@@ -363,6 +382,10 @@ class AutoEvaluator:
             "score_time_seconds": score_time,
             "timestamp": datetime.now().isoformat()
         }
+
+        # 如果是推理模式，添加推理信息
+        if 'reasoning_info' in query_result:
+            result['reasoning_info'] = query_result['reasoning_info']
 
         return result
 

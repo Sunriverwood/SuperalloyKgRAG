@@ -147,7 +147,7 @@ embedding:
   input_community_report_path: "data/reports/community_summaries.jsonl"
   input_id_maps_path: "data/cache/community_detection_id_maps.json"
   output_db_path: "data/embeddings/enriched.db"  #no_entities_merge embedding.db  multicommunities.db
-  output_db_text_path: "data/embeddings/basic_rag_multimodal.db"  #basic_rag_text.db
+  output_db_text_path: "data/embeddings/basic_rag_text.db"  #basic_rag_text.db  basic_rag_multimodal.db
   output_text_table_name: "text"
   requests_path: "data/cache"
   sleep_interval: 60
@@ -306,7 +306,7 @@ reasoning:
     # 节点评分策略
     # use_direct_similarity: true - 仅使用余弦相似度
     # use_direct_similarity: false - 使用混合评分（余弦相似度 + GNN + QueryMatcher）
-    use_direct_similarity: true
+    use_direct_similarity: false
 
     # 混合评分权重 (仅当 use_direct_similarity=false 时有效)
     # direct_similarity_weight: 余弦相似度的权重（确保查询相关性）
@@ -396,7 +396,7 @@ multidimensional_evaluation:
   reports_output_dir: "data/reports/multidimensional_evaluation"
 
   # 断点续传
-  enable_checkpoint: true
+  enable_checkpoint: false
 
   # 并发控制
   max_concurrency: 1
@@ -409,3 +409,30 @@ multidimensional_evaluation:
 
   # 评判模型（复用 evaluation.llm 配置）
   # 使用 qwen3-max 作为评分器
+
+# 消融实验配置
+# 使用方式: python run_index_qwen.py --start 3 --end 4 --ablation text_only
+ablation:
+  text_only:
+    description: "纯文本图谱消融实验（仅 text + abstract）"
+    graph_builder:
+      input_path: "data/graphs/enriched/enriched_graph_text_only.jsonl"
+      disambiguation_graph_path: "data/graphs/text_only/disambiguation_graph.json"
+      merged_graph_path: "data/graphs/text_only/merged_graph.json"
+      output_graph_path: "data/graphs/text_only/final_graph.json"
+      community_reports_path: "data/reports/text_only/community_summaries.jsonl"
+      disambiguation_requests_path: "data/cache/text_only/disambiguation_requests.jsonl"
+      embedding_requests_path: "data/cache/text_only/entities_embedding_requests.jsonl"
+      merge_requests_path: "data/cache/text_only/entities_merge_requests.jsonl"
+      community_requests_path: "data/cache/text_only/community_detection.jsonl"
+    embedding:
+      input_graph_path: "data/graphs/text_only/final_graph.json"
+      input_community_report_path: "data/reports/text_only/community_summaries.jsonl"
+      input_id_maps_path: "data/cache/text_only/community_detection_id_maps.json"
+      output_db_path: "data/embeddings/enriched_text_only.db"
+      requests_path: "data/cache/text_only"
+    query:
+      global_db_path: "data/embeddings/enriched_text_only.db"
+      embedding_db_path: "data/embeddings/enriched_text_only.db"
+      input_graph_path: "data/graphs/text_only/final_graph.json"
+      input_community_report_path: "data/reports/text_only/community_summaries.jsonl"

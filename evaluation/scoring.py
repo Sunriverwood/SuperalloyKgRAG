@@ -235,7 +235,7 @@ class LLMJudge:
         # 加载评判 Prompt 模板
         self.prompts = {}
         prompt_dir = PROJECT_ROOT / "config" / "prompts"
-        for level in ["l3", "l4"]:
+        for level in ["l3", "l4", "hard"]:
             prompt_path = prompt_dir / f"evaluation_{level}.md"
             if prompt_path.exists():
                 with open(prompt_path, 'r', encoding='utf-8') as f:
@@ -467,6 +467,53 @@ class L4Scorer(BaseScorer):
         }
 
 
+class HardScorer(BaseScorer):
+    """Hard 级别评分器 - 学术教材深层推理题，统一使用 LLM Judge"""
+
+    def __init__(self, config: Dict[str, Any]):
+        self.config = config
+        self.llm_judge = LLMJudge(config)
+        self.semantic_scorer = SemanticScorer(config)
+
+    def score(self, question: str, answer: str, ground_truth: str, **kwargs) -> Dict[str, Any]:
+        """
+        Hard 评分：LLM-as-Judge 深层推理评估
+
+        评分维度：
+        - 核心论点覆盖率 (coverage_score)
+        - 科学准确性 (accuracy_score)
+        - 推理深度 (reasoning_depth_score)
+        - 逻辑连贯性 (coherence_score)
+        """
+        # LLM 评判（使用 hard 级别的 prompt）
+        llm_result = self.llm_judge.judge(question, answer, ground_truth, level="hard")
+
+        # 语义相似度作为兜底补充
+        semantic_score = self.semantic_scorer.score(answer, ground_truth)
+
+        # 如果 LLM 评判失败，使用语义相似度作为备选
+        if "error" in llm_result and llm_result.get("overall_score", 0) == 0:
+            overall_score = semantic_score
+        else:
+            # LLM 评判结果权重 85%，语义相似度 15%
+            llm_score = llm_result.get("overall_score", 0.5)
+            overall_score = 0.85 * llm_score + 0.15 * semantic_score
+
+        return {
+            "overall_score": overall_score,
+            "llm_judgment": llm_result,
+            "semantic_score": semantic_score,
+            "coverage_score": llm_result.get("coverage_score", 0),
+            "accuracy_score": llm_result.get("accuracy_score", 0),
+            "reasoning_depth_score": llm_result.get("reasoning_depth_score", 0),
+            "coherence_score": llm_result.get("coherence_score", 0),
+            "core_arguments": llm_result.get("core_arguments", []),
+            "feedback": llm_result.get("feedback", ""),
+            "difficulty": kwargs.get("difficulty", "Hard"),
+            "scoring_method": "llm_judge_deep_reasoning + semantic_similarity"
+        }
+
+
 class ScorerFactory:
     """评分器工厂 - 根据难度级别创建对应的评分器"""
 
@@ -493,6 +540,8 @@ class ScorerFactory:
                 self._scorers[difficulty] = L3Scorer(self.config)
             elif difficulty == "L4":
                 self._scorers[difficulty] = L4Scorer(self.config)
+            elif difficulty == "HARD":
+                self._scorers[difficulty] = HardScorer(self.config)
             else:
                 logging.warning(f"未知难度级别 {difficulty}，使用 L1L2Scorer")
                 self._scorers[difficulty] = L1L2Scorer(self.config)
@@ -520,6 +569,11 @@ class ScorerFactory:
         Returns:
             评分结果字典
         """
-        scorer = self.get_scorer(difficulty)
+        # 来自 hard.json 的题目统一使用 HardScorer
+        source_file = kwargs.pop("source_file", None)
+        if source_file and "hard" in str(source_file).lower():
+            scorer = self.get_scorer("HARD")
+        else:
+            scorer = self.get_scorer(difficulty)
         return scorer.score(question, answer, ground_truth, difficulty=difficulty, **kwargs)
 

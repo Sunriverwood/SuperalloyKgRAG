@@ -111,6 +111,11 @@ class ReasoningQueryHandler:
         self.embedding_model_name = config["embedding"]["model"]
         self.generation_model_name = config["query"]["generation_model"]
         self.temperature = config["query"]["temperature"]
+        
+        # 统一使用 search_config 控制严格模式
+        # search_config: true 表示允许通用知识 -> strict_mode = False
+        # search_config: false 表示禁止通用知识 -> strict_mode = True
+        self.config_strict_mode = not config["query"].get("search_config", False)
 
         # Device setup - CRITICAL: Load data to CPU first to avoid OOM
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -645,8 +650,8 @@ Explain how the information supports your answer and cite sources when relevant.
             logging.error(f"Answer generation failed: {e}")
             return "Error generating answer. Please try again."
 
-    def query(self, query_text: str, method: str = 'ppr',
-              include_llm_answer: bool = True, strict_mode: bool = True) -> Dict[str, Any]:
+    def query(self, query_text: str, method: Optional[str] = None,
+              include_llm_answer: bool = True, strict_mode: Optional[bool] = None) -> Dict[str, Any]:
         """
         Main query interface.
 
@@ -659,6 +664,10 @@ Explain how the information supports your answer and cite sources when relevant.
         Returns:
             Complete query results including reasoning and answer
         """
+        # 优先使用传参，否则使用配置文件的全局设置
+        if strict_mode is None:
+            strict_mode = self.config_strict_mode
+
         logging.info("=" * 80)
         logging.info(f"Processing query: {query_text}")
         logging.info(f"Mode: method={method}, include_llm={include_llm_answer}, strict_mode={strict_mode}")

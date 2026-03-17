@@ -408,7 +408,7 @@ class MultidimensionalEvaluator:
                     loop = asyncio.get_running_loop()
 
                     def _run_reasoning():
-                        return handler.query(question, method="gnn", include_llm_answer=True)
+                        return handler.query(question, include_llm_answer=True)
 
                     result = await loop.run_in_executor(None, _run_reasoning)
                     answer = result.get('answer', '未能生成答案')

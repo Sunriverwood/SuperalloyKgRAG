@@ -685,9 +685,10 @@ def get_level_summary(db_path: Path, table_name: str = "communities") -> str:
 
 
 # --- 主执行函数 ---
-def main():
+def main(config=None):
     """主执行流程"""
-    config = load_config()
+    if config is None:
+        config = load_config()
     setup_logging(config)
 
     # --- 1. 初始化客户端 (修改：使用 OpenAI SDK 连接阿里云百炼) ---

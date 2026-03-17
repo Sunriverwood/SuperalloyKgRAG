@@ -323,6 +323,7 @@ def create_batch_requests(
 
             # 为每个批次创建单独的文件
             batch_output_path = output_path.parent / f"{output_path.stem}_batch_{batch_idx + 1}.jsonl"
+            batch_output_path.parent.mkdir(exist_ok=True, parents=True)
 
             with open(batch_output_path, 'w', encoding='utf-8') as f:
                 for req in batch_requests:
@@ -2228,8 +2229,9 @@ def build_pipeline_from_config(config: Dict[str, Any]) -> Tuple[nx.DiGraph, Dict
 # 主流程
 # =========================
 
-def main():
-    config = load_config()
+def main(config=None):
+    if config is None:
+        config = load_config()
     setup_logging(config)
 
     graph, summaries, communities_list = build_pipeline_from_config(config)

@@ -508,7 +508,11 @@ class GraphReasoner:
         num_nodes = self.graph_data.num_nodes
 
         # Initialize with query-based scores
-        initial_scores = self.score_nodes(query_emb, use_gnn=False).cpu().numpy()
+        initial_scores = self.score_nodes(
+            query_emb,
+            use_gnn=False,
+            use_direct_similarity=self.use_direct_similarity
+        ).cpu().numpy()
         initial_scores = np.maximum(initial_scores, 0)  # Ensure non-negative
 
         # Normalize to probability distribution
