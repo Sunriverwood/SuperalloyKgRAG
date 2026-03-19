@@ -264,11 +264,7 @@ def merge_all_level_id_maps(community_requests_path: Path, output_path: Path = N
 
     # 保存合并后的映射
     if output_path is None:
-        project_root = Path(__file__).resolve().parents[1]
-        settings_path = project_root / "config" / "settings.yaml"
-        with open(settings_path, 'r', encoding='utf-8') as sf:
-            cfg = yaml.safe_load(sf)
-            output_path = project_root/ cfg["embedding"]["input_id_maps_path"]
+        output_path = community_requests_path.parent / f"{community_requests_path.stem}_id_maps.json"
 
     try:
         with open(output_path, 'w', encoding='utf-8') as f:

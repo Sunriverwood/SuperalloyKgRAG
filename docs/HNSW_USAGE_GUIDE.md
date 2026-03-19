@@ -112,7 +112,7 @@ graph_builder:
 
 然后正常运行实体合并：
 ```bash
-python app/run_indexing.py
+python app/run_index_qwen.py
 ```
 
 ### 方法 2：强制使用 HNSW

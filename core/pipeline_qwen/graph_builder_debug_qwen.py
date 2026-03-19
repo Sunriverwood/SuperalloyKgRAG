@@ -47,7 +47,7 @@
   * 提交完成后继续执行：合并 → 社区发现 → 社区摘要
 
   使用方法：
-  1. 设置 START_MODE = "RESUBMIT_MERGE"
+  1. 设置 START_MODE = "COMMUNITY"
   2. 确保已有 data/graphs/disambiguation_graph.json
   3. 确保已有 data/cache/entities_merge_requests_batch_*.jsonl
   4. 运行脚本
@@ -111,12 +111,14 @@
 """
 
 import sys
+import argparse
 from pathlib import Path
 
 # 添加项目根目录到路径
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(PROJECT_ROOT))
 
+import collections.abc
 import json
 import logging
 import os
@@ -139,7 +141,7 @@ from utils.community_reports import (
 # ========== 配置区域 - 请根据实际情况修改 ==========
 # 恢复模式选择（必填）：
 # 可选值: "DISAMBIGUATION", "EMBEDDING", "MERGE", "RESUBMIT_MERGE", "COMMUNITY", "COMMUNITY_LEVEL_RESUME", "DOWNLOAD_COMMUNITY_REPORTS"
-START_MODE = "RESUBMIT_MERGE"
+START_MODE = "COMMUNITY"
 
 # 层级恢复配置（仅在 START_MODE = "COMMUNITY_LEVEL_RESUME" 时使用）
 # 从哪个层级开始恢复（例如：如果Level 3已完成但Level 2失败，设置为2）
@@ -193,6 +195,32 @@ def load_config():
     cfg_path = PROJECT_ROOT / "config" / "settings.yaml"
     with open(cfg_path, 'r', encoding='utf-8') as f:
         return yaml.safe_load(f)
+
+
+def deep_update(d: dict, u: dict) -> dict:
+    """递归深度更新字典"""
+    for k, v in u.items():
+        if isinstance(v, collections.abc.Mapping):
+            d[k] = deep_update(d.get(k, {}), v)
+        else:
+            d[k] = v
+    return d
+
+
+def apply_ablation_config(config: Dict[str, Any], ablation_name: str) -> Dict[str, Any]:
+    """将消融实验配置深层覆盖到主配置"""
+    ablation_profiles = config.get("ablation", {})
+    if ablation_name not in ablation_profiles:
+        raise ValueError(f"未找到消融实验配置: '{ablation_name}'，可用: {list(ablation_profiles.keys())}")
+    profile = ablation_profiles[ablation_name]
+    logging.info(f"🔬 应用消融实验配置: '{ablation_name}' - {profile.get('description', '')}")
+    for section, overrides in profile.items():
+        if section in ['description', 'multidimensional_evaluation']:
+            continue
+        if section in config and isinstance(config[section], dict) and isinstance(overrides, dict):
+            deep_update(config[section], overrides)
+            logging.info(f"   ✅ 已深层覆盖 '{section}' 配置")
+    return config
 
 def normalize_job_id(job_id):
     """
@@ -488,10 +516,18 @@ def download_and_process_multiple_community_summary_batches(client: OpenAI, job_
     return all_summaries
 
 def main():
+    # 解析命令行参数
+    parser = argparse.ArgumentParser(description="Graph Builder Debug/恢复脚本")
+    parser.add_argument('--ablation', type=str, default=None,
+                        help='消融实验名称，如 no_entity_merge')
+    args = parser.parse_args()
+
     setup_logging()
     logging.info("=" * 80)
     logging.info("快速恢复脚本启动（使用 graph_builder_qwen 函数）")
     logging.info(f"启动模式: {START_MODE}")
+    if args.ablation:
+        logging.info(f"消融实验: {args.ablation}")
     logging.info("=" * 80)
 
     # 验证模式
@@ -502,6 +538,10 @@ def main():
         return
 
     config = load_config()
+
+    # 应用消融实验配置（如果指定）
+    if args.ablation:
+        config = apply_ablation_config(config, args.ablation)
 
     # 初始化客户端 (OpenAI / Qwen)
     api_key = os.getenv("QWEN_API_KEY")

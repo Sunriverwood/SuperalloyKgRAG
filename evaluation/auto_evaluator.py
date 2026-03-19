@@ -31,6 +31,7 @@ from pathlib import Path
 from typing import Dict, Any, List, Optional
 
 import yaml
+import collections.abc
 
 # --- 项目根目录定义 ---
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -48,6 +49,35 @@ def load_config(settings_filename: str = "settings.yaml") -> Dict[str, Any]:
         raise FileNotFoundError(f"配置文件 {config_path} 未找到！")
     with open(config_path, 'r', encoding='utf-8') as f:
         return yaml.safe_load(f)
+
+
+def deep_update(d: dict, u: dict) -> dict:
+    """递归深度更新字典"""
+    for k, v in u.items():
+        if isinstance(v, collections.abc.Mapping):
+            d[k] = deep_update(d.get(k, {}), v)
+        else:
+            d[k] = v
+    return d
+
+
+def apply_ablation_config(config: Dict[str, Any], ablation_name: str) -> Dict[str, Any]:
+    """将消融实验配置深层覆盖到主配置"""
+    ablation_profiles = config.get("ablation", {})
+    if ablation_name not in ablation_profiles:
+        raise ValueError(f"未找到消融实验配置: '{ablation_name}'，可用: {list(ablation_profiles.keys())}")
+
+    profile = ablation_profiles[ablation_name]
+    logging.info(f"🔬 应用消融实验配置: '{ablation_name}' - {profile.get('description', '')}")
+
+    for section, overrides in profile.items():
+        if section in ['description', 'multidimensional_evaluation']:
+            continue
+        if section in config and isinstance(config[section], dict) and isinstance(overrides, dict):
+            deep_update(config[section], overrides)
+            logging.info(f"   ✅ 已深层覆盖 '{section}' 配置")
+
+    return config
 
 
 def setup_logging(config: Dict[str, Any], log_name: str = "evaluation"):
@@ -116,6 +146,8 @@ class EvaluationDataLoader:
         else:
             files = ["L12.json", "L3.json", "L4.json", "hard.json"]
 
+        offset = 0
+
         # 加载文件
         for filename in files:
             filepath = self.data_dir / filename
@@ -126,20 +158,32 @@ class EvaluationDataLoader:
             with open(filepath, 'r', encoding='utf-8') as f:
                 data = json.load(f)
 
-            # 为每个问题添加来源文件信息
-            for item in data:
+            # 为每个问题添加来源文件信息和全局 ID
+            for i, item in enumerate(data):
+                global_qid = offset + i + 1
                 item["source_file"] = filename
+                item["original_id"] = item.get("id")
+                item["id"] = global_qid
+                if "difficulty" not in item:
+                    difficulty_map = {
+                        "L12.json": item.get("difficulty", "L1"),
+                        "L3.json": "L3",
+                        "L4.json": "L4",
+                        "hard.json": "L4",
+                    }
+                    item["difficulty"] = difficulty_map.get(filename, "L1")
 
             questions.extend(data)
-            logging.info(f"从 {filename} 加载了 {len(data)} 道题目")
+            logging.info(f"从 {filename} 加载了 {len(data)} 道题目, 全局ID范围 {offset + 1}-{offset + len(data)}")
+            offset += len(data)
 
         # 按难度筛选（针对 L12.json 中混合的 L1/L2）
         if difficulty and difficulty in ["L1", "L2"]:
             questions = [q for q in questions if q.get("difficulty", "").upper() == difficulty]
 
-        # 按 ID 筛选
+        # 按 original_id 或 ID 筛选（为向后兼容，如果使用了 question_ids，则匹配 original_id 或全局 id）
         if question_ids:
-            questions = [q for q in questions if q.get("id") in question_ids]
+            questions = [q for q in questions if q.get("original_id") in question_ids or q.get("id") in question_ids]
 
         logging.info(f"共加载 {len(questions)} 道题目")
         return questions
@@ -175,8 +219,8 @@ class AutoEvaluator:
 
         # 查询模式设置
         self.query_mode = query_mode.lower() if query_mode else None
-        if self.query_mode and self.query_mode not in ['local', 'global', 'reasoning', 'drift']:
-            raise ValueError(f"无效的查询模式: {query_mode}. 可选值: local, global, reasoning, drift")
+        if self.query_mode and self.query_mode not in ['basic_rag', 'local', 'global', 'reasoning', 'drift']:
+            raise ValueError(f"无效的查询模式: {query_mode}. 可选值: basic_rag, local, global, reasoning, drift")
 
         # 初始化评分器工厂
         self.scorer_factory = ScorerFactory(config)
@@ -185,6 +229,7 @@ class AutoEvaluator:
         self._router = None
 
         # 初始化具体查询模块（延迟加载）
+        self._basic_rag_query = None
         self._local_query = None
         self._global_query = None
         self._reasoning_query = None
@@ -205,6 +250,28 @@ class AutoEvaluator:
             logging.info(f"评测器将使用指定查询模式: {self.query_mode.upper()}")
         else:
             logging.info("评测器将使用自动路由模式")
+            
+        # API请求间隔
+        self.request_interval = config.get("multidimensional_evaluation", {}).get("request_interval", 1.0)
+        
+        # 断点控制
+        self.checkpoint_file = self.report_dir / "auto_evaluator_checkpoint.json"
+        
+    def _load_checkpoint(self) -> Dict[str, Any]:
+        """加载断点"""
+        if self.checkpoint_file.exists():
+            with open(self.checkpoint_file, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        return {"completed_ids": [], "last_updated": None}
+
+    def _save_checkpoint(self, completed_ids: List[int]):
+        """保存断点"""
+        checkpoint = {
+            "completed_ids": completed_ids,
+            "last_updated": datetime.now().isoformat()
+        }
+        with open(self.checkpoint_file, 'w', encoding='utf-8') as f:
+            json.dump(checkpoint, f, ensure_ascii=False, indent=2)
 
     @classmethod
     def from_config(cls, settings_filename: str = "settings.yaml", max_concurrency: int = 5, query_mode: Optional[str] = None):
@@ -231,6 +298,15 @@ class AutoEvaluator:
             self._router = GraphRouter(self.config)
             logging.info("GraphRouter 初始化完成")
         return self._router
+
+    @property
+    def basic_rag_query(self):
+        """延迟加载 RAGQueryHandler"""
+        if self._basic_rag_query is None:
+            from core.query_qwen.basic_rag_qwen import RAGQueryHandler
+            self._basic_rag_query = RAGQueryHandler(self.config)
+            logging.info("RAGQueryHandler 初始化完成")
+        return self._basic_rag_query
 
     @property
     def local_query(self):
@@ -286,6 +362,9 @@ class AutoEvaluator:
                 if self.query_mode is None:
                     # 使用自动路由
                     answer = await self.router.route_and_answer(question)
+                    result['answer'] = answer
+                elif self.query_mode == 'basic_rag':
+                    answer = self.basic_rag_query.answer_query(question)
                     result['answer'] = answer
                 elif self.query_mode == 'local':
                     answer = await self.local_query.answer_query(question)
@@ -392,7 +471,8 @@ class AutoEvaluator:
     async def evaluate_batch(
             self,
             questions: List[Dict[str, Any]],
-            save_intermediate: bool = True
+            save_intermediate: bool = True,
+            resume: bool = False
     ) -> List[Dict[str, Any]]:
         """
         批量评测题目 (并行处理)
@@ -410,28 +490,67 @@ class AutoEvaluator:
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         output_file = self.output_dir / f"evaluation_{timestamp}.jsonl"
 
-        logging.info(f"开始批量评测，共 {total} 道题目 (并发限制: {self.max_concurrency})")
+        # 处理断点续传
+        completed_ids = []
+        if resume:
+            checkpoint = self._load_checkpoint()
+            completed_ids = checkpoint.get("completed_ids", [])
+            if completed_ids:
+                logging.info(f"发现断点记录，已完成 {len(completed_ids)} 道题目，将跳过这些题目。")
+            
+            # 分离已完成和未完成的题目
+            pending_questions = [q for q in questions if q.get("id") not in completed_ids]
+            
+            # 如果存在中间结果文件，读取已有的结果
+            if completed_ids and output_file.exists():
+                with open(output_file, 'r', encoding='utf-8') as f:
+                    for line in f:
+                        if line.strip():
+                            res = json.loads(line)
+                            if res.get("id") in completed_ids:
+                                results.append(res)
+        else:
+            pending_questions = questions
+            
+        total_pending = len(pending_questions)
+        if total_pending == 0:
+            logging.info("所有题目都已评测完成。")
+            return results
+
+        logging.info(f"开始批量评测，待评测 {total_pending} 道题目 (并发限制: {self.max_concurrency})")
         logging.info(f"结果将保存到: {output_file}")
 
+        async def _eval_with_delay(idx: int, item: Dict[str, Any]) -> Dict[str, Any]:
+            if idx > 0 and self.request_interval > 0:
+                await asyncio.sleep(self.request_interval)
+            return await self.evaluate_single(item)
+
         # 创建任务列表
-        tasks = [self.evaluate_single(item) for item in questions]
+        tasks = [_eval_with_delay(idx, item) for idx, item in enumerate(pending_questions)]
         
-        results = []
         # 使用 as_completed 实时获取完成的任务，以便显示进度和保存中间结果
         for i, completed_task in enumerate(asyncio.as_completed(tasks), 1):
             try:
                 result = await completed_task
                 results.append(result)
+                completed_ids.append(result.get("id"))
 
                 # 保存中间结果
                 if save_intermediate:
                     with open(output_file, 'a', encoding='utf-8') as f:
                         f.write(json.dumps(result, ensure_ascii=False) + '\n')
+                    # 同步保存断点
+                    self._save_checkpoint(completed_ids)
 
-                logging.info(f"进度: {i}/{total} ({100 * i / total:.1f}%) - ID: {result.get('id')}")
+                logging.info(f"进度: {i}/{total_pending} ({100 * i / total_pending:.1f}%) - ID: {result.get('id')}")
 
             except Exception as e:
                 logging.error(f"评测任务执行失败: {e}")
+
+        # 如果全部完成则清理断点
+        if len(results) == total:
+            if self.checkpoint_file.exists():
+                self.checkpoint_file.unlink()
 
         logging.info(f"批量评测完成，共 {len(results)} 条结果")
         return results
@@ -534,7 +653,8 @@ class AutoEvaluator:
             difficulty: Optional[str] = None,
             question_ids: Optional[List[int]] = None,
             save_intermediate: bool = True,
-            filename: Optional[str] = None
+            filename: Optional[str] = None,
+            resume: bool = False
     ) -> Dict[str, Any]:
         """
         运行完整评测流程的主入口方法
@@ -564,7 +684,7 @@ class AutoEvaluator:
             return {"error": "No questions found"}
 
         # 执行评测
-        results = await self.evaluate_batch(questions, save_intermediate=save_intermediate)
+        results = await self.evaluate_batch(questions, save_intermediate=save_intermediate, resume=resume)
 
         # 生成报告
         report = self.generate_report(results)
@@ -586,9 +706,11 @@ if __name__ == "__main__":
     parser.add_argument("--concurrency", type=int, default=5, help="最大并发数")
     parser.add_argument("--settings", type=str, default="settings.yaml", help="配置文件名")
     parser.add_argument("--mode", type=str, default=None,
-                       choices=['local', 'global', 'reasoning', 'drift'],
-                       help="指定查询模式 (local/global/reasoning/drift)，不指定则使用自动路由")
+                       choices=['basic_rag', 'local', 'global', 'reasoning', 'drift'],
+                       help="指定查询模式 (basic_rag/local/global/reasoning/drift)，不指定则使用自动路由")
     parser.add_argument("--filename", type=str, default=None, help="指定评测文件名 (如 hard.json)")
+    parser.add_argument("--ablation", type=str, default=None, help="使用指定的消融实验配置名称")
+    parser.add_argument("--resume", action="store_true", help="启用断点续传")
 
     args = parser.parse_args()
 
@@ -597,9 +719,16 @@ if __name__ == "__main__":
     if args.ids:
         question_ids = [int(x.strip()) for x in args.ids.split(",")]
 
+    # 加载底层配置并可能覆盖消融参数
+    config = load_config(args.settings)
+    if args.ablation:
+        config = apply_ablation_config(config, args.ablation)
+
     # 创建评测器并运行
-    evaluator = AutoEvaluator.from_config(
-        settings_filename=args.settings,
+    # 初始化时不通过文件由于我们需要注入覆盖后的配置，所以直接调用类并重设日志
+    setup_logging(config)
+    evaluator = AutoEvaluator(
+        config=config,
         max_concurrency=args.concurrency,
         query_mode=args.mode
     )
@@ -607,7 +736,8 @@ if __name__ == "__main__":
     report = asyncio.run(evaluator.run(
         difficulty=args.difficulty,
         question_ids=question_ids,
-        filename=args.filename
+        filename=args.filename,
+        resume=args.resume
     ))
 
     print("\n" + "=" * 80)

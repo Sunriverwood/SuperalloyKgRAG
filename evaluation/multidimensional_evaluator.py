@@ -47,6 +47,34 @@ sys.path.insert(0, str(PROJECT_ROOT))
 # 导入现有模块
 from evaluation.auto_evaluator import EvaluationDataLoader
 
+def apply_ablation_config(config: Dict[str, Any], ablation_name: str) -> Dict[str, Any]:
+    """将消融实验配置覆盖到主配置"""
+    ablation_profiles = config.get("ablation", {})
+    if ablation_name not in ablation_profiles:
+        raise ValueError(f"未找到消融实验配置: '{ablation_name}'，可用: {list(ablation_profiles.keys())}")
+
+    profile = ablation_profiles[ablation_name]
+    logging.info(f"🔬 应用消融实验配置: '{ablation_name}' - {profile.get('description', '')}")
+
+    # 支持深度更新/递归覆盖
+    def deep_update(source, overrides):
+        for key, value in overrides.items():
+            if isinstance(value, dict) and key in source and isinstance(source[key], dict):
+                deep_update(source[key], value)
+            else:
+                source[key] = value
+
+    # 支持覆盖多个核心配置段
+    for section in ["graph_builder", "embedding", "query", "reasoning", "multidimensional_evaluation"]:
+        if section in profile:
+            if section not in config:
+                config[section] = {}
+            # 使用深度更新代替简单的 update
+            deep_update(config[section], profile[section])
+            logging.info(f"   ✅ 已深度覆盖 '{section}' 配置")
+
+    return config
+
 
 def load_config(settings_filename: str = "settings.yaml") -> Dict[str, Any]:
     """加载YAML配置文件"""
@@ -121,6 +149,7 @@ class SharedHandlers:
         self._local_handler = None
         self._reasoning_handler = None
         self._router_handler = None
+        self._drift_handler = None
         self._initialized = set()
 
     def get_basic_rag_handler(self):
@@ -214,6 +243,21 @@ class SharedHandlers:
             self._initialized.add("router")
         return self._router_handler
 
+    def get_drift_handler(self):
+        """获取 Drift Handler（延迟初始化）"""
+        if "drift" not in self._initialized:
+            logging.info("初始化 Drift Handler...")
+            import importlib.util
+            spec = importlib.util.spec_from_file_location(
+                "drift_qwen",
+                PROJECT_ROOT / "core" / "query_qwen" / "router_qwen.py"
+            )
+            module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(module)
+            self._drift_handler = module.DriftSearchHandler(self.config)
+            self._initialized.add("drift")
+        return self._drift_handler
+
     def cleanup(self):
         """释放资源"""
         self._basic_rag_handler = None
@@ -221,6 +265,7 @@ class SharedHandlers:
         self._local_handler = None
         self._reasoning_handler = None
         self._router_handler = None
+        self._drift_handler = None
         self._initialized.clear()
         gc.collect()
         try:
@@ -295,7 +340,7 @@ class MultidimensionalEvaluator:
         self.baseline_models = config.get("baseline", {}).get("models", [])
 
         # RAG 方法列表
-        self.rag_methods = ["basic_rag", "global", "local", "reasoning", "router"]
+        self.rag_methods = ["basic_rag", "global", "local", "reasoning", "router", "drift"]
 
         # 确定启用的方法（优先使用参数，其次配置文件，最后全部启用）
         all_methods = [m["name"] for m in self.baseline_models] + self.rag_methods
@@ -416,6 +461,10 @@ class MultidimensionalEvaluator:
                 elif method == "router":
                     handler = self.shared_handlers.get_router_handler()
                     answer = await handler.route_and_answer(question)
+
+                elif method == "drift":
+                    handler = self.shared_handlers.get_drift_handler()
+                    answer = await handler.perform_drift_search(question)
 
                 else:
                     return f"[ERROR] 未知的 RAG 方法: {method}", time.time() - start_time
@@ -1021,14 +1070,36 @@ async def main():
         default=None,
         help="指定评测文件名 (如 hard.json)"
     )
+    parser.add_argument(
+        "--ablation",
+        type=str,
+        default=None,
+        help="消融实验名称，如 text_only"
+    )
 
     args = parser.parse_args()
 
     # 加载配置
     config = load_config()
-    setup_logging(config)
 
-    # 解析方法列表
+    # 应用消融实验配置（如果指定）
+    ablation_name = args.ablation
+    if ablation_name:
+        config = apply_ablation_config(config, ablation_name)
+        # 调试信息：打印关键路径确认
+        logging.info(f"📍 关键路径检查 (Reasoning): {config.get('reasoning', {}).get('data', {}).get('graph_path')}")
+        logging.info(f"📍 关键路径检查 (Query): {config.get('query', {}).get('input_graph_path')}")
+
+        # 消融实验输出目录自动隔离
+        multi_eval = config.setdefault("multidimensional_evaluation", {})
+        for dir_key in ["answers_output_dir", "reports_output_dir"]:
+            base_dir = multi_eval.get(dir_key, f"data/{dir_key.replace('_output_dir', '')}")
+            multi_eval[dir_key] = f"{base_dir}/ablation_{ablation_name}"
+        logging.info(f"📂 消融实验输出目录: {multi_eval['reports_output_dir']}")
+
+    setup_logging(config, log_name=f"multidimensional_evaluation{'_' + ablation_name if ablation_name else ''}")
+
+    # 解析方法列表：命令行 --methods 优先，否则使用消融配置中的 enabled_methods
     enabled_methods = None
     if args.methods:
         enabled_methods = [m.strip() for m in args.methods.split(",")]

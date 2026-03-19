@@ -70,6 +70,13 @@
    pip install -r requirements.txt
    ```
 
+   如需完整复现当前混合环境（含 conda 包 + pip 包），优先使用：
+
+   ```bash
+   conda env create -f environment.yml
+   conda activate deepseek
+   ```
+
 ------
 
 ## 3. 配置与参数
@@ -78,16 +85,21 @@
 
 ### API 密钥配置
 
-本系统支持 OpenAI 兼容接口（如 Qwen, Gemini）。请将 API Key 注入环境变量，或直接修改配置文件。
+本系统支持 OpenAI 兼容接口（如 Qwen, Gemini），但需要特别注意：
+
+- **OCR/PDF 解析阶段目前仅支持 Gemini**（`core/vlm_pdf_parser.py`）。
+- **Qwen 当前不支持直接输入 PDF 做 OCR**，因此不能替代步骤1的 PDF 解析。
+
+请将 API Key 注入环境变量，或直接修改配置文件。
 
 **方式一：系统环境变量 (推荐)**
 
-- **Windows**: 在“编辑系统环境变量”中新建，变量名 `QWEN_API_KEY`，值为你的密钥。
-- **Linux/Mac**: `export QWEN_API_KEY="sk-..."`
+- **Windows**: 在“编辑系统环境变量”中新建，变量名 `GEMINI_API_KEY`（OCR 必需）和 `QWEN_API_KEY`（Qwen 查询可选）。
+- **Linux/Mac**: `export GEMINI_API_KEY="..."`，如需 Qwen 再配置 `export QWEN_API_KEY="sk-..."`
 
 **方式二：IDE 运行配置**
 
-- 在 PyCharm/VS Code 的 Run/Debug Configurations 中，添加 Environment variables: `QWEN_API_KEY=sk-...`。
+- 在 PyCharm/VS Code 的 Run/Debug Configurations 中，至少添加 `GEMINI_API_KEY=...`（用于 OCR）。若使用 Qwen 查询，再添加 `QWEN_API_KEY=sk-...`。
 
 ------
 
@@ -97,25 +109,26 @@
 
 ### 数据准备
 
-将待处理的 PDF 文献放入 `data/raw_pdfs/` 目录。
+默认请将待处理 PDF 放入 `data/original_data/books/` 目录（可在 `config/settings.yaml` 的 `vlm_parser.input_dir` 中修改）。
 
 ### 执行索引
 
-在 IDE 中运行 `app/run_indexing.py` 或使用命令行：
+在 IDE 中运行 `app/run_index_qwen.py` 或使用命令行：
 
 ```bash
-python app/run_indexing.py
+python app/run_index_qwen.py
 ```
 
-**流水线阶段说明：** 系统将自动按序执行以下处理：
+**流水线阶段说明（Qwen 主流程）：** 系统将自动按序执行以下处理：
 
 1. **VLM Parsing**: 基于视觉大模型解析 PDF，保留版面结构信息。
-2. **Chunking**: 语义级文本切分。
-3. **Triple Extraction**: 抽取实体与关系 (Entity-Relation Extraction)。
-4. **Graph Construction**: 实体消歧、融合及社区发现 (Community Detection)。
-5. **Vector Embedding**: 生成文本与图谱节点的向量表示 (LanceDB)。
+2. **Enrich Extraction**: 融合文本/摘要/图片/表格抽取结果，生成富化图谱。
+3. **Graph Construction**: 实体消歧、融合及社区发现 (Community Detection)。
+4. **Vector Embedding**: 生成图谱节点与社区向量表示 (LanceDB)。
 
 *注：支持断点续传，若中断可再次运行，脚本将自动跳过已完成步骤。*
+
+*补充：步骤1当前通过 Gemini API 执行 PDF OCR，Qwen API 不支持直接 PDF 输入。*
 
 ------
 
@@ -125,27 +138,27 @@ python app/run_indexing.py
 
 ### 启动训练
 
-运行 `core/reasoning/train_reasoning.py`：
+推荐通过 `core/query_qwen/reasoning_query_qwen.py` 的训练模式启动：
 
 ```bash
 # 推荐使用 GPU
-python core/reasoning/train_reasoning.py --epochs 100 --device cuda
+python core/query_qwen/reasoning_query_qwen.py --train --epochs 100 --device cuda
 
 # CPU 训练
-python core/reasoning/train_reasoning.py --epochs 100 --device cpu
+python core/query_qwen/reasoning_query_qwen.py --train --epochs 100 --device cpu
 ```
 
-训练产出的模型权重将保存至 `data/reasoning/model.pt`。
+训练产出的模型权重路径由 `config/settings.yaml` 的 `reasoning.output.model_path` 控制（当前默认：`data/reasoning/develop.pt`）。
 
 ------
 
 ## 6. 查询与推理 (Inference)
 
-系统提供交互式与命令行两种查询模式，支持输出推理路径与参考文献。
+系统推荐统一使用路由入口，支持交互式与命令行两种查询模式，并可在需要时切换到推理专用入口。
 
 ### 模式一：IDE 交互式查询 (调试推荐)
 
-1. 在 IDE 中打开 `core/reasoning/run_reasoning_query.py`。
+1. 在 IDE 中打开 `core/query_qwen/router_qwen.py`。
 
 2. 右键点击 **Run** (或 `Shift+F10`)。
 
@@ -164,14 +177,14 @@ python core/reasoning/train_reasoning.py --epochs 100 --device cpu
 适用于批量测试或评估：
 
 ```bash
-# 单次查询
-python core/reasoning/run_reasoning_query.py --query "高温合金蠕变机制有哪些？"
+# 单次查询（自动路由，需在项目根目录执行）
+$env:PYTHONPATH="."; python core/query_qwen/router_qwen.py --query "高温合金蠕变机制有哪些？"
 
-# 指定推理算法 (支持 ppr / gnn) 并保存结果
-python core/reasoning/run_reasoning_query.py \
-    --query "Re 元素对单晶高温合金的影响" \
-    --method ppr \
-    --output results.json
+# 强制推理模式
+$env:PYTHONPATH="."; python core/query_qwen/router_qwen.py --mode reasoning --query "Re 元素对单晶高温合金的影响"
+
+# 调试用：直接调用推理模块并指定算法
+python core/query_qwen/reasoning_query_qwen.py --query "Re 元素对单晶高温合金的影响" --method ppr --output results.json
 ```
 
 ------
@@ -182,31 +195,30 @@ python core/reasoning/run_reasoning_query.py \
 
 ### 评估数据准备
 
-评估问题集存放在 `data/evaluation_sets/` 目录下，支持按难度级别（L1-L5）组织问题：
+评估问题集存放在 `data/evaluation_sets/` 目录下，当前评测流程主要覆盖 L1-L4：
 
 - **L1**: 基础事实查询
 - **L2**: 单跳关系推理
 - **L3**: 多跳关系推理
 - **L4**: 复杂综合问题
-- **L5**: 开放性研究问题
 
 ### 运行评估
 
 ```bash
 # 评估所有题目
-python evaluation/run_evaluation.py
+python evaluation/auto_evaluator.py
 
 # 评估指定难度
-python evaluation/run_evaluation.py --difficulty L3
+python evaluation/auto_evaluator.py --difficulty L3
 
 # 评估指定题目ID
-python evaluation/run_evaluation.py --ids 1,2,3,4,5
+python evaluation/auto_evaluator.py --ids 1,2,3,4,5
 
 # 指定并发数（加速评估）
-python evaluation/run_evaluation.py --difficulty L4 --concurrency 3
+python evaluation/auto_evaluator.py --difficulty L4 --concurrency 3
 
-# 指定输出目录
-python evaluation/run_evaluation.py --output ./my_results/
+# 指定查询模式（可选）
+python evaluation/auto_evaluator.py --difficulty L3 --mode reasoning
 ```
 
 ### 评估指标
@@ -285,10 +297,10 @@ Neo4j 是一款图数据库，支持 Cypher 查询语言，适合进行交互式
 
 ### app/ (应用层)
 
-- **`run_indexing.py`**: **[核心入口]** 索引流水线主程序。负责编排从 PDF 解析到向量入库的完整流程，支持断点续传。
-- **`run_index_qwen.py`**: 针对 Qwen 模型的特定索引启动脚本，预设了 Qwen 相关的参数配置。
+- **`run_index_qwen.py`**: **[核心入口]** Qwen 主索引流水线程序（4 步），支持断点续传与消融配置。
+- **`run_indexing.py`**: 通用索引流水线脚本（兼容保留入口）。
 - **`API_test.py`**: 简单的 API 连通性测试脚本，用于验证 Key 是否有效。
-- **`cloud_manager.py`**: 云存储管理工具，处理与 Google Cloud Storage 等云服务的交互（如需）。
+- **`cloud_manager.py`**: Gemini 文件与批处理作业管理脚本（清理上传文件、作业结果等）。
 - **`formatting.py`**: 用于将final_graph.json变为可以导入Neo4j的json格式。
 
 ### config/ (配置层)
@@ -301,7 +313,7 @@ Neo4j 是一款图数据库，支持 Cypher 查询语言，适合进行交互式
 #### vlm_pdf_parser (文档解析)
 
 - **`vlm_pdf_parser.py`**: 基于视觉语言模型 (VLM) 的通用 PDF 解析器，处理图表和复杂排版。
-- **`vlm_pdf_parser_qwen.py`**: 针对 Qwen-VL 优化的 PDF 解析实现。
+- **`paper_pdf_parser.py`**: 面向论文全文场景的 PDF 解析实现（与 `vlm_pdf_parser.py` 输入目录可分别配置）。
 
 #### pipeline/ (通用索引流水线组件)
 
@@ -340,20 +352,21 @@ Neo4j 是一款图数据库，支持 Cypher 查询语言，适合进行交互式
 
 ### evaluation/ (评估系统)
 
-- **`run_evaluation.py`**: **[评估入口]** 评估系统的命令行主程序，支持批量测试和并发执行。
-- **`auto_evaluator.py`**: 自动评估器核心实现，负责问题加载、答案生成和打分。
+- **`auto_evaluator.py`**: **[评估入口]** 评估系统的命令行主程序，支持批量测试和并发执行。
+- **`multidimensional_evaluator.py`**: 多维度评测器，支持与基线方法进行对比分析。
 - **`scoring.py`**: 评分逻辑模块，实现多维度的答案质量评估。
 - **`distribution_of_questions.py`**: 问题分布分析工具，用于统计评估集的难度分布。
 
 ### data/ (数据存储 - 自动生成)
 
-- `raw_pdfs/`: 存放原始 PDF 输入文件。
+- `original_data/books/`: 默认书籍类 PDF 输入目录（由 `vlm_parser.input_dir` 控制）。
+- `original_data/full_text/`: 默认论文全文输入目录（由 `paper_parser.input_dir` 控制）。
 - `processed_jsons/`: OCR 解析后的中间 JSON 文件。
 - `chunks/`: 文本切片文件 (`text_units.jsonl`)。
 - `graphs/`: 构建完成的知识图谱 (`final_graph.json`)。
 - `embeddings/`: LanceDB 向量数据库文件。
-- `reasoning/`: 存放训练好的模型权重 (`model.pt`) 和推理结果。
-- `evaluation_sets/`: 评估问题集，按难度级别（L1-L5）组织。
+- `reasoning/`: 存放训练好的模型权重（默认 `develop.pt`）和推理结果。
+- `evaluation_sets/`: 评估问题集（当前自动评测主流程覆盖 L1-L4）。
 - `answers/`: 评估系统生成的答案和评分结果。
 
 ------

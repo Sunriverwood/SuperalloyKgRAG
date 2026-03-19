@@ -65,13 +65,13 @@
 3. **构建知识图谱** 🔨
    - 按照 [RUN_INDEXING_GUIDE.md](RUN_INDEXING_GUIDE.md) 执行索引流水线
    ```bash
-   python app/run_indexing.py
+   python app/run_index_qwen.py
    ```
 
 4. **开始查询** 🔍
    - 使用统一查询入口（路由器会自动选择最优查询模式）
    ```bash
-   python core/query_qwen/router_qwen.py
+   $env:PYTHONPATH="."; python core/query_qwen/router_qwen.py
    ```
 
 5. **系统评测** 📊

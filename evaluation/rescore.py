@@ -143,11 +143,20 @@ def rescore(
         config: Dict[str, Any],
         methods: Optional[List[str]] = None,
         timestamp: Optional[str] = None,
-        max_workers: int = 3
+        max_workers: int = 3,
+        answers_dir_path: Optional[str] = None
 ):
     """主评分流程"""
-    answers_dir = PROJECT_ROOT / "data" / "answers" / "multidimensional_evaluation"
-    output_dir = PROJECT_ROOT / "data" / "reports" / "rescore"
+    base_answers_dir = PROJECT_ROOT / "data" / "answers" / "multidimensional_evaluation"
+    base_reports_dir = PROJECT_ROOT / "data" / "reports" / "rescore"
+
+    if answers_dir_path:
+        answers_dir = base_answers_dir / answers_dir_path
+        output_dir = base_reports_dir / answers_dir_path
+    else:
+        answers_dir = base_answers_dir
+        output_dir = base_reports_dir
+
     output_dir.mkdir(exist_ok=True, parents=True)
 
     # 自动检测时间戳
@@ -324,6 +333,8 @@ if __name__ == "__main__":
                         help="并发评分线程数（默认5，建议3-5避免API限流）")
     parser.add_argument("--settings", type=str, default="settings.yaml",
                         help="配置文件名")
+    parser.add_argument("--answers_dir", type=str, default=None,
+                        help="指定答案所在的子目录名称，例如：ablation_text_only")
     args = parser.parse_args()
 
     config = load_config(args.settings)
@@ -331,4 +342,10 @@ if __name__ == "__main__":
 
     methods = [m.strip() for m in args.methods.split(",")] if args.methods else None
 
-    rescore(config, methods=methods, timestamp=args.timestamp, max_workers=args.concurrency)
+    rescore(
+        config, 
+        methods=methods, 
+        timestamp=args.timestamp, 
+        max_workers=args.concurrency,
+        answers_dir_path=args.answers_dir
+    )
