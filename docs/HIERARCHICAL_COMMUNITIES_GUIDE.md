@@ -1,5 +1,9 @@
 # 递归分层社区发现使用指南
 
+> 更新时间：2026-03-24（与当前主流程入口对齐）
+> 
+> 说明：本轮文档整理不包含 `draw/` 与 `visualizations/` 目录。
+
 ## 概述
 
 本项目已实现**递归分层社区发现（Recursive Hierarchical Community Detection）**功能，用于支持 GraphRAG 的宏观-微观多粒度检索。

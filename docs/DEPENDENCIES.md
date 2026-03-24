@@ -1,5 +1,9 @@
 # SuperalloyKgRAG 依赖说明
 
+> 更新时间：2026-03-24（与当前主流程入口对齐）
+> 
+> 说明：本轮文档整理不包含 `draw/` 与 `visualizations/` 目录。
+
 ## 概述
 
 本文档按**当前主代码链路**整理依赖（索引、查询、推理、评测）。
@@ -62,4 +66,3 @@ $env:PYTHONPATH="."; python core/query_qwen/router_qwen.py --help
 python core/query_qwen/reasoning_query_qwen.py --help
 python evaluation/auto_evaluator.py --help
 ```
-

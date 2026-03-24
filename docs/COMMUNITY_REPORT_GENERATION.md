@@ -1,5 +1,9 @@
 # 多层社区报告生成指南 (Community Report Generation Guide)
 
+> 更新时间：2026-03-24（与当前主流程入口对齐）
+> 
+> 说明：本轮文档整理不包含 `draw/` 与 `visualizations/` 目录。
+
 本文档详细说明GraphRAG中多层社区报告的生成方法，这是实现宏观-微观多粒度检索的关键环节。
 
 ## 一、多层社区的构建方法 (Structure Construction)

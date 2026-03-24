@@ -1,5 +1,9 @@
 # SuperalloyKgRAG: 基于知识图谱的高温合金领域 RAG 推理框架
 
+> 文档状态：已于 2026-03-24 对齐当前主流程（索引、查询、推理、评测）。
+> 
+> 文档维护范围：`README.md` 与 `docs/`；本次更新按要求忽略 `draw/` 与 `visualizations/` 目录内容。
+
 ## 1. 项目概述
 
 **SuperalloyKgRAG** 是一个针对高温合金（Superalloys）领域的垂直检索增强生成（RAG）系统。本项目旨在解决传统文本切片 RAG 在处理复杂材料科学问题时的局限性。

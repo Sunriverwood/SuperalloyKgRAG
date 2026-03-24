@@ -1,5 +1,9 @@
 # SuperalloyKgRAG 项目架构说明
 
+> 更新时间：2026-03-24（与当前主流程入口对齐）
+> 
+> 说明：本轮文档整理不包含 `draw/` 与 `visualizations/` 目录。
+
 ## 📋 项目概述
 
 SuperalloyKgRAG 是一个基于知识图谱的增强检索生成（Knowledge Graph RAG）系统，专注于超合金领域的知识抽取、存储和问答。
