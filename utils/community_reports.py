@@ -266,6 +266,7 @@ def merge_all_level_id_maps(community_requests_path: Path, output_path: Path = N
     if output_path is None:
         output_path = community_requests_path.parent / f"{community_requests_path.stem}_id_maps.json"
 
+    output_path.parent.mkdir(parents=True, exist_ok=True)
     try:
         with open(output_path, 'w', encoding='utf-8') as f:
             json.dump(all_id_maps, f, ensure_ascii=False, indent=2)
@@ -490,6 +491,7 @@ def run_hierarchical_community_summaries_with_resume(
 
         # 保存检查点
         level_checkpoint_path = community_requests_path.parent / f"community_summaries_checkpoint_level{current_level}.json"
+        level_checkpoint_path.parent.mkdir(parents=True, exist_ok=True)
         try:
             with open(level_checkpoint_path, 'w', encoding='utf-8') as f:
                 json.dump({
@@ -503,6 +505,7 @@ def run_hierarchical_community_summaries_with_resume(
 
         # 保存当前层级的报告到单独文件（JSONL格式）
         level_reports_path = community_requests_path.parent / f"community_reports_level{current_level}.jsonl"
+        level_reports_path.parent.mkdir(parents=True, exist_ok=True)
         try:
             # 筛选出当前层级的社区报告
             level_community_ids = set(c['community_id'] for c in level_communities)
@@ -553,6 +556,36 @@ def run_hierarchical_community_summaries_with_resume(
     return all_summaries
 
 
+def _monitor_multiple_jobs(client: OpenAI, submitted_jobs: List[Tuple], sleep_interval: int, job_type: str) -> List[Tuple]:
+    """并行监控多个批次作业"""
+    import time
+    completed_states = {'completed', 'failed', 'cancelled', 'expired'}
+    pending_jobs = list(submitted_jobs)
+    completed_jobs = []
+    
+    while pending_jobs:
+        still_pending = []
+        for batch_idx, job, extra in pending_jobs:
+            try:
+                status = client.batches.retrieve(batch_id=job.id)
+                current_state = status.status
+                if current_state in completed_states:
+                    logging.info(f"      ✅ [{job_type}] 批次 {batch_idx} 作业结束，状态: {current_state}")
+                    completed_jobs.append((batch_idx, status, extra))
+                else:
+                    still_pending.append((batch_idx, job, extra))
+            except Exception as e:
+                logging.error(f"      ❌ [{job_type}] 批次 {batch_idx} 状态查询失败: {e}")
+                still_pending.append((batch_idx, job, extra))
+        
+        pending_jobs = still_pending
+        if pending_jobs:
+            logging.info(f"      ⏳ [{job_type}] 仍有 {len(pending_jobs)} 个批次作业在进行中，等待 {sleep_interval} 秒...")
+            time.sleep(sleep_interval)
+            
+    return completed_jobs
+
+
 def generate_leaf_community_summaries(
     client: OpenAI,
     graph: nx.DiGraph,
@@ -593,48 +626,141 @@ def generate_leaf_community_summaries(
     Returns:
         社区ID到报告的映射
     """
-    # 创建临时请求文件
-    temp_path = community_requests_path.parent / f"{community_requests_path.stem}_level{level}.jsonl"
-
-    # 准备请求
-    community_prompt = Template(load_prompt_func(prompt_dir, "community_summary.md"))
+    MAX_BATCH_SIZE = 45000
+    all_summaries = {}
     all_id_maps: Dict[str, Dict[str, str]] = {}
+    
+    total_communities = len(communities)
+    num_batches = (total_communities + MAX_BATCH_SIZE - 1) // MAX_BATCH_SIZE
 
-    with open(temp_path, 'w', encoding='utf-8') as f:
-        for comm in communities:
-            comm_id = comm['community_id']
-            members = comm['node_ids']
+    logging.info(f"      📦 社区总数 {total_communities}，将拆分为 {num_batches} 个批次处理（每批最多 {MAX_BATCH_SIZE}）")
 
-            # 构建社区上下文
-            context, id_map = build_context_func(graph, members, max_entities, max_relationships)
-            prompt = community_prompt.substitute(max_report_len=max_report_words, context=context)
-            all_id_maps[comm_id] = id_map
+    single_full_path = community_requests_path.parent / f"{community_requests_path.stem}_level{level}.jsonl"
+    id_map_path = community_requests_path.parent / f"{community_requests_path.stem}_level{level}_id_maps.json"
+    skip_build_context = False
 
-            # 写入请求
-            request_line = {
-                "custom_id": comm_id,
-                "method": "POST",
-                "url": "/v1/chat/completions",
-                "body": {
-                    "model": model_name,
-                    "messages": [{"role": "user", "content": prompt}],
-                    "temperature": 0.1
-                }
-            }
-            f.write(json.dumps(request_line, ensure_ascii=False) + '\n')
+    if single_full_path.exists() and single_full_path.stat().st_size > 1024 * 1024:
+        batches_exist = True
+        for b_idx in range(num_batches):
+            b_path = community_requests_path.parent / f"{community_requests_path.stem}_level{level}_batch{b_idx}.jsonl"
+            if not b_path.exists():
+                batches_exist = False
+                break
+                
+        if id_map_path.exists() and batches_exist:
+            logging.info("      ✅ 发现已生成的批次请求与 ID Maps，跳过上下文构建。")
+            with open(id_map_path, 'r', encoding='utf-8') as f:
+                all_id_maps = json.load(f)
+            skip_build_context = True
+        else:
+            logging.info(f"      🔍 发现上次生成的完整请求文件: {single_full_path.name}，正在解析拆分并提取 ID Maps...")
+            import re
+            batch_files = []
+            for b_idx in range(num_batches):
+                b_path = community_requests_path.parent / f"{community_requests_path.stem}_level{level}_batch{b_idx}.jsonl"
+                b_path.parent.mkdir(parents=True, exist_ok=True)
+                batch_files.append(open(b_path, 'w', encoding='utf-8'))
+                
+            with open(single_full_path, 'r', encoding='utf-8') as f:
+                for line_idx, line in enumerate(f):
+                    b_idx = line_idx // MAX_BATCH_SIZE
+                    if b_idx < len(batch_files):
+                        batch_files[b_idx].write(line)
+                        
+                    try:
+                        obj = json.loads(line)
+                        c_id = obj.get("custom_id")
+                        content = obj.get("body", {}).get("messages", [{}])[0].get("content", "")
+                        
+                        entities_match = re.search(r'Entities:\n(.*?)(?:\n\nRelationships:|$)', content, re.DOTALL)
+                        id_map = {}
+                        if entities_match:
+                            for e_line in entities_match.group(1).split('\n'):
+                                e_line = e_line.strip()
+                                if e_line.startswith('- '):
+                                    m = re.match(r'- (.*?) \((E\d+)\)', e_line)
+                                    if m:
+                                        id_map[m.group(1).strip()] = m.group(2)
+                        all_id_maps[c_id] = id_map
+                    except Exception:
+                        pass
+                        
+            for bf in batch_files:
+                bf.close()
+                
+            id_map_path.parent.mkdir(parents=True, exist_ok=True)
+            with open(id_map_path, 'w', encoding='utf-8') as f:
+                json.dump(all_id_maps, f, ensure_ascii=False, indent=2)
+            logging.info("      ✅ 大文件拆分与 ID Maps 恢复完成！")
+            skip_build_context = True
 
-    # 保存ID映射
-    id_map_path = temp_path.parent / f"{temp_path.stem}_id_maps.json"
+    submitted_jobs = []
+    for batch_idx in range(num_batches):
+        start_idx = batch_idx * MAX_BATCH_SIZE
+        end_idx = min((batch_idx + 1) * MAX_BATCH_SIZE, total_communities)
+        batch_communities = communities[start_idx:end_idx]
+        
+        # 创建临时请求文件
+        temp_path = community_requests_path.parent / f"{community_requests_path.stem}_level{level}_batch{batch_idx}.jsonl"
+        temp_path.parent.mkdir(parents=True, exist_ok=True)
+        
+        if not skip_build_context:
+            # 准备请求
+            community_prompt = Template(load_prompt_func(prompt_dir, "community_summary.md"))
+            
+            with open(temp_path, 'w', encoding='utf-8') as f:
+                for comm in batch_communities:
+                    comm_id = comm['community_id']
+                    members = comm['node_ids']
+
+                    # 构建社区上下文
+                    context, id_map = build_context_func(graph, members, max_entities, max_relationships)
+                    prompt = community_prompt.substitute(max_report_len=max_report_words, context=context)
+                    all_id_maps[comm_id] = id_map
+
+                    # 写入请求
+                    request_line = {
+                        "custom_id": comm_id,
+                        "method": "POST",
+                        "url": "/v1/chat/completions",
+                        "body": {
+                            "model": model_name,
+                            "messages": [{"role": "user", "content": prompt}],
+                            "temperature": 0.1
+                        }
+                    }
+                    f.write(json.dumps(request_line, ensure_ascii=False) + '\n')
+
+        logging.info(f"      ✅ 已准备好批次 {batch_idx+1}/{num_batches} ({len(batch_communities)} 个社区) 的请求: {temp_path.name}")
+
+        # 提交批量作业
+        job_name = f"L{level}Leaf_B{batch_idx}" if num_batches > 1 else f"Level{level}LeafSummary"
+        try:
+            job = submit_job_func(client, temp_path, model_name, sleep_interval, job_name, monitor=False)
+            if job:
+                submitted_jobs.append((batch_idx, job, None))
+        except TypeError:
+            logging.warning("      ⚠️ submit_job_func 不支持 monitor=False 参数，退化为串行提交")
+            job = submit_job_func(client, temp_path, model_name, sleep_interval, job_name)
+            batch_summaries = process_results_func(job, client)
+            if batch_summaries:
+                all_summaries.update(batch_summaries)
+
+    if submitted_jobs:
+        logging.info(f"      ⏳ 开始并行轮询 {len(submitted_jobs)} 个叶子社区作业...")
+        completed_jobs = _monitor_multiple_jobs(client, submitted_jobs, sleep_interval, f"Level{level}Leaf")
+        for batch_idx, comp_job, _ in sorted(completed_jobs, key=lambda x: x[0]):
+            batch_summaries = process_results_func(comp_job, client)
+            if batch_summaries:
+                all_summaries.update(batch_summaries)
+
+    # 保存ID映射（所有批次合并保存）
+    id_map_path = community_requests_path.parent / f"{community_requests_path.stem}_level{level}_id_maps.json"
+    temp_path.parent.mkdir(parents=True, exist_ok=True)
     with open(id_map_path, 'w', encoding='utf-8') as f:
         json.dump(all_id_maps, f, ensure_ascii=False, indent=2)
 
-    logging.info(f"      ✅ 已创建 {len(communities)} 个叶子社区的请求: {temp_path.name}")
-
-    # 提交批量作业
-    job = submit_job_func(client, temp_path, model_name, sleep_interval, f"Level{level}LeafSummary")
-    summaries = process_results_func(job, client)
-
-    return summaries
+    return all_summaries
 
 
 def generate_parent_community_summaries(
@@ -684,94 +810,129 @@ def generate_parent_community_summaries(
     Returns:
         社区ID到报告的映射
     """
-    # 创建临时请求文件
-    temp_path = community_requests_path.parent / f"{community_requests_path.stem}_level{level}.jsonl"
+    MAX_BATCH_SIZE = 45000
+    all_summaries = {}
+    
+    total_communities = len(communities)
+    num_batches = (total_communities + MAX_BATCH_SIZE - 1) // MAX_BATCH_SIZE
 
-    # 加载层级社区prompt
-    hierarchical_prompt = Template(load_prompt_func(prompt_dir, "hierarchical_community_summary.md"))
+    logging.info(f"      📦 父社区总数 {total_communities}，将拆分为 {num_batches} 个批次处理（每批最多 {MAX_BATCH_SIZE}）")
 
     # 用于保存节点ID映射（当使用节点上下文时）
     all_id_maps: Dict[str, Dict[str, str]] = {}
+    
+    # 加载层级社区prompt
+    hierarchical_prompt = Template(load_prompt_func(prompt_dir, "hierarchical_community_summary.md"))
 
-    with open(temp_path, 'w', encoding='utf-8') as f:
-        for comm in communities:
-            comm_id = comm['community_id']
-            children_ids = comm['children_ids']
+    for batch_idx in range(num_batches):
+        start_idx = batch_idx * MAX_BATCH_SIZE
+        end_idx = min((batch_idx + 1) * MAX_BATCH_SIZE, total_communities)
+        batch_communities = communities[start_idx:end_idx]
+        
+        # 创建临时请求文件
+        temp_path = community_requests_path.parent / f"{community_requests_path.stem}_level{level}_batch{batch_idx}.jsonl"
+        temp_path.parent.mkdir(parents=True, exist_ok=True)
+        
+        with open(temp_path, 'w', encoding='utf-8') as f:
+            for comm in batch_communities:
+                comm_id = comm['community_id']
+                children_ids = comm['children_ids']
 
-            # 尝试收集子社区的报告
-            sub_reports = []
-            for child_id in children_ids:
-                if child_id in child_summaries:
-                    child_text = child_summaries[child_id]
-                    # 解析JSON（更健壮的解析逻辑）
-                    child_obj = _parse_report_json(child_text, child_id)
+                # 尝试收集子社区的报告
+                sub_reports = []
+                for child_id in children_ids:
+                    if child_id in child_summaries:
+                        child_text = child_summaries[child_id]
+                        # 解析JSON（更健壮的解析逻辑）
+                        child_obj = _parse_report_json(child_text, child_id)
 
-                    if child_obj:
-                        sub_reports.append({
-                            "community_id": child_id,
-                            "report": child_obj
-                        })
+                        if child_obj:
+                            sub_reports.append({
+                                "community_id": child_id,
+                                "report": child_obj
+                            })
 
-            # 决定使用哪种上下文
-            if sub_reports:
-                # 情况1: 有子社区报告，使用报告上下文
-                context_text = ""
-                for idx, sr in enumerate(sub_reports, 1):
-                    report = sr['report']
-                    context_text += f"\n## Sub-Community {sr['community_id']}\n"
-                    context_text += f"**Title**: {report.get('title', 'N/A')}\n"
-                    context_text += f"**Summary**: {report.get('summary', 'N/A')}\n"
-                    context_text += f"**Rating**: {report.get('rating', 0)}/10 - {report.get('rating_explanation', 'N/A')}\n"
+                # 决定使用哪种上下文
+                if sub_reports:
+                    # 情况1: 有子社区报告，使用报告上下文
+                    context_text = ""
+                    for idx, sr in enumerate(sub_reports, 1):
+                        report = sr['report']
+                        context_text += f"\n## Sub-Community {sr['community_id']}\n"
+                        context_text += f"**Title**: {report.get('title', 'N/A')}\n"
+                        context_text += f"**Summary**: {report.get('summary', 'N/A')}\n"
+                        context_text += f"**Rating**: {report.get('rating', 0)}/10 - {report.get('rating_explanation', 'N/A')}\n"
 
-                    findings = report.get('findings', [])
-                    if findings:
-                        context_text += f"**Key Findings** ({len(findings)} findings):\n"
-                        for f_idx, finding in enumerate(findings[:3], 1):  # 限制每个子社区最多3个findings
-                            context_text += f"{f_idx}. {finding.get('summary', 'N/A')}\n"
-                    context_text += "\n"
+                        findings = report.get('findings', [])
+                        if findings:
+                            context_text += f"**Key Findings** ({len(findings)} findings):\n"
+                            for f_idx, finding in enumerate(findings[:3], 1):  # 限制每个子社区最多3个findings
+                                context_text += f"{f_idx}. {finding.get('summary', 'N/A')}\n"
+                        context_text += "\n"
 
-                logging.debug(f"      社区 {comm_id}: 使用 {len(sub_reports)} 个子社区报告作为上下文")
+                    logging.debug(f"      社区 {comm_id}: 使用 {len(sub_reports)} 个子社区报告作为上下文")
 
-            else:
-                # 情况2: 没有子社区报告，使用节点信息（叶子社区或投影社区）
-                members = comm['node_ids']
-                context_text, id_map = build_context_func(graph, members, max_entities, max_relationships)
-                all_id_maps[comm_id] = id_map
+                else:
+                    # 情况2: 没有子社区报告，使用节点信息（叶子社区或投影社区）
+                    members = comm['node_ids']
+                    context_text, id_map = build_context_func(graph, members, max_entities, max_relationships)
+                    all_id_maps[comm_id] = id_map
 
-                logging.debug(f"      社区 {comm_id}: 使用 {len(members)} 个节点作为上下文（叶子/投影社区）")
+                    logging.debug(f"      社区 {comm_id}: 使用 {len(members)} 个节点作为上下文（叶子/投影社区）")
 
-            # 生成prompt
-            prompt = hierarchical_prompt.substitute(
-                max_report_len=max_report_words,
-                sub_community_reports=context_text
-            )
+                # 生成prompt
+                prompt = hierarchical_prompt.substitute(
+                    max_report_len=max_report_words,
+                    sub_community_reports=context_text
+                )
 
-            # 写入请求
-            request_line = {
-                "custom_id": comm_id,
-                "method": "POST",
-                "url": "/v1/chat/completions",
-                "body": {
-                    "model": model_name,
-                    "messages": [{"role": "user", "content": prompt}],
-                    "temperature": 0.1
+                # 写入请求
+                request_line = {
+                    "custom_id": comm_id,
+                    "method": "POST",
+                    "url": "/v1/chat/completions",
+                    "body": {
+                        "model": model_name,
+                        "messages": [{"role": "user", "content": prompt}],
+                        "temperature": 0.1
+                    }
                 }
-            }
-            f.write(json.dumps(request_line, ensure_ascii=False) + '\n')
+                f.write(json.dumps(request_line, ensure_ascii=False) + '\n')
+
+        logging.info(f"      ✅ 已准备好父社区请求批次 {batch_idx+1}/{num_batches}: {temp_path.name}")
+
+    # 并发提交并监控所有批次
+    submitted_jobs = []
+    for batch_idx in range(num_batches):
+        temp_path = community_requests_path.parent / f"{community_requests_path.stem}_level{level}_batch{batch_idx}.jsonl"
+        job_name = f"L{level}Parent_B{batch_idx}" if num_batches > 1 else f"Level{level}ParentSummary"
+        try:
+            job = submit_job_func(client, temp_path, model_name, sleep_interval, job_name, monitor=False)
+            if job:
+                submitted_jobs.append((batch_idx, job, None))
+        except TypeError:
+            logging.warning("      ⚠️ submit_job_func 不支持 monitor=False 参数，退化为串行提交")
+            job = submit_job_func(client, temp_path, model_name, sleep_interval, job_name)
+            batch_summaries = process_results_func(job, client)
+            if batch_summaries:
+                all_summaries.update(batch_summaries)
+
+    if submitted_jobs:
+        logging.info(f"      ⏳ 开始并行轮询 {len(submitted_jobs)} 个父社区作业...")
+        completed_jobs = _monitor_multiple_jobs(client, submitted_jobs, sleep_interval, f"Level{level}Parent")
+        for batch_idx, comp_job, _ in sorted(completed_jobs, key=lambda x: x[0]):
+            batch_summaries = process_results_func(comp_job, client)
+            if batch_summaries:
+                all_summaries.update(batch_summaries)
 
     # 如果使用了节点上下文，保存ID映射
     if all_id_maps:
-        id_map_path = temp_path.parent / f"{temp_path.stem}_id_maps.json"
+        id_map_path = community_requests_path.parent / f"{community_requests_path.stem}_level{level}_id_maps.json"
+        temp_path.parent.mkdir(parents=True, exist_ok=True)
         with open(id_map_path, 'w', encoding='utf-8') as f:
             json.dump(all_id_maps, f, ensure_ascii=False, indent=2)
 
-    logging.info(f"      ✅ 已创建 {len(communities)} 个父社区的请求: {temp_path.name}")
-
-    # 提交批量作业
-    job = submit_job_func(client, temp_path, model_name, sleep_interval, f"Level{level}ParentSummary")
-    summaries = process_results_func(job, client)
-
-    return summaries
+    return all_summaries
 
 
 def run_hierarchical_community_summaries(

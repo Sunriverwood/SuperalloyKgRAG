@@ -540,11 +540,11 @@ ablation:
     query:
       search_config: true
     multidimensional_evaluation:
-      enabled_methods: ["basic_rag", "local", "global", "reasoning", "router"]
+      enabled_methods: ["drift", "local", "global", "reasoning", "router"]
 
   strict_mode:
     description: "严格限制仅使用检索知识（search_config=false）"
     query:
       search_config: false
     multidimensional_evaluation:
-      enabled_methods: ["basic_rag", "local", "global", "reasoning", "router"]
+      enabled_methods: ["drift", "local", "global", "reasoning", "router"]
