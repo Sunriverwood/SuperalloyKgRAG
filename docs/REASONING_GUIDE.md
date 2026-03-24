@@ -1,5 +1,9 @@
 # 图推理系统 - 完整指南
 
+> 更新时间：2026-03-24（与当前主流程入口对齐）
+> 
+> 说明：本轮文档整理不包含 `draw/` 与 `visualizations/` 目录。
+
 ## 📋 概述
 
 图推理系统是 SuperalloyKgRAG 的核心功能模块，实现基于知识图谱的多跳推理和路径发现。系统采用自监督学习方式，结合 Query-Aware RGAT 图神经网络和 Personalized PageRank 算法，实现可解释的推理查询。
@@ -21,7 +25,7 @@
 │  └──────────────────┘  └──────────────────┘  └──────────────┘  │
 │          ↓                      ↓                    ↓          │
 │  • 加载 final_graph.json    • Query-Aware RGAT   • PPR 传播   │
-│  • 提取向量 embedding.db    • 多头注意力机制     • BFS 路径搜索│
+│  • 提取向量 enriched.db     • 多头注意力机制     • BFS 路径搜索│
 │  • 构建邻接矩阵            • 边权重整合         • 路径评分     │
 │                                                                 │
 │  ┌──────────────────┐                    ┌──────────────────┐  │
@@ -39,7 +43,7 @@
 ### 数据流程
 
 ```
-final_graph.json + embedding.db
+final_graph.json + enriched.db
          ↓
     数据加载器 (data_loader.py)
          ↓
@@ -51,7 +55,7 @@ final_graph.json + embedding.db
    ↓                   ↓
 自监督训练        查询 → PPR/GNN → 路径 → 答案
    ↓
-model.pt
+develop.pt
 ```
 
 ## 🔧 配置说明
@@ -91,10 +95,10 @@ reasoning:
 
 ```bash
 # 交互模式
-python core/query_qwen/router_qwen.py
+$env:PYTHONPATH="."; python core/query_qwen/router_qwen.py
 
 # 命令行模式
-python core/query_qwen/router_qwen.py --query "镍和涡轮叶片有什么关系？"
+$env:PYTHONPATH="."; python core/query_qwen/router_qwen.py --query "镍和涡轮叶片有什么关系？"
 ```
 
 **路由器会自动识别推理类型查询**，例如：
@@ -119,7 +123,7 @@ python core/query_qwen/reasoning_query_qwen.py --train --epochs 100
 python core/query_qwen/reasoning_query_qwen.py --train --force-train --epochs 100
 ```
 
-训练完成后，模型保存至 `data/reasoning/model.pt`。
+训练完成后，模型保存路径由 `config/settings.yaml` 的 `reasoning.output.model_path` 控制（当前默认：`data/reasoning/develop.pt`）。
 
 #### 执行推理查询
 
@@ -136,7 +140,7 @@ python core/query_qwen/reasoning_query_qwen.py
 Graph Reasoning Query System - Interactive Mode
 ================================================================================
 
-✓ Found trained model: D:\...\data\reasoning\model.pt
+✓ Found trained model: D:\...\data\reasoning\develop.pt
 
 Enter your query (or 'quit' to exit): 镍和涡轮叶片有什么关系？
 
@@ -350,8 +354,8 @@ python core/query_qwen/reasoning_query_qwen.py --train --device cuda
 **首次使用或知识图谱更新后**需要训练：
 
 ```bash
-# 检查模型是否存在
-ls data/reasoning/model.pt
+# 检查模型是否存在 (PowerShell)
+Get-Item data/reasoning/develop.pt
 
 # 如果不存在，训练模型
 python core/query_qwen/reasoning_query_qwen.py --train --epochs 50
@@ -411,7 +415,7 @@ utils/
 └── graph_reasoning_utils.py # 工具函数
 
 data/reasoning/
-└── model.pt                # 训练好的模型（自动生成）
+└── develop.pt              # 默认训练好的模型（自动生成）
 ```
 
 ## 🔗 相关文档
@@ -422,4 +426,3 @@ data/reasoning/
 ---
 
 **提示**: 日常使用推荐通过 `router_qwen.py` 统一入口，路由器会自动判断并选择最优查询模式。
-

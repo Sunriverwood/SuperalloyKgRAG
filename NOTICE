@@ -1,0 +1,78 @@
+SuperalloyKgRAG: 基于知识图谱的高温合金领域 RAG 推理框架
+Copyright 2025 SUNRIVERWOOD
+
+本产品包含由 SUNRIVERWOOD 开发的软件。
+
+================================================================================
+
+本项目采用 Apache License 2.0 许可证。
+详情请参阅 LICENSE 文件。
+
+================================================================================
+
+第三方依赖库
+
+本项目使用了以下开源软件库（具体版本请参考 requirements.txt）：
+
+1. PyTorch - BSD-style License
+   https://github.com/pytorch/pytorch
+
+2. PyTorch Geometric - MIT License
+   https://github.com/pyg-team/pytorch_geometric
+
+3. LanceDB - Apache License 2.0
+   https://github.com/lancedb/lancedb
+
+4. NetworkX - BSD License
+   https://github.com/networkx/networkx
+
+5. OpenAI Python SDK - Apache License 2.0
+   https://github.com/openai/openai-python
+
+6. Google Generative AI - Apache License 2.0
+   https://github.com/google/generative-ai-python
+
+7. Qwen API - 通义千问 API
+   https://dashscope.aliyun.com/
+
+8. NumPy - BSD License
+   https://github.com/numpy/numpy
+
+9. Pandas - BSD License
+   https://github.com/pandas-dev/pandas
+
+10. Scikit-learn - BSD License
+    https://github.com/scikit-learn/scikit-learn
+
+11. YAML - MIT License
+    https://github.com/yaml/pyyaml
+
+12. tqdm - MIT License / MPL 2.0
+    https://github.com/tqdm/tqdm
+
+13. Loguru - MIT License
+    https://github.com/Delgan/loguru
+
+详细的依赖信息请参见 requirements.txt 文件。
+
+感谢所有开源项目的贡献者！
+
+================================================================================
+
+致谢
+
+感谢所有为本项目做出贡献的开发者和研究人员。
+
+如果您在学术研究中使用了本项目，欢迎引用我们的工作。
+
+================================================================================
+
+联系方式
+
+项目主页: https://github.com/SUNRIVERWOOD/SuperalloyKgRAG
+问题反馈: 请通过 GitHub Issues 提交
+
+================================================================================
+
+最后更新: 2025年12月13日
+

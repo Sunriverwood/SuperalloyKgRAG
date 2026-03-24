@@ -1,7 +1,22 @@
+# Copyright 2025 SUNRIVERWOOD
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import asyncio
 import json
 import logging
 import re
+import gc
 from typing import Dict, Any, List, Literal
 from string import Template
 import yaml
@@ -121,6 +136,13 @@ class DriftSearchHandler(LocalQueryHandler):
             # 并行执行后续查询的向量检索
             new_contexts = []
             for follow_up in follow_ups:
+                # 验证后续查询不为空
+                if not follow_up or not follow_up.strip():
+                    logging.warning(f"跳过空的后续查询")
+                    continue
+
+                follow_up = follow_up.strip()
+
                 # 实际生产中建议使用 asyncio.gather 优化
                 try:
                     vec = self._embed_query(follow_up)
@@ -134,11 +156,34 @@ class DriftSearchHandler(LocalQueryHandler):
                 logging.info("后续查询未检索到新内容，停止漂移。")
                 break
 
-            # 合并上下文
-            combined_context += "\n\n" + "\n\n".join(new_contexts)
-            if len(combined_context) > self.max_context_tokens * 4:
-                combined_context = combined_context[:self.max_context_tokens * 4]
-                logging.info("上下文过长，已截断。")
+            # 合并上下文（内存优化：更严格的限制）
+            new_context_text = "\n\n".join(new_contexts)
+
+            # 估算 token 数量（粗略：1 token ≈ 4 字符）
+            current_tokens = len(combined_context) // 4
+            new_tokens = len(new_context_text) // 4
+
+            # 设置更严格的上限：max_context_tokens * 2（而非 * 4）
+            max_total_tokens = self.max_context_tokens * 2
+
+            if current_tokens + new_tokens > max_total_tokens:
+                # 需要截断
+                available_tokens = max_total_tokens - current_tokens
+                if available_tokens <= 0:
+                    logging.info(f"上下文已达上限 ({current_tokens} tokens)，停止漂移。")
+                    break
+
+                # 截断新上下文
+                available_chars = available_tokens * 4
+                new_context_text = new_context_text[:available_chars]
+                logging.info(f"新上下文被截断到 {available_tokens} tokens，总计 {current_tokens + available_tokens} tokens")
+
+            combined_context += "\n\n" + new_context_text
+
+            # 最终安全检查
+            if len(combined_context) > max_total_tokens * 4:
+                combined_context = combined_context[:max_total_tokens * 4]
+                logging.warning(f"上下文超过限制，强制截断到 {max_total_tokens} tokens")
                 break
 
         # 3. 最终合成 (Final Synthesis)
@@ -158,6 +203,11 @@ class DriftSearchHandler(LocalQueryHandler):
         )
 
         response_text = await self.generate_async_wrapper(prompt=prompt)
+
+        # 内存优化：显式释放大对象并触发垃圾回收
+        del combined_context
+        gc.collect()
+
         return self._resolve_chunk_citations(response_text)
 
 
@@ -169,6 +219,8 @@ class GraphRouter:
     2. LOCAL: 局部查询（特定实体、关系）
     3. REASONING: 推理查询（多跳推理、因果关系）
     4. DRIFT: 漂移搜索（需要上下文扩展的查询）
+
+    内存优化：使用单例模式共享数据，避免重复加载
     """
 
     def __init__(self, config: Dict[str, Any]):
@@ -187,9 +239,32 @@ class GraphRouter:
 
         self.model_name = config["query"]["generation_model"]  # 复用生成模型进行分类
 
-        # 初始化子处理器
-        self.global_handler = GlobalQueryHandler(config)
+        # 加载全局查询参数选择配置
+        self.enable_dynamic_level_selection = config["query"].get("enable_dynamic_level_selection", True)
+        self.params_selection_prompt = None
+        if self.enable_dynamic_level_selection:
+            try:
+                params_prompt_path = PROJECT_ROOT / "config" / "prompts" / "global_query_params_selection.md"
+                if params_prompt_path.exists():
+                    with open(params_prompt_path, 'r', encoding='utf-8') as f:
+                        self.params_selection_prompt = f.read()
+                    logging.info("✅ 已加载全局查询参数选择提示词")
+                else:
+                    logging.warning(f"⚠️ 未找到参数选择提示词文件: {params_prompt_path}")
+                    self.enable_dynamic_level_selection = False
+            except Exception as e:
+                logging.warning(f"⚠️ 加载参数选择提示词失败: {e}")
+                self.enable_dynamic_level_selection = False
+
+        # 内存优化：使用共享的 DriftSearchHandler，避免重复加载数据
+        # DriftSearchHandler 继承自 LocalQueryHandler，已包含所有局部查询功能
+        logging.info("💡 [内存优化] 使用共享数据加载器初始化处理器...")
+
+        # 只初始化一次 DriftHandler（包含 Local 功能）
         self.drift_handler = DriftSearchHandler(config)
+
+        # Global handler 需要单独初始化（使用不同的数据）
+        self.global_handler = GlobalQueryHandler(config)
 
         # 初始化推理处理器（智能检测模型）
         try:
@@ -198,7 +273,15 @@ class GraphRouter:
 
             if load_model:
                 logging.info(f"检测到推理模型: {model_path}")
-                self.reasoning_handler = ReasoningQueryHandler(config, load_trained_model=True)
+                # 注意：ReasoningQueryHandler 需要 GraphData 对象（dataclass），
+                # 而 drift_handler.graph_data 是 dict 类型（JSON格式），不能共享
+                # 因此让 ReasoningQueryHandler 自行加载其所需的 GraphData
+                logging.info("正在加载推理处理器...")
+                self.reasoning_handler = ReasoningQueryHandler(
+                    config,
+                    load_trained_model=True,
+                    shared_graph_data=None  # 不共享，让其自行加载
+                )
                 self.reasoning_enabled = True
             else:
                 logging.warning(f"未找到推理模型: {model_path}，推理功能将被禁用")
@@ -209,11 +292,25 @@ class GraphRouter:
             self.reasoning_handler = None
             self.reasoning_enabled = False
 
+        logging.info(f"✅ 路由器初始化完成")
+        logging.info(f"   - 启用处理器: Global, Local, Drift" +
+                    (", Reasoning" if self.reasoning_enabled else ""))
+        if self.reasoning_enabled:
+            logging.info(f"   - 推理处理器: 已启用")
+
     async def route_and_answer(self, query: str) -> str:
         """
         路由并回答问题的入口函数。
         使用 CoT (Chain of Thought) 技术进行智能分类和方法选择。
         """
+        # 输入验证
+        if not query or not query.strip():
+            logging.error("❌ 收到空查询字符串")
+            return "错误：查询不能为空，请提供有效的问题。"
+
+        query = query.strip()  # 清理空白字符
+        logging.info(f"📥 收到查询: '{query[:100]}...'")
+
         # 1. CoT 意图分类（包含推理模式）
         classification_result = await self._cot_classify_intent(query)
         intent = classification_result['intent']
@@ -229,7 +326,22 @@ class GraphRouter:
         # 2. 分发执行
         if intent == "GLOBAL":
             logging.info(f"路由判定: 全局查询 (Global) -> '{query}'")
-            return await self.global_handler.answer_query(query)
+
+            # LLM动态参数选择
+            if self.enable_dynamic_level_selection and self.params_selection_prompt:
+                try:
+                    params = await self._select_global_query_params(query)
+                    logging.info(f"LLM参数选择结果: Level={params['level']}, Reasoning={params['reasoning']}")
+                    return await self.global_handler.answer_query(
+                        query,
+                        community_level=params['level']
+                    )
+                except Exception as e:
+                    logging.warning(f"⚠️ LLM参数选择失败: {e}，使用默认配置")
+                    return await self.global_handler.answer_query(query)
+            else:
+                # 使用默认配置
+                return await self.global_handler.answer_query(query)
 
         elif intent == "REASONING":
             if not self.reasoning_enabled:
@@ -370,6 +482,76 @@ METHOD: <ppr/gnn> (only if REASONING)
             # 降级为简单分类
             return await self._simple_classify_intent(query)
 
+    async def _select_global_query_params(self, query: str) -> Dict[str, Any]:
+        """
+        使用 LLM 选择全局查询的最优参数（社区层级）
+
+        Returns:
+            Dict with keys: 'level', 'reasoning'
+        """
+        import time
+        start_time = time.time()
+
+        try:
+            # 使用 Template 替换查询
+            from string import Template
+            prompt_template = Template(self.params_selection_prompt)
+            prompt = prompt_template.safe_substitute(query=query)
+
+            logging.debug(f"正在调用LLM进行参数选择...")
+
+            loop = asyncio.get_running_loop()
+
+            def call_llm():
+                response = self.client.chat.completions.create(
+                    model=self.model_name,
+                    messages=[{"role": "user", "content": prompt}],
+                    temperature=0.1  # 适中的温度，保证一定稳定性
+                )
+                return response.choices[0].message.content
+
+            result_text = await loop.run_in_executor(None, call_llm)
+
+            # 解析JSON响应
+            result_text = result_text.strip()
+
+            # 尝试提取JSON
+            json_match = re.search(r'\{[^}]*"level"[^}]*\}', result_text, re.DOTALL)
+            if json_match:
+                json_str = json_match.group(0)
+                params = json.loads(json_str)
+
+                level = params.get('level')
+                reasoning = params.get('reasoning', 'No reasoning provided')
+
+                # 验证level的有效性
+                if level not in [0, 1, 2, 3]:
+                    logging.warning(f"⚠️ LLM返回的层级 {level} 无效，使用默认 Level 1")
+                    level = 1
+
+                end_time = time.time()
+                selection_time_ms = (end_time - start_time) * 1000
+
+                logging.info(f"✅ LLM参数选择成功 (耗时: {selection_time_ms:.2f}ms)")
+                logging.info(f"   选择层级: Level {level}")
+                logging.info(f"   推理过程: {reasoning}")
+
+                return {
+                    'level': level,
+                    'reasoning': reasoning,
+                    'selection_time_ms': selection_time_ms
+                }
+            else:
+                logging.warning(f"⚠️ 无法从LLM响应中提取JSON: {result_text[:200]}")
+                return {'level': 1, 'reasoning': 'Failed to parse, using default'}
+
+        except json.JSONDecodeError as e:
+            logging.error(f"❌ JSON解析失败: {e}")
+            return {'level': 1, 'reasoning': 'JSON parse error, using default'}
+        except Exception as e:
+            logging.error(f"❌ LLM参数选择失败: {e}", exc_info=True)
+            return {'level': 1, 'reasoning': 'Error occurred, using default'}
+
     async def _simple_classify_intent(self, query: str) -> Dict[str, Any]:
         """
         简单的意图分类（作为 CoT 的降级方案）。
@@ -443,8 +625,11 @@ Return ONLY one word: GLOBAL, LOCAL, REASONING, or DRIFT
 async def main():
     import argparse
 
-    parser = argparse.ArgumentParser(description="GraphRAG 智能路由与漂移检索")
+    parser = argparse.ArgumentParser(description="智能路由与漂移检索")
     parser.add_argument("query", type=str, nargs='?', default="", help="输入问题")
+    parser.add_argument("--mode", type=str, default=None,
+                       choices=['local', 'global', 'reasoning', 'drift'],
+                       help="指定查询模式 (local/global/reasoning/drift)，不指定则使用自动路由")
     args = parser.parse_args()
 
     try:
@@ -455,18 +640,48 @@ async def main():
         # 初始化路由器
         router = GraphRouter(config)
 
+        async def get_answer(q, mode):
+            if mode == 'local':
+                # 使用 DriftHandler 的基础 LocalQueryHandler 功能
+                query_vector = router.drift_handler._embed_query(q)
+                context = router.drift_handler._build_local_context(query_vector)
+                from string import Template
+                template = Template(router.drift_handler.local_prompt_template)
+                prompt = template.safe_substitute(
+                    context_data=context,
+                    query=q,
+                    constraints="严格基于提供的上下文回答，禁止编造。"
+                )
+                response_text = await router.drift_handler.generate_async_wrapper(prompt=prompt)
+                return router.drift_handler._resolve_chunk_citations(response_text)
+            elif mode == 'global':
+                return await router.global_handler.answer_query(q)
+            elif mode == 'drift':
+                return await router.drift_handler.perform_drift_search(q)
+            elif mode == 'reasoning':
+                if not router.reasoning_enabled:
+                    return "错误：推理功能未启用（未找到模型）。"
+                loop = asyncio.get_running_loop()
+                result = await loop.run_in_executor(
+                    None,
+                    lambda: router.reasoning_handler.query(q, method='ppr', include_llm_answer=True)
+                )
+                return result.get('answer', '未能生成推理答案')
+            else:
+                return await router.route_and_answer(q)
+
         if args.query:
-            print(f"正在处理: {args.query}")
-            answer = await router.route_and_answer(args.query)
+            print(f"正在处理 (模式: {args.mode or '自动路由'}): {args.query}")
+            answer = await get_answer(args.query, args.mode)
             logging.info(f"最终答案:\n{answer}")
             print("\n--- 最终答案 ---\n")
             print(answer)
         else:
-            print("进入交互模式 (输入 exit 退出)")
+            print(f"进入交互模式 (模式: {args.mode or '自动路由'}, 输入 exit 退出)")
             while True:
                 q = input("\n问题: ")
                 if q.lower() in ["exit", "quit"]: break
-                answer = await router.route_and_answer(q)
+                answer = await get_answer(q, args.mode)
                 logging.info(f"问题: {q}\n答案:\n{answer}")
                 print(f"\n>>> 答案:\n{answer}\n")
 

@@ -9,20 +9,30 @@ vlm_parser:
   parsing_prompt_path: "config/prompts/pdf_parsing.md"
   requests_path: "data/cache/pdf_parsing_requests.jsonl"
   state_file_path: "data/cache/processing_state.json"
-  input_dir: "data/raw_pdfs/"
+  input_dir: "data/original_data/books/"
+  output_dir: "data/processed_jsons/"
+
+paper_parser:
+  batch_size: 20
+  batch_polling_timeout_seconds: 28800
+  sleep_interval: 600
+  parsing_prompt_path: "config/prompts/paper_pdf_parsing.md"
+  requests_path: "data/cache/paper_parsing_requests.jsonl"
+  state_file_path: "data/cache/paper_processing_state.json"
+  input_dir: "data/original_data/full_text/"
   output_dir: "data/processed_jsons/"
 
 llm:
-  provider: QWEN                   # GEMINI
-  model: qwen3-max                 # gemini-2.5-pro
-  api_key: ${QWEN_API_KEY}         # ${GEMINI_API_KEY}
+  provider: QWEN                   # GEMINI QWEN
+  model: qwen3-max                 # gemini-2.5-pro  qwen-plus  qwen3-max
+  api_key: ${QWEN_API_KEY}         # ${GEMINI_API_KEY} ${QWEN_API_KEY} 
   batch_mode: true                 # 是否启用批处理
   temperature: 0.1                 # 控制生成的稳定性
   top_p: 0.9
 
   pdf_parser:
-    input_dir: "data/raw_pdfs"
-    output_dir: "data/processed_jsons"
+    input_dir: "data/original_data/books/"
+    output_dir: "data/processed_jsons/"
 
 loader:
   source_json_dir: "data/processed_jsons/"
@@ -49,8 +59,41 @@ extraction:
     schematic: "config/prompts/schematic_to_graph.md"
     photograph: "config/prompts/photograph_to_graph.md"
 
+table_extraction:
+  input_dir: "data/processed_jsons"  # VLM 解析后的 JSON 文件目录
+  output_dir: "data/chunks"  # 中间文件保存位置（与 loader 一致）
+  output_filename: "table_units.jsonl"  # 表格 text units 文件
+  graph_output_dir: "data/graphs/extracted"  # 图谱输出目录
+  graph_output_filename: "extracted_table_graph.jsonl"  # 表格图谱文件
+  requests_dir: "data/cache"  # 批量请求文件目录
+  requests_filename: "extraction_table_requests.jsonl"  # 批量请求文件名
+  prompt_path: "config/prompts/table_to_graph.md"
+
+abstract_extraction:
+  input_excel: "data/original_data/abstract/superalloy_research.xlsx"  # Excel 文件路径
+  output_dir: "data/chunks"  # abstract_units.jsonl 保存位置
+  output_filename: "abstract_units.jsonl"  # 摘要 text units 文件
+  graph_output_dir: "data/graphs/extracted"  # 图谱输出目录
+  graph_output_filename: "extracted_abstract_graph.jsonl"  # 摘要图谱文件
+  requests_dir: "data/cache"  # 批量请求文件目录
+  requests_filename: "extraction_abstract_requests.jsonl"  # 批量请求文件名
+
+image_extraction:
+  input_dir: "data/processed_jsons"  # VLM 解析后的 JSON 文件目录
+  output_dir: "data/chunks"  # 中间文件保存位置（与 loader 一致）
+  output_filename: "image_units.jsonl"  # 图片 text units 文件
+  graph_output_dir: "data/graphs/extracted"  # 图谱输出目录
+  graph_output_filename: "extracted_image_graph.jsonl"  # 图片图谱文件
+  requests_dir: "data/cache"  # 批量请求文件目录
+  requests_filename: "extraction_image_requests.jsonl"  # 批量请求文件名
+
+enrich_extraction:
+  extracted_dir: "data/graphs/extracted"  # 提取的图谱存放目录
+  enriched_dir: "data/graphs/enriched"  # 富化后的图谱存放目录
+  enriched_filename: "enriched_graph.jsonl"  # 富化图谱文件名
+
 graph_builder:
-  input_path: "data/graphs/extracted/extracted_graph.jsonl"
+  input_path: "data/graphs/enriched/enriched_graph.jsonl"
   disambiguation_graph_path: "data/graphs/disambiguation_graph.json"
   merged_graph_path: "data/graphs/merged_graph.json"
   output_graph_path: "data/graphs/final_graph.json"
@@ -65,28 +108,54 @@ graph_builder:
   community_summary_max_report_words: 1000
   community_summary_used_entities_num: 25
   community_summary_used_relationships_num: 50
-  community_importance_weight_alpha: 0.6 # 重要性权重的alpha值
+  community_importance_weight_alpha: 0.8 # 重要性权重的alpha值
   enable_entity_merge: True
   entity_merge_topk: 10
-  entity_merge_min_sim: 0.82
-  embedding_batch_size: 1000 # 每批次处理的实体嵌入数量，避免API配额错误
+  entity_merge_min_sim: 0.9
+  embedding_batch_size: 10000 # 每批次处理的实体嵌入数量和LLM仲裁数量，避免API配额错误
+  
+  similarity_algorithm: "auto"  # 可选值: "hnsw", "brute_force", "auto"  # 实体合并相似度计算算法配置
+  auto_algorithm_threshold: 5000  # 自动模式下的切换阈值（实体数量）
+
+  hnsw_params:
+    auto_tune: true  # 是否自动计算参数（基于数据规模的启发式规则） # HNSW 参数配置
+    quality_level: "balanced"  # 质量级别: "fast", "balanced", "accurate"
+    # 手动配置参数（当 auto_tune=false 时生效）
+    M: 16
+    ef_construction: 200
+    ef_search: 100  # 最小值100，保证高召回率
+  # 人工审核配置
+  enable_manual_review: False # 是否启用人工审核功能
+  manual_review_sample_size: 5 # 人工审核抽样数量
+  manual_review_output_dir: "data/reports/manual_review" # 人工审核输出目录
+
+
+  use_hierarchical_communities: false  # true: 使用递归分层Leiden算法，支持多层级社区结构   # false: 使用传统扁平化Leiden算法（向后兼容）
+  max_community_level: 3  # 最大递归层级（默认10，防止无限递归）
+  min_community_size: 10  # 当社区节点数少于此值时，不再进行细分（默认10）
+
+  # 如果指定，会将完整的社区层级结构保存为CSV文件
+  # 包含：community_id, level, title, parent_id, children_ids, node_ids, node_count, is_projected
+  hierarchical_communities_path: "data/reports/hierarchical_communities.csv"
+
 
 embedding:
   model: "text-embedding-v4"  #"gemini-embedding-001""text-embedding-v4"
-  dimensionality: 768
+  dimensionality: 1024
   input_text_units_path: "data/chunks/text_units.jsonl"
   input_graph_path: "data/graphs/final_graph.json"
   input_community_report_path: "data/reports/community_summaries.jsonl"
-  output_db_path: "data/embeddings/embedding.db"  #no_entities_merge
-  output_db_text_path: "data/embeddings/text.db"
+  input_id_maps_path: "data/cache/community_detection_id_maps.json"
+  output_db_path: "data/embeddings/enriched.db"  #no_entities_merge embedding.db  multicommunities.db
+  output_db_text_path: "data/embeddings/basic_rag_multimodal.db"  #basic_rag_text.db  basic_rag_multimodal.db
   output_text_table_name: "text"
   requests_path: "data/cache"
   sleep_interval: 60
   batch_size: 10000  # 每批次处理的嵌入数量，避免API配额错误
 
 query:
-  top_k: 20
-  generation_model: "qwen3-max-preview"  #gemini-2.5-pro""qwen3-max"
+  top_k: 50
+  generation_model: "qwen3-max"  #gemini-2.5-pro""qwen3-max"
   temperature: 0.1
   top_p: 0.9
   search_config: false # allow_general_knowledge or not
@@ -96,15 +165,36 @@ query:
   drift_k_followups: 2  # 当启用drift时，允许的后续问题数量
   drift_max_steps: 2 # 当启用drift时，最大漂移步数
 
-  text_db_path: "data/embeddings/text.db"
+  # 全局查询社区层级配置
+  default_community_level: 2  # 默认查询 Level
+  enable_dynamic_level_selection: false  # 启用LLM动态层级选择
+
+  # 层级到top_k的映射（固定配置，不由LLM决定）
+  level_top_k_mapping:
+    0: 2      # Level 0: 全局主题总览，社区数量少
+    1: 10     # Level 1: 主要研究方向，中等数量
+    2: 20     # Level 2: 具体子主题，较多社区
+    3: 30    # Level 3: 细粒度概念，大量社区
+
+  # 可选：不同层级的最小质量评分阈值
+  min_rating_by_level:
+    0: null    # Level 0 要求高质量
+    1: null    # Level 1 中等质量
+    2: null    # Level 2 较低门槛
+    3: null   # Level 3 不限制
+
+  # 性能监控配置（记录到主日志文件）
+  enable_performance_monitoring: true
+
+  text_db_path: "data/embeddings/basic_rag_multimodal.db"
   text_table_name: "text"
   output_dir: "data/answers"
   output_filename: "answers_text.jsonl"
   requests_path: "data/cache"
   sleep_interval: 60
   basic_rag_prompt: "config/prompts/basic_rag.md"
-
-  embedding_db_path: "data/embeddings/embedding.db"  #no_entities_merge   embedding.db
+  global_db_path: "data/embeddings/enriched.db"  #no_entities_merge   embedding.db  enriched.db
+  embedding_db_path: "data/embeddings/enriched.db"  #no_entities_merge   embedding.db  enriched.db
   global_table_name: "communities"
   local_table_name: "entities"
   prompt_dir: "config/prompts"
@@ -159,6 +249,13 @@ evaluation:
       mechanism_invocation: 0.35
       solution_proposal: 0.35
 
+  # 评判模型配置
+  llm:
+    model: "qwen3-max"   # qwen-plus  gemini-2.5-flash  qwen3-max
+    api_key: "${QWEN_API_KEY} " # ${GEMINI_API_KEY}  ${QWEN_API_KEY}
+    base_url: "https://dashscope.aliyuncs.com/compatible-mode/v1"
+              #https://generativelanguage.googleapis.com/v1beta/openai/   https://dashscope.aliyuncs.com/compatible-mode/v1
+
 reasoning:
   # Graph Reasoning Model Configuration
   model:
@@ -172,11 +269,17 @@ reasoning:
 
   # Training Configuration
   training:
-    batch_size: 512
+    batch_size: 64
+    gradient_accumulation_steps: 4
     learning_rate: 0.001
-    num_epochs: 1000
+    num_epochs: 100
     weight_decay: 0.0001
-    early_stopping_patience: 10
+    min_epochs: 30
+    early_stopping_patience: 20
+    early_stopping_min_delta: 1.0e-4
+    contrastive_num_samples: 1024   # 建议 1024~4096 之间试
+    contrastive_temperature: 0.2
+    contrastive_noise_std: 0.1
 
     # Self-supervised task weights
     loss_weights:
@@ -198,6 +301,18 @@ reasoning:
     ppr_alpha: 0.15  # Personalized PageRank restart probability
     ppr_max_iter: 100
     ppr_tol: 1.0e-6
+    default_method: "ppr"  # 默认推理方法: "ppr" 或 "gnn"
+
+    # 节点评分策略
+    # use_direct_similarity: true - 仅使用余弦相似度
+    # use_direct_similarity: false - 使用混合评分（余弦相似度 + GNN + QueryMatcher）
+    use_direct_similarity: true
+
+    # 混合评分权重 (仅当 use_direct_similarity=false 时有效)
+    # direct_similarity_weight: 余弦相似度的权重（确保查询相关性）
+    # gnn_matcher_weight: GNN + QueryMatcher 的权重（利用图结构）
+    direct_similarity_weight: 0.7
+    gnn_matcher_weight: 0.3
 
     # Path extraction
     max_path_length: 5
@@ -207,17 +322,229 @@ reasoning:
     # Query encoding
     use_cached_embeddings: true
 
+    # 关键词增强配置
+    keyword_enhancement:
+      enabled: true  # 是否启用关键词提取增强
+      max_keywords: 5  # 最大提取关键词数量
+      cache_enabled: true  # 是否缓存关键词提取结果
+
+      # PPR 方法的融合策略 (目标: 高召回率，广覆盖)
+      ppr_strategy:
+        fusion_method: "max_pool"  # max_pool: 取各embedding的逐维度最大值
+        original_query_weight: 0.4  # 原始query的权重
+        keyword_weight: 0.6  # 关键词的权重
+
+      # GNN 方法的融合策略 (目标: 语义一致性)
+      gnn_strategy:
+        fusion_method: "weighted_avg"  # weighted_avg: 加权平均
+        original_query_weight: 0.7  # 原始query的权重
+        keyword_weight: 0.3  # 关键词的权重
+
   # Data paths
   data:
     graph_path: "data/graphs/final_graph.json"
-    entity_embeddings_db: "data/embeddings/embedding.db"
+    entity_embeddings_db: "data/embeddings/enriched.db"
     entity_table: "entities"
     relationship_table: "relationships"
     pseudo_queries_path: "data/reasoning/pseudo_queries.jsonl"
 
   # Output paths
   output:
-    model_path: "data/reasoning/model.pt"
+    model_path: "data/reasoning/develop.pt"
     inference_results: "data/reasoning/inference_results.jsonl"
     attention_viz: "data/reasoning/attention_viz"
 
+baseline:
+  models:
+    - name: "qwen3.5-plus"
+      provider: "openai"
+      api_key: "${QWEN_API_KEY}"
+      base_url: "https://dashscope.aliyuncs.com/compatible-mode/v1"
+    - name: "kimi-k2.5"         #kimi-k2-thinking  Kimi-K2
+      provider: "openai"
+      api_key: "${QWEN_API_KEY}"
+      base_url: "https://dashscope.aliyuncs.com/compatible-mode/v1"
+    # - name: "deepseek-v3.2"   #deepseek-v3.2  DeepSeek-V3.2
+    #   provider: "openai"
+    #   api_key: "${QWEN_API_KEY}"
+    #   base_url: "https://dashscope.aliyuncs.com/compatible-mode/v1"
+    - name: "glm-5"         #glm-4.6  GLM-4.6
+      provider: "openai"
+      api_key: "${QWEN_API_KEY}"
+      base_url: "https://dashscope.aliyuncs.com/compatible-mode/v1"
+    - name: "MiniMax-M2.5"
+      provider: "openai"
+      api_key: "${QWEN_API_KEY_2}"
+      base_url: "https://llmapi.paratera.com/v1"
+    - name: "ERNIE-5.0-Thinking-Preview"
+      provider: "openai"
+      api_key: "${QWEN_API_KEY_2}"
+      base_url: "https://llmapi.paratera.com/v1"
+
+# 多维度评测配置
+multidimensional_evaluation:
+  # 启用的评测方法（留空表示全部启用）
+  # Baseline 模型: qwen3-max, kimi-k2-thinking, deepseek-v3.2, glm-4.6, MiniMax-M2, ERNIE-4.5-Turbo-128K
+  # RAG 方法: basic_rag, global, local, reasoning, router
+  enabled_methods: []
+
+  # 评判 Prompt 路径
+  judge_prompt_path: "config/prompts/multidimensional_judge.md"
+
+  # 输出目录配置
+  answers_output_dir: "data/answers/multidimensional_evaluation"
+  reports_output_dir: "data/reports/multidimensional_evaluation"
+
+  # 断点续传
+  enable_checkpoint: false
+
+  # 并发控制
+  max_concurrency: 1
+
+  # API 请求间隔（秒），用于避免限流
+  request_interval: 1.0
+
+  # LLM 调用失败重试次数
+  retry_count: 2
+
+  # 评判模型（复用 evaluation.llm 配置）
+  # 使用 qwen3-max 作为评分器
+
+# 消融实验配置
+# 使用方式: python evaluation/multidimensional_evaluator.py --ablation <name> [--methods ...]
+ablation:
+  # --- 实验 1: basic_rag 纯文本 vs 多模态 ---
+  basic_rag_text:
+    description: "Basic RAG 纯文本数据库"
+    query:
+      text_db_path: "data/embeddings/basic_rag_text.db"
+    multidimensional_evaluation:
+      enabled_methods: ["basic_rag"]
+
+  basic_rag_multimodal:
+    description: "Basic RAG 多模态数据库（默认配置基线）"
+    query:
+      text_db_path: "data/embeddings/basic_rag_multimodal.db"
+    multidimensional_evaluation:
+      enabled_methods: ["basic_rag"]
+
+  # --- 实验 2: reasoning + local 默认配置 vs text_only ---
+  text_only:
+    description: "纯文本图谱消融实验（仅 text + abstract）"
+    graph_builder:
+      input_path: "data/graphs/enriched/enriched_graph_text_only.jsonl"
+      disambiguation_graph_path: "data/graphs/text_only/disambiguation_graph.json"
+      merged_graph_path: "data/graphs/text_only/merged_graph.json"
+      output_graph_path: "data/graphs/text_only/final_graph.json"
+      community_reports_path: "data/reports/text_only/community_summaries.jsonl"
+      disambiguation_requests_path: "data/cache/text_only/disambiguation_requests.jsonl"
+      embedding_requests_path: "data/cache/text_only/entities_embedding_requests.jsonl"
+      merge_requests_path: "data/cache/text_only/entities_merge_requests.jsonl"
+      community_requests_path: "data/cache/text_only/community_detection.jsonl"
+    embedding:
+      input_graph_path: "data/graphs/text_only/final_graph.json"
+      input_community_report_path: "data/reports/text_only/community_summaries.jsonl"
+      input_id_maps_path: "data/cache/text_only/community_detection_id_maps.json"
+      output_db_path: "data/embeddings/enriched_text_only.db"
+      requests_path: "data/cache/text_only"
+    query:
+      global_db_path: "data/embeddings/enriched_text_only.db"
+      embedding_db_path: "data/embeddings/enriched_text_only.db"
+      input_graph_path: "data/graphs/text_only/final_graph.json"
+      input_community_report_path: "data/reports/text_only/community_summaries.jsonl"
+    reasoning:
+      data:
+        graph_path: "data/graphs/text_only/final_graph.json"
+        entity_embeddings_db: "data/embeddings/enriched_text_only.db"
+      output:
+        model_path: "data/reasoning/text_only.pt"
+    multidimensional_evaluation:
+      enabled_methods: ["reasoning", "local"]
+
+  # --- 实验 3: reasoning 推理方法 × 相似度计算方法 交叉实验 ---
+  reasoning_ppr_direct:
+    description: "PPR + 直接余弦相似度"
+    reasoning:
+      inference:
+        default_method: "ppr"
+        use_direct_similarity: true
+    multidimensional_evaluation:
+      enabled_methods: ["reasoning"]
+
+  reasoning_ppr_hybrid:
+    description: "PPR + 混合评分（余弦 + GNN + QueryMatcher）"
+    reasoning:
+      inference:
+        default_method: "ppr"
+        use_direct_similarity: false
+    multidimensional_evaluation:
+      enabled_methods: ["reasoning"]
+
+  reasoning_gnn_direct:
+    description: "GNN + 直接余弦相似度"
+    reasoning:
+      inference:
+        default_method: "gnn"
+        use_direct_similarity: true
+    multidimensional_evaluation:
+      enabled_methods: ["reasoning"]
+
+  reasoning_gnn_hybrid:
+    description: "GNN + 混合评分（余弦 + GNN + QueryMatcher）"
+    reasoning:
+      inference:
+        default_method: "gnn"
+        use_direct_similarity: false
+    multidimensional_evaluation:
+      enabled_methods: ["reasoning"]
+
+  # --- 实验 4: 实体合并 vs 不合并（reasoning + local）---
+  entity_merge:
+    description: "实体合并（默认配置基线）"
+    multidimensional_evaluation:
+      enabled_methods: ["reasoning", "local"]
+
+  no_entity_merge:
+    description: "不合并实体（从消歧图直接做社区发现）"
+    graph_builder:
+      # 输入：使用默认的消歧图（已完成消歧，跳过合并）
+      disambiguation_graph_path: "data/graphs/disambiguation_graph.json"
+      merged_graph_path: "data/graphs/no_entities_merge/merged_graph.json"
+      output_graph_path: "data/graphs/no_entities_merge/final_graph.json"
+      community_reports_path: "data/reports/no_entities_merge/community_summaries.jsonl"
+      community_requests_path: "data/cache/no_entities_merge/community_detection.jsonl"
+      hierarchical_communities_path: "data/reports/no_entities_merge/hierarchical_communities.csv"
+    embedding:
+      input_graph_path: "data/graphs/no_entities_merge/final_graph.json"
+      input_community_report_path: "data/reports/no_entities_merge/community_summaries.jsonl"
+      input_id_maps_path: "data/cache/no_entities_merge/community_detection_id_maps.json"
+      output_db_path: "data/embeddings/no_entities_merge.db"
+      requests_path: "data/cache/no_entities_merge"
+    query:
+      global_db_path: "data/embeddings/no_entities_merge.db"
+      embedding_db_path: "data/embeddings/no_entities_merge.db"
+      input_graph_path: "data/graphs/no_entities_merge/final_graph.json"
+      input_community_report_path: "data/reports/no_entities_merge/community_summaries.jsonl"
+    reasoning:
+      data:
+        graph_path: "data/graphs/no_entities_merge/final_graph.json"
+        entity_embeddings_db: "data/embeddings/no_entities_merge.db"
+      output:
+        model_path: "data/reasoning/no_entities_merge.pt"
+    multidimensional_evaluation:
+      enabled_methods: ["reasoning", "local"]
+
+  # --- 实验 5: 允许 vs 不允许 LLM 通用知识 ---
+  allow_general_knowledge:
+    description: "允许 LLM 使用通用知识（search_config=true）"
+    query:
+      search_config: true
+    multidimensional_evaluation:
+      enabled_methods: ["drift", "local", "global", "reasoning", "router"]
+
+  strict_mode:
+    description: "严格限制仅使用检索知识（search_config=false）"
+    query:
+      search_config: false
+    multidimensional_evaluation:
+      enabled_methods: ["drift", "local", "global", "reasoning", "router"]

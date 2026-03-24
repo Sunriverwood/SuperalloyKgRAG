@@ -1,3 +1,17 @@
+# Copyright 2025 SUNRIVERWOOD
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import re
 import json
 import logging
@@ -41,7 +55,7 @@ class EmbeddingTextCleaner:
                 graph_data = json.load(f)
 
             # 使用 networkx 正确解析图谱结构
-            graph = nx.node_link_graph(graph_data)
+            graph = nx.node_link_graph(graph_data, edges="links")
 
             for node_id, data in graph.nodes(data=True):
                 # 映射: 全局ID -> 实体名称

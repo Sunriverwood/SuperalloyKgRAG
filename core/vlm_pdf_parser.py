@@ -1,3 +1,17 @@
+# Copyright 2025 SUNRIVERWOOD
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import os
 import json
 import time
@@ -60,14 +74,15 @@ def load_config(settings_filename: str = "settings.yaml") -> Dict[str, Any]:
 
 
 class VLMPdfParser:
-    def __init__(self, config: Dict[str, Any]):
+    def __init__(self, config: Dict[str, Any], config_key: str = "vlm_parser"):
         """
         初始化 VLM PDF 解析器
 
         Args:
             config: 配置字典
+            config_key: 配置节点名称，子类可传入不同的 key（如 "paper_parser"）
         """
-        parser_cfg = config["vlm_parser"]
+        parser_cfg = config[config_key]
         llm_cfg = config["llm"]
 
         # 设置日志
@@ -147,10 +162,11 @@ class VLMPdfParser:
             raise
 
     def list_pdfs(self, pdf_folder: Path = None) -> set:
-        """列出PDF文件夹中的所有PDF文件"""
+        """列出PDF文件夹及其子目录中的所有PDF文件"""
         if pdf_folder is None:
             pdf_folder = self.pdf_folder
-        return {f.name for f in pdf_folder.iterdir() if f.suffix.lower() == ".pdf"}
+        # 递归查找所有 PDF 文件，返回相对路径并统一为正斜杠，以支持子文件夹
+        return {str(f.relative_to(pdf_folder)).replace('\\', '/') for f in pdf_folder.rglob("*.pdf") if f.is_file()}
 
     def save_json(self, data: dict, path: Path):
         """保存JSON文件"""
@@ -192,6 +208,57 @@ class VLMPdfParser:
                 finally:
                     self.save_state(self.state)
 
+    # -------- 等待文件就绪 --------
+    def wait_for_files_active(self, poll_interval: int = 10, max_wait: int = 600):
+        """轮询等待所有已上传文件从 PROCESSING 变为 ACTIVE 状态
+
+        Args:
+            poll_interval: 每次轮询的间隔秒数
+            max_wait: 单个文件最长等待秒数
+        """
+        self.logger.info("[阶段1.5] 等待所有已上传文件变为 ACTIVE 状态...")
+        pending_files = {
+            pdf: data["uploaded_file_name"]
+            for pdf, data in self.state.items()
+            if data.get("status") == "uploaded" and data.get("uploaded_file_name")
+        }
+
+        if not pending_files:
+            self.logger.info("无需等待，没有处于 uploaded 状态的文件。")
+            return
+
+        self.logger.info(f"共 {len(pending_files)} 个文件需要确认就绪状态。")
+
+        for pdf_name, file_name in pending_files.items():
+            waited = 0
+            while waited < max_wait:
+                try:
+                    file_info = self.client.files.get(name=file_name)
+                    file_state = file_info.state.name if hasattr(file_info.state, 'name') else str(file_info.state)
+
+                    if file_state == "ACTIVE":
+                        self.logger.info(f"  ✅ '{pdf_name}' 已就绪 (ACTIVE)，等待了 {waited}s")
+                        break
+                    elif file_state == "FAILED":
+                        self.logger.error(f"  ❌ '{pdf_name}' 文件处理失败 (FAILED)")
+                        self.state[pdf_name].update({"status": "failed_file_processing", "error": "文件在云端处理失败"})
+                        self.save_state(self.state)
+                        break
+                    else:
+                        self.logger.info(f"  ⏳ '{pdf_name}' 状态: {file_state}，已等待 {waited}s，继续等待...")
+                        time.sleep(poll_interval)
+                        waited += poll_interval
+                except Exception as e:
+                    self.logger.warning(f"  ⚠️ 查询 '{pdf_name}' 状态时出错: {e}，将重试...")
+                    time.sleep(poll_interval)
+                    waited += poll_interval
+            else:
+                self.logger.error(f"  ❌ '{pdf_name}' 等待超时 ({max_wait}s)，标记为失败")
+                self.state[pdf_name].update({"status": "failed_file_timeout", "error": f"文件等待 ACTIVE 超时 ({max_wait}s)"})
+                self.save_state(self.state)
+
+        self.logger.info("所有文件状态确认完毕。")
+
     # -------- 批处理作业 --------
     def create_batch_jobs(self):
         """创建批处理作业"""
@@ -225,10 +292,11 @@ class VLMPdfParser:
         for i, (chunk, files_in_chunk) in enumerate(zip(chunks, files_chunks)):
             job_name = f"KG-Batch-{datetime.now().strftime('%Y%m%d-%H%M%S')}-{i + 1}"
 
-            # # 为每个批次创建唯一的请求文件（使用时间戳）
-            # timestamp = int(time.time())
-            # batch_request_file = requests_dir / f"vlm_batch_requests_{timestamp}_{i}.jsonl"
-            batch_request_file = self.requests_path
+            # 为每个批次创建唯一的请求文件（使用时间戳，基于 self.requests_path 动态命名）
+            timestamp = int(time.time())
+            base_name = self.requests_path.stem
+            ext = self.requests_path.suffix or ".jsonl"
+            batch_request_file = requests_dir / f"{base_name}_{timestamp}_{i}{ext}"
 
             try:
                 # 写入批量请求文件
@@ -353,15 +421,37 @@ class VLMPdfParser:
                     continue
 
                 if result.get("response"):
-                    output_file = self.output_folder / (Path(key).stem + ".json")
+                    output_file = self.output_folder / Path(key).with_suffix(".json")
+                    output_file.parent.mkdir(parents=True, exist_ok=True)
                     try:
-                        text = result["response"]["candidates"][0]["content"]["parts"][0]["text"]
+                        # 防御性逐层提取，避免安全拦截或异常返回导致 KeyError/NoneType 崩溃
+                        response = result.get("response", {})
+                        candidates = response.get("candidates")
+                        if not candidates or len(candidates) == 0:
+                            finish_reason = response.get("promptFeedback", {}).get("blockReason", "未知原因")
+                            raise ValueError(f"API 未返回 candidates，可能被安全策略拦截: {finish_reason}")
+
+                        candidate = candidates[0]
+                        finish_reason = candidate.get("finishReason", "")
+                        content = candidate.get("content")
+                        if content is None:
+                            raise ValueError(f"candidate 中无 content 字段，finishReason={finish_reason}")
+
+                        parts = content.get("parts")
+                        if not parts or len(parts) == 0:
+                            raise ValueError(f"content 中无 parts 字段，finishReason={finish_reason}")
+
+                        text = parts[0].get("text", "")
+                        if not text.strip():
+                            raise ValueError(f"返回文本为空，finishReason={finish_reason}")
+
                         cleaned = text.strip().replace("```json", "").replace("```", "").strip()
                         data = json.loads(cleaned)
                         self.save_json(data, output_file)
+
                         self.state[key].update({"status": "completed", "output_path": str(output_file)})
                         self.logger.info(f"    - ✅ 成功: '{key}' 的结果已保存到 {output_file}")
-                    except (KeyError, IndexError, json.JSONDecodeError) as e:
+                    except (ValueError, KeyError, IndexError, json.JSONDecodeError) as e:
                         self.state[key].update({"status": "failed_parsing", "error": f"解析结果失败: {e}"})
                         self.logger.error(f"    - ❌ 失败: 解析 '{key}' 的结果时出错: {e}")
                 elif result.get("error"):
@@ -424,6 +514,7 @@ def main():
 
         # 运行核心逻辑
         parser.upload_files()
+        parser.wait_for_files_active()  # 等待所有文件从 PROCESSING 变为 ACTIVE
         parser.create_batch_jobs()
         parser.monitor_jobs()
         parser.generate_report()

@@ -5,6 +5,7 @@ Document Parser: Convert document content into a structured JSON object followin
 1. **ID**: Assign `block_id` ("page_<N>_block_<M>") sequentially.
 2. **Ref**: In `text_block`, link mentioned figures/tables in `references` (list of `block_id`).
 3. **Img**: Classify `image_type` as: `chart` (graphs), `schematic` (diagrams), `photograph` (real photos), or `other`.
+4. **Table Compression**: For tables, do NOT use 2D JSON arrays. Output a single string `csv_data` in standard CSV format (comma-separated, fields containing commas or newlines must be enclosed in double quotes).
 
 ### Output Schema (Strict JSON)
 {
@@ -22,7 +23,7 @@ Document Parser: Convert document content into a structured JSON object followin
       "block_id": "String",
       "type": "table",
       "caption": "String",
-      "data": [["Header1", "Header2"], ["Row1Col1", "Row1Col2"]], // Matrix strings
+      "csv_data": "Header1,Header2\nRow1Col1,Row1Col2\nRow2Col1,Row2Col2", // Standard CSV format, use double quotes for fields containing commas
       "summary": "Concise English insight"
     },
     // Case 3: Image
@@ -38,7 +39,7 @@ Document Parser: Convert document content into a structured JSON object followin
         "y_axis_label": "String (w/ units)",
         "legend": ["String"],
         "trend_description": "Detailed description focusing on defects and phases",
-        "extracted_data": [{"x": val, "y": val}] // Best effort
+        "extracted_data": "x,y\nval1,val2\nval3,val4" // CSV format, key turning points only
         // If schematic:
         "description": "Structure/flow/components detail",
         "ocr_text": "Labels inside diagram"

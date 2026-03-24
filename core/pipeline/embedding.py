@@ -1,3 +1,17 @@
+# Copyright 2025 SUNRIVERWOOD
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import json
 import logging
 import os
@@ -95,7 +109,7 @@ def load_graph_data(graph_path: Path) -> nx.DiGraph:
     logging.info(f"正在从 {graph_path} 加载图谱...")
     with open(graph_path, 'r', encoding='utf-8') as f:
         graph_data = json.load(f)
-    graph = nx.node_link_graph(graph_data)
+    graph = nx.node_link_graph(graph_data, edges="links")
     logging.info("图谱加载成功。")
     return graph
 

@@ -1,3 +1,17 @@
+# Copyright 2025 SUNRIVERWOOD
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 # embedding_basic.py
 
 import json
@@ -56,21 +70,70 @@ def load_config(settings_filename: str = "settings.yaml") -> Dict[str, Any]:
 
 
 # --- 数据加载 ---
-def load_text_units(file_path: Path) -> List[Dict[str, Any]]:
-    """从 JSONL 文件加载文本单元。"""
-    logging.info(f"正在从 {file_path} 加载文本单元...")
+def load_text_units(file_path: Path, unit_type: str = "text") -> List[Dict[str, Any]]:
+    """从 JSONL 文件加载文本单元，并添加 unit_type 字段以便溯源。
+
+    Args:
+        file_path: JSONL 文件路径
+        unit_type: 单元类型标识（text, abstract, image, table）
+    """
+    logging.info(f"正在从 {file_path} 加载 {unit_type} 单元...")
     if not file_path.exists():
-        raise FileNotFoundError(f"输入文件 {file_path} 未找到！")
+        logging.warning(f"输入文件 {file_path} 未找到，跳过。")
+        return []
     documents = []
     with open(file_path, 'r', encoding='utf-8') as f:
         for i, line in enumerate(f):
             try:
                 # 假设每行都是一个有效的JSON对象
-                documents.append(json.loads(line))
+                doc = json.loads(line)
+                # 添加 unit_type 字段用于溯源
+                doc["unit_type"] = unit_type
+                documents.append(doc)
             except json.JSONDecodeError:
                 logging.warning(f"跳过无法解析的行 {i + 1}: {line.strip()}")
-    logging.info(f"成功加载 {len(documents)} 个文本单元。")
+    logging.info(f"成功加载 {len(documents)} 个 {unit_type} 单元。")
     return documents
+
+
+def load_all_text_units(config: Dict[str, Any]) -> List[Dict[str, Any]]:
+    """加载所有类型的文本单元（text, abstract），用于向量嵌入。
+
+    Args:
+        config: 配置字典
+
+    Returns:
+        合并后的所有文档列表
+    """
+    all_documents = []
+    chunks_dir = PROJECT_ROOT / config["extraction"]["input_dir"]
+
+    # 定义需要加载的文件类型：
+    units_files = [
+        ("text_units.jsonl", "text", True),
+        ("abstract_units.jsonl", "abstract", True),
+        ("image_units.jsonl", "image", True),
+        ("table_units.jsonl", "table", True),
+    ]
+
+    for filename, unit_type, required in units_files:
+        file_path = chunks_dir / filename
+        try:
+            docs = load_text_units(file_path, unit_type)
+            if docs:
+                all_documents.extend(docs)
+                logging.info(f"  ✓ 从 {filename} 加载了 {len(docs)} 个文档")
+            elif required:
+                logging.warning(f"⚠️ 必需文件 {filename} 为空或不存在")
+        except Exception as e:
+            if required:
+                logging.error(f"❌ 加载必需文件 {filename} 时出错: {e}")
+                raise
+            else:
+                logging.warning(f"⚠️ 加载可选文件 {filename} 时出错: {e}")
+
+    logging.info(f"✅ 总共加载 {len(all_documents)} 个文本单元")
+    return all_documents
 
 
 # --- 批量向量化工作流 (修改为 OpenAI Batch 格式) ---
@@ -278,15 +341,22 @@ def main():
     logging.info("阿里云百炼 (OpenAI兼容) 客户端初始化完成。")
 
     # --- 2. 加载数据 ---
-    text_units_path = PROJECT_ROOT / config["embedding"]["input_text_units_path"]
-    documents_to_embed = load_text_units(text_units_path)
+    # 加载所有类型的文本单元（text_units.jsonl 和 abstract_units.jsonl）
+    documents_to_embed = load_all_text_units(config)
 
     if not documents_to_embed:
         logging.warning("未能加载任何文本单元，程序即将退出。")
         return
 
+    # 统计各类型文档数量
+    type_counts = {}
+    for doc in documents_to_embed:
+        unit_type = doc.get("unit_type", "unknown")
+        type_counts[unit_type] = type_counts.get(unit_type, 0) + 1
+    logging.info(f"📊 各类型文档统计: {type_counts}")
+
     # --- 3. 完整嵌入工作流 ---
-    logging.info("\n--- 开始处理文本块嵌入 ---")
+    logging.info("\n--- 开始处理文本块嵌入（包含 text 和 abstract 类型）---")
 
     # 从配置中提取参数
     embedding_config = config["embedding"]
@@ -311,7 +381,7 @@ def main():
     # d. 存储到LanceDB
     if embedded_documents:
         store_embeddings_lancedb(db_path, table_name, embedded_documents)
-        logging.info("\n✅ 所有文本块已成功嵌入并存入向量数据库！")
+        logging.info("\n✅ 所有文本块（text + abstract）已成功嵌入并存入向量数据库！")
     else:
         logging.error("\n❌ 未能获取任何有效的向量，存储过程被跳过。")
 

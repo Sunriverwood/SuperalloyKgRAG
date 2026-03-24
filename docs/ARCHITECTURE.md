@@ -1,5 +1,9 @@
 # SuperalloyKgRAG 项目架构说明
 
+> 更新时间：2026-03-24（与当前主流程入口对齐）
+> 
+> 说明：本轮文档整理不包含 `draw/` 与 `visualizations/` 目录。
+
 ## 📋 项目概述
 
 SuperalloyKgRAG 是一个基于知识图谱的增强检索生成（Knowledge Graph RAG）系统，专注于超合金领域的知识抽取、存储和问答。
@@ -20,7 +24,7 @@ SuperalloyKgRAG 是一个基于知识图谱的增强检索生成（Knowledge Gra
 │                                    ↓                                        │
 │  ┌────────────────────┐  ┌────────────────────┐  ┌─────────────────────┐   │
 │  │   知识图谱存储      │  │    向量数据库       │  │    社区报告         │   │
-│  │   final_graph.json │  │    embedding.db    │  │   community_*.jsonl │   │
+│  │   final_graph.json │  │    enriched.db     │  │   community_*.jsonl │   │
 │  └────────────────────┘  └────────────────────┘  └─────────────────────┘   │
 │                                    ↓                                        │
 │  ┌─────────────────────────────────────────────────────────────────────┐   │
@@ -46,8 +50,10 @@ SuperalloyKgRAG 是一个基于知识图谱的增强检索生成（Knowledge Gra
 ```
 SuperalloyKgRAG/
 ├── app/                          # 应用入口脚本
-│   ├── run_indexing.py          # 索引流水线主入口
-│   └── run_index_qwen.py        # Qwen版本索引入口
+│   ├── run_index_qwen.py        # 索引流水线主入口（Qwen 主流程）
+│   ├── run_indexing.py          # 通用索引入口（兼容保留）
+│   ├── run_clustering_comparison.py # 聚类策略对比工具
+│   └── API_test.py              # API连通性测试
 │
 ├── config/                       # 配置文件
 │   ├── settings.yaml            # 主配置文件
@@ -61,7 +67,7 @@ SuperalloyKgRAG/
 │
 ├── core/                         # 核心功能模块
 │   ├── vlm_pdf_parser.py        # Gemini PDF解析器
-│   ├── vlm_pdf_parser_qwen.py   # Qwen PDF解析器
+│   ├── paper_pdf_parser.py      # 论文全文PDF解析器
 │   │
 │   ├── pipeline/                # Gemini版本流水线
 │   │   ├── loader.py            # 文档加载器
@@ -104,17 +110,19 @@ SuperalloyKgRAG/
 │   └── local_context.py         # 局部上下文构建
 │
 ├── data/                         # 数据目录
-│   ├── raw_pdfs/                # 原始PDF文件
+│   ├── original_data/           # 原始数据输入目录
+│   │   ├── books/               # 默认OCR输入目录 (vlm_parser.input_dir)
+│   │   └── full_text/           # 默认论文解析输入目录 (paper_parser.input_dir)
 │   ├── processed_jsons/         # OCR解析后的JSON
 │   ├── chunks/                  # 文本分块结果
 │   ├── graphs/                  # 知识图谱
 │   │   ├── extracted/           # 提取的原始图
 │   │   └── final_graph.json     # 最终合并图
 │   ├── embeddings/              # 向量数据库
-│   │   └── embedding.db/        # LanceDB向量库
+│   │   └── enriched.db/         # 默认LanceDB向量库 (embedding.output_db_path)
 │   ├── reports/                 # 社区报告
 │   ├── reasoning/               # 推理模型
-│   │   └── model.pt             # 训练好的GNN模型
+│   │   └── develop.pt           # 默认训练产物 (reasoning.output.model_path)
 │   └── cache/                   # 缓存数据
 │
 └── docs/                         # 文档
@@ -122,13 +130,13 @@ SuperalloyKgRAG/
 
 ## 🔄 核心流程说明
 
-### 1. 索引流水线 (run_indexing.py)
+### 1. 索引流水线 (run_index_qwen.py)
 
 **完整流程**: PDF → JSON → 文本块 → 三元组 → 知识图谱 → 向量库
 
 ```
 步骤1: OCR解析
-  输入: data/raw_pdfs/*.pdf
+  输入: data/original_data/books/*.pdf (默认，可在 settings 中修改)
   输出: data/processed_jsons/*.json
   功能: VLM模型解析PDF为结构化JSON
 
@@ -150,7 +158,7 @@ SuperalloyKgRAG/
 
 步骤5: 向量化存储
   输入: final_graph.json + community_summaries.jsonl
-  输出: data/embeddings/embedding.db/
+  输出: data/embeddings/enriched.db (默认，可在 settings 中修改)
   功能: 将实体、关系、社区嵌入向量数据库
 ```
 
@@ -189,7 +197,7 @@ CoT分类引擎
 
 ```bash
 # ✅ 推荐使用方式
-python core/query_qwen/router_qwen.py
+$env:PYTHONPATH="."; python core/query_qwen/router_qwen.py
 
 # ❌ 不推荐直接调用
 python core/query_qwen/local_query_qwen.py  # 不推荐
@@ -522,7 +530,7 @@ python core/query_qwen/local_query_qwen.py  # 不推荐
 │  │ PPR 适用: 连接性查询 "find related", "what connects"                │   │
 │  │ GNN 适用: 因果推理 "why", "how does X affect Y"                     │   │
 │  │                                                                      │   │
-│  │ ⚠️ 需要预先训练 GNN 模型 (data/reasoning/model.pt)                   │   │
+│  │ ⚠️ 需要预先训练 GNN 模型 (默认: data/reasoning/develop.pt)          │   │
 │  └─────────────────────────────────────────────────────────────────────┘   │
 │      │                                                                      │
 │      ├────────────────────────────┬────────────────────────────┐           │
@@ -782,7 +790,12 @@ reasoning:
 | [RUN_INDEXING_GUIDE.md](RUN_INDEXING_GUIDE.md) | 索引流水线的详细使用说明 |
 | [REASONING_GUIDE.md](REASONING_GUIDE.md) | 图推理系统的完整指南（架构、训练、使用） |
 | [DEPENDENCIES.md](DEPENDENCIES.md) | 项目依赖包说明 |
+| [HIERARCHICAL_COMMUNITIES_GUIDE.md](HIERARCHICAL_COMMUNITIES_GUIDE.md) | 分层社区发现指南 |
+| [COMMUNITY_REPORT_GENERATION.md](COMMUNITY_REPORT_GENERATION.md) | 社区报告生成方法 |
+| [ENTITY_MERGE_GUIDE.md](ENTITY_MERGE_GUIDE.md) | 实体合并机制说明 |
+| [EVALUATION_GUIDE.md](EVALUATION_GUIDE.md) | 评测系统使用指南 |
 | [IMPORT_TO_NEO4J.md](IMPORT_TO_NEO4J.md) | 如何将图谱导入 Neo4j |
+| [IMPORT_TO_GEPHI.md](IMPORT_TO_GEPHI.md) | 如何将图谱导入 Gephi 进行可视化 |
 
 ---
 
@@ -798,24 +811,31 @@ pip install -r requirements.txt
 # 编辑 config/settings.yaml，填入 Qwen API 密钥
 
 # Step 3: 准备数据
-# 将 PDF 文件放入 data/raw_pdfs/
+# 将 PDF 文件放入 data/original_data/books/
 
 # Step 4: 执行索引流水线
-python app/run_indexing.py
+python app/run_index_qwen.py
 
 # Step 5: 开始查询
-python core/query_qwen/router_qwen.py
+$env:PYTHONPATH="."; python core/query_qwen/router_qwen.py
 ```
 
 ### 2. 推理查询使用
 
 ```bash
 # 方式1: 交互模式（推荐）
-python core/query_qwen/router_qwen.py
+$env:PYTHONPATH="."; python core/query_qwen/router_qwen.py
 
 # 方式2: 命令行模式
-python core/query_qwen/router_qwen.py --query "镍和涡轮叶片的关系？"
+$env:PYTHONPATH="."; python core/query_qwen/router_qwen.py --query "镍和涡轮叶片的关系？"
 ```
 
 **注意**: 推理查询需要先训练 GNN 模型，详见 [REASONING_GUIDE.md](REASONING_GUIDE.md)。
 
+---
+
+## 更新日志
+
+| 日期 | 更新内容 |
+|------|---------|
+| 2026-01-14 | 更新相关文档链接 |

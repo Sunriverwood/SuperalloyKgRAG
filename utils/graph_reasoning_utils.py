@@ -1,3 +1,17 @@
+# Copyright 2025 SUNRIVERWOOD
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """
 Utility Functions for Graph Reasoning
 
@@ -170,8 +184,19 @@ def score_path_by_importance(path: List[str], G: nx.DiGraph,
 
         edge_scores.append(combined_score)
 
-    # Path score is the product of edge scores (geometric mean-like)
-    total_score = np.prod(edge_scores) if edge_scores else 0.0
+    # Path score: geometric mean of edge scores
+    # Using geometric mean (prod^(1/n)) instead of raw product to avoid
+    # exponential decay on multi-hop paths. This makes the score represent
+    # "average edge quality" and is path-length invariant.
+    if edge_scores:
+        n = len(edge_scores)
+        product = np.prod(edge_scores)
+        if product > 0:
+            total_score = product ** (1.0 / n)
+        else:
+            total_score = 0.0
+    else:
+        total_score = 0.0
 
     return float(total_score), edge_scores, composite_scores
 

@@ -1,3 +1,17 @@
+# Copyright 2025 SUNRIVERWOOD
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """
 快速恢复脚本 - 从云端恢复已完成的批处理作业并继续执行（直接使用graph_builder）
 使用时移动到core/pipeline文件夹下
@@ -527,7 +541,7 @@ def main():
             logging.info(f"从 {merge_graph_path} 加载已合并的图...")
             with open(merge_graph_path, 'r', encoding='utf-8') as f:
                 data = json.load(f)
-            graph = nx.node_link_graph(data, directed=True)
+            graph = nx.node_link_graph(data, directed=True, edges="links")
             logging.info(f"✅ 成功加载图：{graph.number_of_nodes()} 节点, {graph.number_of_edges()} 边")
 
             # 检查图中是否已经应用了所有前置步骤

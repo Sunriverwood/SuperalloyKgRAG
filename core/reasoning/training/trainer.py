@@ -1,3 +1,17 @@
+# Copyright 2025 SUNRIVERWOOD
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """
 Self-Supervised Training for Graph Reasoning
 
@@ -12,7 +26,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import logging
 import numpy as np
-from typing import Dict, List, Tuple, Optional, Any
+from typing import Dict, List, Tuple, Optional, Any, Union
 from pathlib import Path
 import json
 import time
@@ -20,6 +34,9 @@ import time
 from core.reasoning.models.rgat import QueryAwareRGAT
 from core.reasoning.data_loader import GraphData
 from utils.graph_reasoning_utils import PseudoQueryGenerator
+
+# --- 项目根目录定义 ---
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
 
 
 class LinkPredictionDecoder(nn.Module):
@@ -105,7 +122,7 @@ class GraphReasoningTrainer:
     3. Pseudo query-entity matching loss
     """
 
-    def __init__(self, config: Dict[str, Any], graph_data: GraphData, device: str = 'cuda'):
+    def __init__(self, config: Dict[str, Any], graph_data: GraphData, device: Union[str, torch.device] = 'cuda'):
         """
         Args:
             config: Configuration dictionary
@@ -118,16 +135,23 @@ class GraphReasoningTrainer:
         self.training_config = self.reasoning_config.get('training', {})
 
         self.graph_data = graph_data
-        self.device = device
+        self.device = torch.device(device)
+
+        # MEMORY OPTIMIZATION: Store which tensors are on which device
+        logging.info(f"🔧 [Trainer Init] Graph data devices:")
+        logging.info(f"  - node_embeddings: {graph_data.node_embeddings.device}")
+        logging.info(f"  - edge_index: {graph_data.edge_index.device}")
+        logging.info(f"  - edge_type_embeddings: {graph_data.edge_type_embeddings.device}")
+        logging.info(f"  - Training device: {self.device}")
 
         # Model components
-        self.gnn = self._build_gnn().to(device)
-        self.link_decoder = LinkPredictionDecoder(self.model_config.get('hidden_dim', 256)).to(device)
+        self.gnn = self._build_gnn().to(self.device)
+        self.link_decoder = LinkPredictionDecoder(self.model_config.get('hidden_dim', 256)).to(self.device)
         self.query_matcher = QueryEntityMatcher(
             query_dim=graph_data.embed_dim,
             entity_dim=self.model_config.get('hidden_dim', 256),
             hidden_dim=self.model_config.get('hidden_dim', 256)
-        ).to(device)
+        ).to(self.device)
 
         # Optimizer
         all_params = list(self.gnn.parameters()) + list(self.link_decoder.parameters()) + \
@@ -155,7 +179,7 @@ class GraphReasoningTrainer:
 
         logging.info("GraphReasoningTrainer initialized")
         logging.info(f"  GNN parameters: {sum(p.numel() for p in self.gnn.parameters()):,}")
-        logging.info(f"  Device: {device}")
+        logging.info(f"  Device: {self.device}")
 
     def _build_gnn(self) -> QueryAwareRGAT:
         """Build the GNN model"""
@@ -171,7 +195,7 @@ class GraphReasoningTrainer:
             edge_type_dim=self.graph_data.embed_dim  # Edge type embeddings stay in original dimension
         )
 
-    def sample_negative_edges(self, num_samples: int) -> torch.Tensor:
+    def sample_negative_edges(self, num_samples: int, device: Optional[torch.device] = None) -> torch.Tensor:
         """
         Sample negative edges (non-existing edges).
 
@@ -197,7 +221,8 @@ class GraphReasoningTrainer:
             if u != v and (u, v) not in existing_edges:
                 negative_edges.append([u, v])
 
-        return torch.tensor(negative_edges, dtype=torch.long, device=self.device).T
+        dev = device or self.device
+        return torch.tensor(negative_edges, dtype=torch.long, device=dev).T
 
     def link_prediction_loss(self, node_embeddings: torch.Tensor) -> torch.Tensor:
         """
@@ -209,13 +234,21 @@ class GraphReasoningTrainer:
         Returns:
             Binary cross-entropy loss
         """
+        dev = node_embeddings.device
+        non_blocking = dev.type == 'cuda'
+
         # Positive samples (existing edges)
         pos_edge_index = self.graph_data.edge_index
+        if pos_edge_index.device != dev:
+            pos_edge_index = pos_edge_index.to(dev, non_blocking=non_blocking)
+
         pos_edge_weights = self.graph_data.edge_weights
+        if pos_edge_weights.device != dev:
+            pos_edge_weights = pos_edge_weights.to(dev, non_blocking=non_blocking)
 
         # Sample negative edges
         num_neg = min(pos_edge_index.size(1), self.training_config.get('batch_size', 512))
-        neg_edge_index = self.sample_negative_edges(num_neg)
+        neg_edge_index = self.sample_negative_edges(num_neg, device=dev)
 
         # Get embeddings for source and target nodes
         pos_src_emb = node_embeddings[pos_edge_index[0]]
@@ -236,40 +269,80 @@ class GraphReasoningTrainer:
             neg_scores, torch.zeros_like(neg_scores), reduction='mean'
         )
 
-        total_loss = pos_loss + neg_loss
-
-        return total_loss
+        return pos_loss + neg_loss
 
     def contrastive_loss(self, node_embeddings: torch.Tensor) -> torch.Tensor:
-        """
-        Compute contrastive learning loss (InfoNCE).
-        Create two augmented views and contrast node representations.
+            """
+            Compute contrastive learning loss (InfoNCE / NT-Xent).
 
-        Args:
-            node_embeddings: Node representations [num_nodes, hidden_dim]
+            NOTE:
+            The naive implementation builds an [N, N] similarity matrix, which will OOM for large graphs.
+            This implementation supports:
+            - Subsampling nodes (default) via training.contrastive_num_samples
+            - Chunked logits computation via training.contrastive_chunk_size (no full [N, N] allocation)
 
-        Returns:
-            InfoNCE loss
-        """
-        # Simple augmentation: add noise
-        aug1 = node_embeddings + torch.randn_like(node_embeddings) * 0.1
-        aug2 = node_embeddings + torch.randn_like(node_embeddings) * 0.1
+            Args:
+                node_embeddings: Node representations [num_nodes, hidden_dim]
 
-        # Normalize
-        aug1 = F.normalize(aug1, dim=-1)
-        aug2 = F.normalize(aug2, dim=-1)
+            Returns:
+                InfoNCE loss (scalar)
+            """
+            dev = node_embeddings.device
+            N = node_embeddings.size(0)
 
-        # Compute similarity matrix
-        sim_matrix = torch.mm(aug1, aug2.T) / 0.2  # Temperature = 0.2
+            # Hyperparams (overridable in config)
+            temp = float(self.training_config.get('contrastive_temperature', 0.2))
+            noise_std = float(self.training_config.get('contrastive_noise_std', 0.1))
 
-        # Labels: diagonal elements are positive pairs
-        labels = torch.arange(node_embeddings.size(0), device=self.device)
+            # 1) Optional subsampling to cap the quadratic cost
+            max_samples = self.training_config.get('contrastive_num_samples', 4096)
+            if max_samples is not None:
+                max_samples = int(max_samples)
+                if N > max_samples:
+                    idx = torch.randperm(N, device=dev)[:max_samples]
+                    node_embeddings = node_embeddings.index_select(0, idx)
+                    N = node_embeddings.size(0)
 
-        # InfoNCE loss
-        loss = F.cross_entropy(sim_matrix, labels)
+            # 2) Two augmented views
+            aug1 = node_embeddings + torch.randn_like(node_embeddings) * noise_std
+            aug2 = node_embeddings + torch.randn_like(node_embeddings) * noise_std
 
-        return loss
+            # Normalize
+            aug1 = F.normalize(aug1, dim=-1)
+            aug2 = F.normalize(aug2, dim=-1)
 
+            # 3) Chunked InfoNCE to avoid allocating full [N, N]
+            chunk_size = self.training_config.get('contrastive_chunk_size', None)
+            if chunk_size is not None:
+                chunk_size = int(chunk_size)
+                if chunk_size <= 0:
+                    chunk_size = None
+
+            if chunk_size is not None and N > chunk_size:
+                aug2_t = aug2.T  # [hidden_dim, N]
+                total = 0.0
+                count = 0
+
+                for s in range(0, N, chunk_size):
+                    e = min(s + chunk_size, N)
+                    B = e - s
+
+                    logits = torch.mm(aug1[s:e], aug2_t) / temp  # [B, N]
+                    lse = torch.logsumexp(logits, dim=1)  # [B]
+                    diag_idx = torch.arange(s, e, device=dev)
+                    diag = logits[torch.arange(B, device=dev), diag_idx]  # [B]
+
+                    total = total + (-diag + lse).sum()
+                    count += B
+
+                    del logits, lse, diag
+
+                return total / max(count, 1)
+
+            # Fallback (safe when N is small)
+            sim_matrix = torch.mm(aug1, aug2.T) / temp
+            labels = torch.arange(N, device=dev)
+            return F.cross_entropy(sim_matrix, labels)
     def pseudo_query_loss(self, node_embeddings: torch.Tensor) -> torch.Tensor:
         """
         Compute pseudo query-entity matching loss.
@@ -285,48 +358,48 @@ class GraphReasoningTrainer:
         Returns:
             Ranking loss (BPR or cross-entropy)
         """
+        dev = node_embeddings.device
+        non_blocking = dev.type == 'cuda'
+
         # Generate triplets
         triplets = self.pseudo_query_gen.generate_triplets(
             max_triplets=self.training_config.get('batch_size', 512)
         )
-
         if not triplets:
-            return torch.tensor(0.0, device=self.device)
+            return torch.tensor(0.0, device=dev)
 
         losses = []
         num_negatives = self.training_config.get('num_negatives', 5)
 
         for head_id, relation, tail_id in triplets:
-            # Get head and tail indices
             if head_id not in self.graph_data.node_to_idx or tail_id not in self.graph_data.node_to_idx:
                 continue
 
             head_idx = self.graph_data.node_to_idx[head_id]
             tail_idx = self.graph_data.node_to_idx[tail_id]
 
-            # Use head embedding + relation as pseudo query
-            # (In practice, we'd encode the text, but for now use the head embedding)
+            # Pseudo query embedding (head embedding for now)
             query_emb = self.graph_data.node_embeddings[head_idx]
+            if query_emb.device != dev:
+                query_emb = query_emb.to(dev, non_blocking=non_blocking)
 
             # Positive sample
             pos_emb = node_embeddings[tail_idx].unsqueeze(0)  # [1, hidden_dim]
 
             # Negative samples
-            neg_indices = torch.randint(0, self.graph_data.num_nodes, (num_negatives,), device=self.device)
+            neg_indices = torch.randint(0, self.graph_data.num_nodes, (num_negatives,), device=dev)
             neg_emb = node_embeddings[neg_indices]  # [num_negatives, hidden_dim]
 
-            # Compute scores
+            # Scores
             pos_score = self.query_matcher(query_emb, pos_emb)
             neg_scores = self.query_matcher(query_emb, neg_emb)
 
-            # BPR loss: positive score should be higher than negative scores
-            # Loss = -log(sigmoid(pos_score - neg_score))
+            # BPR loss
             for neg_score in neg_scores:
-                loss = -F.logsigmoid(pos_score - neg_score)
-                losses.append(loss)
+                losses.append(-F.logsigmoid(pos_score - neg_score))
 
         if not losses:
-            return torch.tensor(0.0, device=self.device)
+            return torch.tensor(0.0, device=dev)
 
         return torch.stack(losses).mean()
 
@@ -341,14 +414,56 @@ class GraphReasoningTrainer:
         self.link_decoder.train()
         self.query_matcher.train()
 
-        # Forward pass through GNN (without query for general training)
+        # Get gradient accumulation steps from config (default: 1)
+        gradient_accumulation_steps = self.training_config.get('gradient_accumulation_steps', 1)
+
+        # MEMORY OPTIMIZATION: Move ALL necessary tensors to device for forward pass
+        # This ensures all tensors are on the same device and prevents OOM by keeping them on CPU when not needed
+
+        logging.debug(f"🔧 Preparing tensors for forward pass on {self.device}...")
+
+        # Move node embeddings
+        node_embeddings_input = self.graph_data.node_embeddings
+        if node_embeddings_input.device != self.device:
+            node_embeddings_input = node_embeddings_input.to(self.device)
+
+        # Move edge_index
+        edge_index = self.graph_data.edge_index
+        if edge_index.device != self.device:
+            edge_index = edge_index.to(self.device)
+
+        # Move edge_types
+        edge_types = self.graph_data.edge_types
+        if edge_types.device != self.device:
+            edge_types = edge_types.to(self.device)
+
+        # Move edge_weights
+        edge_weights = self.graph_data.edge_weights
+        if edge_weights.device != self.device:
+            edge_weights = edge_weights.to(self.device)
+
+        # CRITICAL FIX: Move edge_type_embeddings to device BEFORE indexing
+        # Otherwise we get "indices should be on same device" error
+        edge_type_embeddings_full = self.graph_data.edge_type_embeddings
+        if edge_type_embeddings_full.device != self.device:
+            edge_type_embeddings_full = edge_type_embeddings_full.to(self.device)
+
+        # Now index with edge_types (both are on the same device)
+        edge_type_emb = edge_type_embeddings_full[edge_types]
+
+        # Move adjacency mask
+        adjacency_mask = self.graph_data.adjacency_mask
+        if adjacency_mask is not None and adjacency_mask.device != self.device:
+            adjacency_mask = adjacency_mask.to(self.device)
+
+        # Forward pass through GNN
         node_embeddings = self.gnn(
-            x=self.graph_data.node_embeddings,
-            edge_index=self.graph_data.edge_index,
-            edge_type_emb=self.graph_data.edge_type_embeddings[self.graph_data.edge_types],
-            edge_weights=self.graph_data.edge_weights,
+            x=node_embeddings_input,
+            edge_index=edge_index,
+            edge_type_emb=edge_type_emb,
+            edge_weights=edge_weights,
             query_emb=None,  # No specific query in unsupervised training
-            adjacency_mask=self.graph_data.adjacency_mask
+            adjacency_mask=adjacency_mask
         )
 
         # Compute losses
@@ -369,14 +484,25 @@ class GraphReasoningTrainer:
             for k, v in losses.items()
         )
 
-        # Backward pass
-        self.optimizer.zero_grad()
-        total_loss.backward()
-        torch.nn.utils.clip_grad_norm_(
-            list(self.gnn.parameters()) + list(self.link_decoder.parameters()) + list(self.query_matcher.parameters()),
-            max_norm=1.0
-        )
-        self.optimizer.step()
+        # Scale loss for gradient accumulation
+        scaled_loss = total_loss / gradient_accumulation_steps
+
+        # Backward pass (accumulate gradients)
+        scaled_loss.backward()
+
+        # Only update weights every N steps
+        if (self.epoch + 1) % gradient_accumulation_steps == 0:
+            # Gradient clipping
+            torch.nn.utils.clip_grad_norm_(
+                list(self.gnn.parameters()) + list(self.link_decoder.parameters()) + list(self.query_matcher.parameters()),
+                max_norm=1.0
+            )
+            self.optimizer.step()
+            self.optimizer.zero_grad()
+
+            # Clear GPU cache to free memory
+            if self.device.type == 'cuda':
+                torch.cuda.empty_cache()
 
         # Return loss values
         result = {k: v.item() for k, v in losses.items()}
@@ -455,7 +581,7 @@ class GraphReasoningTrainer:
 
     def save_checkpoint(self, name: str = 'checkpoint'):
         """Save model checkpoint"""
-        checkpoint_dir = Path(self.reasoning_config.get('training', {}).get('checkpoint_dir', 'data/reasoning/checkpoints'))
+        checkpoint_dir = PROJECT_ROOT / self.reasoning_config.get('training', {}).get('checkpoint_dir', 'data/reasoning/checkpoints')
         checkpoint_dir.mkdir(parents=True, exist_ok=True)
 
         checkpoint_path = checkpoint_dir / f'{name}.pt'

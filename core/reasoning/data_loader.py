@@ -1,3 +1,17 @@
+# Copyright 2025 SUNRIVERWOOD
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """
 Data Loader for Graph Reasoning System
 
@@ -68,7 +82,7 @@ class GraphReasoningDataLoader:
         from pathlib import Path
         PROJECT_ROOT = Path(__file__).resolve().parents[2]
         self.graph_path = PROJECT_ROOT / self.data_config.get("graph_path", "data/graphs/final_graph.json")
-        self.embedding_db_path = PROJECT_ROOT / self.data_config.get("entity_embeddings_db", "data/embeddings/embedding.db")
+        self.embedding_db_path = PROJECT_ROOT / self.data_config.get("entity_embeddings_db", "data/embeddings/enriched.db")
         self.entity_table = self.data_config.get("entity_table", "entities")
         self.relationship_table = self.data_config.get("relationship_table", "relationships")
 
@@ -83,7 +97,7 @@ class GraphReasoningDataLoader:
         with open(self.graph_path, 'r', encoding='utf-8') as f:
             graph_data = json.load(f)
 
-        G = nx.node_link_graph(graph_data, directed=True)
+        G = nx.node_link_graph(graph_data, directed=True, edges="links")
 
         logging.info(f"Loaded graph with {G.number_of_nodes()} nodes and {G.number_of_edges()} edges")
         return G
@@ -276,8 +290,14 @@ class GraphReasoningDataLoader:
             edge_type_to_idx, edge_type_embeddings_dict, embed_dim
         )
 
-        # 6. Create adjacency mask
-        adjacency_mask_np = self.create_adjacency_mask(num_nodes, edge_index_np)
+        # 6. Create adjacency mask (skip for large graphs to avoid OOM)
+        MAX_NODES_FOR_DENSE_MASK = 50000
+        if num_nodes <= MAX_NODES_FOR_DENSE_MASK:
+            adjacency_mask_np = self.create_adjacency_mask(num_nodes, edge_index_np)
+        else:
+            logging.info(f"⚠️ 节点数 {num_nodes} 超过 {MAX_NODES_FOR_DENSE_MASK}，跳过稠密邻接矩阵"
+                         f"（需 {num_nodes**2 * 4 / 1024**3:.1f} GiB），使用 edge_index 替代")
+            adjacency_mask_np = None
 
         # 7. Convert to PyTorch tensors
         logging.info(f"Converting to PyTorch tensors on device: {device}")
@@ -287,7 +307,7 @@ class GraphReasoningDataLoader:
         edge_types = torch.from_numpy(edge_types_np).long().to(device)
         edge_weights = torch.from_numpy(edge_weights_np).float().to(device)
         edge_type_embeddings = torch.from_numpy(edge_type_embeddings_np).float().to(device)
-        adjacency_mask = torch.from_numpy(adjacency_mask_np).float().to(device)
+        adjacency_mask = torch.from_numpy(adjacency_mask_np).float().to(device) if adjacency_mask_np is not None else None
 
         # 8. Create GraphData object
         graph_data = GraphData(

@@ -1,3 +1,17 @@
+# Copyright 2025 SUNRIVERWOOD
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import json
 import logging
 import os
@@ -86,15 +100,17 @@ def load_graph_data(graph_path: Path) -> nx.DiGraph:
     logging.info(f"正在从 {graph_path} 加载图谱...")
     with open(graph_path, 'r', encoding='utf-8') as f:
         graph_data = json.load(f)
-    graph = nx.node_link_graph(graph_data)
+    graph = nx.node_link_graph(graph_data, edges="links")
     logging.info("图谱加载成功。")
     return graph
 
 
 def load_and_prepare_community_data(community_report_path: Path, text_cleaner: EmbeddingTextCleaner) -> List[Dict]:
-    """加载并准备社区数据"""
+    """加载并准备社区数据（包含层级信息，支持按level查询）"""
     logging.info(f"[社区] 正在从 {community_report_path} 加载和准备社区数据...")
     communities_to_embed = []
+    level_stats = {}  # 统计各层级社区数量
+
     if not community_report_path.exists():
         logging.error(f"[社区] 社区报告文件未找到: {community_report_path}")
         return []
@@ -104,8 +120,36 @@ def load_and_prepare_community_data(community_report_path: Path, text_cleaner: E
             try:
                 data = json.loads(line)
                 community_id = str(data["community_id"])
-                report = data["report"]
+                report = data.get("report", {})
+
+                # 处理 report 可能是字符串的情况
+                if isinstance(report, str):
+                    try:
+                        report = json.loads(report)
+                    except:
+                        report = {}
+
                 local_id_map = data.get("local_id_map", {})
+
+                # 提取层级信息
+                level = data.get("level", 0)
+                title = data.get("title", "") or report.get("title", "")
+                parent_id = data.get("parent_id")
+                children_ids = data.get("children_ids", [])
+                node_count = data.get("node_count", 0)
+
+                # 提取评分信息（用于排序和筛选）
+                rating = report.get("rating", 0)
+                if isinstance(rating, str):
+                    try:
+                        rating = float(rating)
+                    except:
+                        rating = 0
+                rating_explanation = report.get("rating_explanation", "")
+
+                # 统计各层级数量
+                level_stats[level] = level_stats.get(level, 0) + 1
+
                 clean_title = text_cleaner.clean_text(report.get("title", ""), community_id)
                 clean_summary = text_cleaner.clean_text(report.get("summary", ""), community_id)
                 clean_findings_texts = []
@@ -117,13 +161,28 @@ def load_and_prepare_community_data(community_report_path: Path, text_cleaner: E
                     clean_findings_texts))
                 communities_to_embed.append({
                     "id": f"community_{community_id}",
+                    "community_id": community_id,  # 原始社区ID，方便查询
                     "text_to_embed": full_clean_text,
                     "payload_report_json": json.dumps(report, ensure_ascii=False),
-                    "payload_map_json": json.dumps(local_id_map, ensure_ascii=False)
+                    "payload_map_json": json.dumps(local_id_map, ensure_ascii=False),
+                    "level": level,  # 层级信息，用于筛选
+                    "title": title if title else clean_title,
+                    "rating": rating,  # 重要性评分
+                    "rating_explanation": rating_explanation,
+                    "parent_id": parent_id if parent_id else "",
+                    "children_ids": json.dumps(children_ids, ensure_ascii=False),
+                    "node_count": node_count
                 })
-            except Exception:
+            except Exception as e:
+                logging.debug(f"[社区] 解析社区数据失败: {e}")
                 pass
+
+    # 输出层级统计信息
     logging.info(f"[社区] 准备了 {len(communities_to_embed)} 个社区待嵌入。")
+    logging.info(f"[社区] 层级分布:")
+    for level in sorted(level_stats.keys()):
+        logging.info(f"       Level {level}: {level_stats[level]} 个社区")
+
     return communities_to_embed
 
 
@@ -237,7 +296,7 @@ def submit_and_monitor_embedding_job(client: OpenAI, requests_path: Path, model_
         return None
 
     job_id = batch_job.id
-    # 阿里云 Batch 状态：validating, failed, in_progress, finalizing, completed, expired, cancelling, cancelled [cite: 1427]
+    # 阿里云 Batch 状态：validating, failed, in_progress, finalizing, completed, expired, cancelling, canceled
     completed_states = {'completed', 'failed', 'cancelled', 'expired'}
 
     if sleep_interval == 0:
@@ -350,9 +409,13 @@ def process_embedding_results(batch_job: Any, client: OpenAI, original_docs: Lis
     return embedded_docs
 
 
-# --- 向量存储函数 (保持不变) ---
+# --- 向量存储函数 (增强：支持层级筛选) ---
 def store_embeddings_lancedb(db_path: Path, table_name: str, embedded_data: List[Dict], data_type: str = ""):
-    """将嵌入数据存储到LanceDB表中"""
+    """
+    将嵌入数据存储到LanceDB表中
+
+    对于社区表，会保留 level、rating 等字段用于后续按层级查询
+    """
     level_tag = f"[{data_type.upper()}] " if data_type else ""
     if not embedded_data:
         logging.warning(f"{level_tag}没有可用于存储到表 '{table_name}' 的数据。")
@@ -363,11 +426,36 @@ def store_embeddings_lancedb(db_path: Path, table_name: str, embedded_data: List
     db = lancedb.connect(db_path)
 
     df_data = []
+    level_stats = {}  # 统计各层级数量（仅用于社区）
+
     for doc in embedded_data:
         if "vector" not in doc: continue
         new_doc = doc.copy()
         if "text_to_embed" in new_doc:
             new_doc["text"] = new_doc.pop("text_to_embed")
+
+        # 确保 level 字段为整数类型（用于社区筛选）
+        if "level" in new_doc:
+            try:
+                new_doc["level"] = int(new_doc["level"])
+                level_stats[new_doc["level"]] = level_stats.get(new_doc["level"], 0) + 1
+            except (ValueError, TypeError):
+                new_doc["level"] = 0
+
+        # 确保 rating 字段为浮点数类型
+        if "rating" in new_doc:
+            try:
+                new_doc["rating"] = float(new_doc["rating"])
+            except (ValueError, TypeError):
+                new_doc["rating"] = 0.0
+
+        # 确保 node_count 字段为整数类型
+        if "node_count" in new_doc:
+            try:
+                new_doc["node_count"] = int(new_doc["node_count"])
+            except (ValueError, TypeError):
+                new_doc["node_count"] = 0
+
         for key, val in new_doc.items():
             if key.startswith("payload_") and not isinstance(val, str):
                 new_doc[key] = json.dumps(val, ensure_ascii=False)
@@ -382,6 +470,14 @@ def store_embeddings_lancedb(db_path: Path, table_name: str, embedded_data: List
             db.drop_table(table_name)
         db.create_table(table_name, data=df)
         logging.info(f"{level_tag}✅ LanceDB 表 '{table_name}' 创建并写入成功。")
+
+        # 输出层级统计（仅社区表）
+        if level_stats:
+            logging.info(f"{level_tag}   存储的社区层级分布:")
+            for level in sorted(level_stats.keys()):
+                logging.info(f"{level_tag}      Level {level}: {level_stats[level]} 条记录")
+            logging.info(f"{level_tag}   💡 查询时可使用 level 字段筛选特定层级的社区")
+
     except Exception as e:
         logging.error(f"{level_tag}❌ 写入 LanceDB 表 '{table_name}' 时失败: {e}", exc_info=True)
 
@@ -452,10 +548,147 @@ def process_data_type(data_type: str, documents: List[Dict], config: Dict[str, A
         return f"[{data_type.upper()}] 处理失败或未返回向量。"
 
 
+# --- 按层级查询社区的辅助函数（供 global 查询使用）---
+
+def get_community_levels(db_path: Path, table_name: str = "communities") -> Dict[int, int]:
+    """
+    获取社区表中各层级的社区数量
+
+    Args:
+        db_path: LanceDB 数据库路径
+        table_name: 表名（默认 "communities"）
+
+    Returns:
+        {level: count} 字典
+    """
+    try:
+        db = lancedb.connect(db_path)
+        if table_name not in db.table_names():
+            logging.warning(f"表 '{table_name}' 不存在")
+            return {}
+
+        table = db.open_table(table_name)
+        df = table.to_pandas()
+
+        if "level" not in df.columns:
+            logging.warning("社区表中没有 'level' 字段")
+            return {}
+
+        level_counts = df["level"].value_counts().to_dict()
+        return {int(k): int(v) for k, v in level_counts.items()}
+    except Exception as e:
+        logging.error(f"获取社区层级统计失败: {e}")
+        return {}
+
+
+def query_communities_by_level(
+    db_path: Path,
+    query_vector: List[float],
+    level: int = None,
+    min_level: int = None,
+    max_level: int = None,
+    top_k: int = 10,
+    min_rating: float = None,
+    table_name: str = "communities"
+) -> List[Dict]:
+    """
+    按层级查询社区向量
+
+    Args:
+        db_path: LanceDB 数据库路径
+        query_vector: 查询向量
+        level: 指定层级（精确匹配）
+        min_level: 最小层级（包含）
+        max_level: 最大层级（包含）
+        top_k: 返回数量
+        min_rating: 最小评分筛选
+        table_name: 表名（默认 "communities"）
+
+    Returns:
+        匹配的社区列表
+
+    示例:
+        # 查询 Level 0 的顶层社区
+        results = query_communities_by_level(db_path, query_vec, level=0, top_k=5)
+
+        # 查询 Level 0-2 的社区
+        results = query_communities_by_level(db_path, query_vec, min_level=0, max_level=2)
+
+        # 查询评分大于 5 的社区
+        results = query_communities_by_level(db_path, query_vec, min_rating=5.0)
+    """
+    try:
+        db = lancedb.connect(db_path)
+        if table_name not in db.table_names():
+            logging.warning(f"表 '{table_name}' 不存在")
+            return []
+
+        table = db.open_table(table_name)
+
+        # 构建查询
+        query = table.search(query_vector)
+
+        # 应用层级筛选条件
+        filters = []
+        if level is not None:
+            filters.append(f"level = {level}")
+        else:
+            if min_level is not None:
+                filters.append(f"level >= {min_level}")
+            if max_level is not None:
+                filters.append(f"level <= {max_level}")
+
+        # 应用评分筛选
+        if min_rating is not None:
+            filters.append(f"rating >= {min_rating}")
+
+        # 组合筛选条件
+        if filters:
+            filter_str = " AND ".join(filters)
+            query = query.where(filter_str)
+
+        # 执行查询
+        results = query.limit(top_k).to_pandas()
+
+        # 转换为字典列表
+        return results.to_dict(orient="records")
+
+    except Exception as e:
+        logging.error(f"按层级查询社区失败: {e}")
+        return []
+
+
+def get_level_summary(db_path: Path, table_name: str = "communities") -> str:
+    """
+    获取社区层级的摘要信息（用于日志或调试）
+
+    Args:
+        db_path: LanceDB 数据库路径
+        table_name: 表名
+
+    Returns:
+        格式化的层级摘要字符串
+    """
+    level_counts = get_community_levels(db_path, table_name)
+    if not level_counts:
+        return "无层级信息"
+
+    lines = ["社区层级分布:"]
+    total = 0
+    for level in sorted(level_counts.keys()):
+        count = level_counts[level]
+        total += count
+        lines.append(f"  Level {level}: {count} 个社区")
+    lines.append(f"  总计: {total} 个社区")
+
+    return "\n".join(lines)
+
+
 # --- 主执行函数 ---
-def main():
+def main(config=None):
     """主执行流程"""
-    config = load_config()
+    if config is None:
+        config = load_config()
     setup_logging(config)
 
     # --- 1. 初始化客户端 (修改：使用 OpenAI SDK 连接阿里云百炼) ---
@@ -481,7 +714,7 @@ def main():
 
     # --- 2. 初始化文本清洁器 ---
     graph_path = PROJECT_ROOT / config["embedding"]["input_graph_path"]
-    id_maps_path = PROJECT_ROOT / "data" / "cache" / "community_detection_id_maps.json"
+    id_maps_path = PROJECT_ROOT / config["embedding"]["input_id_maps_path"]
     text_cleaner = init_text_cleaner(graph_path, id_maps_path)
     logging.info("文本清洁器初始化完成。")
 

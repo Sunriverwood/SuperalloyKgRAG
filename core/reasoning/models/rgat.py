@@ -1,3 +1,17 @@
+# Copyright 2025 SUNRIVERWOOD
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """
 Query-Aware Relational Graph Attention Network (RGAT)
 
@@ -142,18 +156,21 @@ class RGATLayer(nn.Module):
         src_idx = edge_index[0]  # [num_edges]
         dst_idx = edge_index[1]  # [num_edges]
 
-        # Concatenate features for each edge
-        # [num_edges, num_heads, 4 * head_dim]
-        attn_input = torch.cat([
-            h_src[src_idx],  # Source node
-            h_dst[dst_idx],  # Target node
-            h_rel,           # Edge type
-            h_query          # Query
-        ], dim=-1)
+        # Memory optimization: Avoid concatting 4 huge tensors into one
+        # Split attention weights into 4 parts corresponding to src, dst, rel, query
+        attn_src = self.attn[:, :, :self.head_dim]
+        attn_dst = self.attn[:, :, self.head_dim:2*self.head_dim]
+        attn_rel = self.attn[:, :, 2*self.head_dim:3*self.head_dim]
+        attn_query = self.attn[:, :, 3*self.head_dim:]
 
-        # Compute attention coefficients
-        # e_uv = a^T * concat_features
-        e = (attn_input * self.attn).sum(dim=-1)  # [num_edges, num_heads]
+        # Compute attention scores step by step
+        # e_uv = a^T * concat_features = a_src^T * h_src + a_dst^T * h_dst + a_rel^T * h_rel + a_query^T * h_query
+        e_src = (h_src[src_idx] * attn_src).sum(dim=-1)
+        e_dst = (h_dst[dst_idx] * attn_dst).sum(dim=-1)
+        e_rel = (h_rel * attn_rel).sum(dim=-1)
+        e_query = (h_query * attn_query).sum(dim=-1)
+
+        e = e_src + e_dst + e_rel + e_query
         e = self.leaky_relu(e)
 
         # Incorporate edge weights as priors if available

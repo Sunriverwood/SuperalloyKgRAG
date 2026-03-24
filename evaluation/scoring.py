@@ -1,3 +1,17 @@
+# Copyright 2025 SUNRIVERWOOD
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """
 评分模块 - 针对不同难度级别的回答质量评估
 
@@ -69,7 +83,7 @@ class KeywordMatcher:
     TECHNICAL_TERMS = [
         # 相与结构
         "γ相", "γ'相", "γ\"相", "gamma", "gamma prime", "δ相", "σ相", "μ相", "P相",
-        "TCP相", "拓扑密排相", "FCC", "BCC", "HCP", "L12", "D022",
+        "TCP相", "拓扑密排相", "FCC", "BCC", "HCP",
         # 强化机制
         "固溶强化", "沉淀强化", "弥散强化", "晶界强化", "奥罗万", "Orowan",
         "位错", "滑移", "攀移", "交滑移", "层错", "反相畴界", "APB",
@@ -159,7 +173,7 @@ class SemanticScorer:
 
     def __init__(self, config: Dict[str, Any]):
         self.config = config
-        self.api_key = os.environ.get("QWEN_API_KEY") or os.environ.get("GEMINI_API_KEY")
+        self.api_key = os.environ.get("QWEN_API_KEY")
         self.embedding_model = config.get("embedding", {}).get("model", "text-embedding-v4")
         self.dimensionality = config.get("embedding", {}).get("dimensionality", 768)
 
@@ -201,24 +215,51 @@ class LLMJudge:
 
     def __init__(self, config: Dict[str, Any]):
         self.config = config
-        self.api_key = os.environ.get("QWEN_API_KEY") or os.environ.get("GEMINI_API_KEY")
-        self.model_name = config.get("query", {}).get("generation_model", "qwen3-max")
+        
+        # 从配置文件读取评判模型设置
+        eval_llm_config = config.get("evaluation", {}).get("llm", {})
+        
+        self.model_name = eval_llm_config.get("model", "qwen-plus")
+        self.base_url = eval_llm_config.get("base_url", "https://dashscope.aliyuncs.com/compatible-mode/v1")
+        
+        # 解析 API Key (支持环境变量引用)
+        raw_api_key = eval_llm_config.get("api_key", "")
+        self.api_key = self._resolve_api_key(raw_api_key)
 
-        self.client = OpenAI(
-            api_key=self.api_key,
-            base_url="https://dashscope.aliyuncs.com/compatible-mode/v1"
-        )
+        if not self.api_key:
+            logging.warning("未找到评判模型的 API Key，请在 settings.yaml 或环境变量中配置")
+
+        # 不在初始化时创建客户端，因为需要在设置代理后创建
+        self.client = None
 
         # 加载评判 Prompt 模板
         self.prompts = {}
         prompt_dir = PROJECT_ROOT / "config" / "prompts"
-        for level in ["l3", "l4"]:
+        for level in ["l3", "l4", "hard"]:
             prompt_path = prompt_dir / f"evaluation_{level}.md"
             if prompt_path.exists():
                 with open(prompt_path, 'r', encoding='utf-8') as f:
                     self.prompts[level] = f.read()
             else:
                 logging.warning(f"评判 Prompt 未找到: {prompt_path}")
+
+    def _needs_proxy(self, model_name: str) -> bool:
+        """判断模型是否需要代理"""
+        model_lower = model_name.lower()
+        # Gemini 系列或 ChatGPT/GPT 系列需要代理
+        return "gemini" in model_lower or "gpt" in model_lower or "chatgpt" in model_lower
+
+    def _resolve_api_key(self, api_key_str: str) -> str:
+        """解析 API Key，支持 ${VAR} 格式"""
+        if not api_key_str:
+            # 兜底逻辑：尝试从环境变量直接读取
+            return os.environ.get("QWEN_API_KEY") or os.environ.get("GEMINI_API_KEY") or ""
+        
+        api_key_str = api_key_str.strip()
+        if api_key_str.startswith("${") and api_key_str.endswith("}"):
+            var_name = api_key_str[2:-1].strip()
+            return os.getenv(var_name, "")
+        return api_key_str
 
     def judge(
             self,
@@ -239,6 +280,25 @@ class LLMJudge:
         Returns:
             评判结果字典
         """
+        # 在每次调用前设置代理，避免被其他调用清除
+        if self._needs_proxy(self.model_name):
+            proxy = self.config.get("proxy")
+            if proxy:
+                os.environ["HTTP_PROXY"] = proxy
+                os.environ["HTTPS_PROXY"] = proxy
+                logging.info(f"评判模型 {self.model_name} 使用代理: {proxy}")
+        else:
+            # 不需要代理时清除环境变量
+            os.environ.pop("HTTP_PROXY", None)
+            os.environ.pop("HTTPS_PROXY", None)
+            logging.info(f"评判模型 {self.model_name} 不使用代理")
+        
+        # 在设置代理后创建客户端，确保代理生效
+        client = OpenAI(
+            api_key=self.api_key,
+            base_url=self.base_url
+        )
+        
         if level not in self.prompts:
             logging.error(f"未找到 {level} 级别的评判 Prompt")
             return {"error": f"Missing prompt for level {level}"}
@@ -252,7 +312,7 @@ class LLMJudge:
         )
 
         try:
-            response = self.client.chat.completions.create(
+            response = client.chat.completions.create(
                 model=self.model_name,
                 messages=[{"role": "user", "content": prompt}],
                 temperature=0.1  # 低温度以保证评判一致性
@@ -407,6 +467,53 @@ class L4Scorer(BaseScorer):
         }
 
 
+class HardScorer(BaseScorer):
+    """Hard 级别评分器 - 学术教材深层推理题，统一使用 LLM Judge"""
+
+    def __init__(self, config: Dict[str, Any]):
+        self.config = config
+        self.llm_judge = LLMJudge(config)
+        self.semantic_scorer = SemanticScorer(config)
+
+    def score(self, question: str, answer: str, ground_truth: str, **kwargs) -> Dict[str, Any]:
+        """
+        Hard 评分：LLM-as-Judge 深层推理评估
+
+        评分维度：
+        - 核心论点覆盖率 (coverage_score)
+        - 科学准确性 (accuracy_score)
+        - 推理深度 (reasoning_depth_score)
+        - 逻辑连贯性 (coherence_score)
+        """
+        # LLM 评判（使用 hard 级别的 prompt）
+        llm_result = self.llm_judge.judge(question, answer, ground_truth, level="hard")
+
+        # 语义相似度作为兜底补充
+        semantic_score = self.semantic_scorer.score(answer, ground_truth)
+
+        # 如果 LLM 评判失败，使用语义相似度作为备选
+        if "error" in llm_result and llm_result.get("overall_score", 0) == 0:
+            overall_score = semantic_score
+        else:
+            # LLM 评判结果权重 85%，语义相似度 15%
+            llm_score = llm_result.get("overall_score", 0.5)
+            overall_score = 0.85 * llm_score + 0.15 * semantic_score
+
+        return {
+            "overall_score": overall_score,
+            "llm_judgment": llm_result,
+            "semantic_score": semantic_score,
+            "coverage_score": llm_result.get("coverage_score", 0),
+            "accuracy_score": llm_result.get("accuracy_score", 0),
+            "reasoning_depth_score": llm_result.get("reasoning_depth_score", 0),
+            "coherence_score": llm_result.get("coherence_score", 0),
+            "core_arguments": llm_result.get("core_arguments", []),
+            "feedback": llm_result.get("feedback", ""),
+            "difficulty": kwargs.get("difficulty", "Hard"),
+            "scoring_method": "llm_judge_deep_reasoning + semantic_similarity"
+        }
+
+
 class ScorerFactory:
     """评分器工厂 - 根据难度级别创建对应的评分器"""
 
@@ -433,6 +540,8 @@ class ScorerFactory:
                 self._scorers[difficulty] = L3Scorer(self.config)
             elif difficulty == "L4":
                 self._scorers[difficulty] = L4Scorer(self.config)
+            elif difficulty == "HARD":
+                self._scorers[difficulty] = HardScorer(self.config)
             else:
                 logging.warning(f"未知难度级别 {difficulty}，使用 L1L2Scorer")
                 self._scorers[difficulty] = L1L2Scorer(self.config)
@@ -460,6 +569,11 @@ class ScorerFactory:
         Returns:
             评分结果字典
         """
-        scorer = self.get_scorer(difficulty)
+        # 来自 hard.json 的题目统一使用 HardScorer
+        source_file = kwargs.pop("source_file", None)
+        if source_file and "hard" in str(source_file).lower():
+            scorer = self.get_scorer("HARD")
+        else:
+            scorer = self.get_scorer(difficulty)
         return scorer.score(question, answer, ground_truth, difficulty=difficulty, **kwargs)
 
