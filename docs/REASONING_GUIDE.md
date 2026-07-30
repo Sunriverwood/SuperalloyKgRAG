@@ -210,51 +210,60 @@ python core/query_qwen/reasoning_query_qwen.py --query "..." --output results.js
 损失函数: Triplet Loss
 ```
 
-### 推理流程
+### 推理流程（PPR/GNN + Direct/Hybrid）
 
-#### PPR 方法（Personalized PageRank）
+基于系统配置的 `use_direct_similarity`（决定是否使用混合打分）以及 `method`（决定使用何种网络扩散模式），图推理的完整运行流程分为 **四大阶段**：
 
+#### 阶段一：查询向量化与关键增强
 ```
-1. 初始化节点分布:
-   π_0[i] = similarity(query, node_i)
-
-2. 迭代传播:
-   π_{k+1} = α·π_0 + (1-α)·π_k·P
-   
-   其中:
-   - α: 重启概率（默认 0.15）
-   - P: 转移矩阵（基于 composite_importance 归一化）
-
-3. 选取 Top-K 节点
-4. BFS 搜索路径
-5. 路径评分 = Π(composite_importance × attention)
+1. 基础编码: 将用户 Natural Language Query 转为 Embedding 向量
+2. 关键增强(选配): 调用 LLM 从 Query 提取实体关键字，二次编码并池化拼接（形成强特征的 query_emb）
 ```
 
-**适用场景**: 连接性查询，如 "X 和 Y 有什么关系？"
-
-#### GNN 方法（Query-Aware RGAT）
-
+#### 阶段二：初始节点打分（Direct vs Hybrid 定起点）
+此阶段旨在从全图中筛选出“起跑线”最高的一批起始节点（Start Nodes）：
 ```
-1. 查询编码:
-   q = encode_query(query_text)
+根据 use_direct_similarity 配置：
 
-2. 图神经网络传播:
-   h^(l+1) = RGAT(h^(l), edge_index, edge_type, edge_weights, q)
-   
-   注意力机制:
-   α_{ij} = softmax(attention(h_i, h_j, r_{ij}, q) × w_{ij})
-   
-   其中 w_{ij} = composite_importance
+[Direct 模式 (true)]
+仅计算：Score = Cosine_Similarity(query_emb, node_i)
+特点：快，只看纯文本相关性
 
-3. 节点评分:
-   score_i = Matcher(q, h_i^(L))
+[Hybrid 混合模式 (false)]
+计算分两步：
+a) Direct_Score = Cosine_Similarity(query_emb, node_i)
+b) GNN_Score    = Matcher(query_emb, RGAT_Node_Embeddings)
+合并打分：
+Hybrid_Score = (W1 * Direct_Score_Norm) + (W2 * GNN_Score_Norm)
+特点：结合了语义与周围知识图谱关系的网络结构，枢纽节点分数更高
+```
+👉 取分数最高的 Top-K（如 5 个）作为**起点（Start Nodes）**。
 
-4. 选取 Top-K 节点
-5. BFS 搜索路径
-6. 路径评分
+#### 阶段三：网络扩散与终点选择（PPR vs GNN 找终点）
+基于阶段二得出的全图初始分布规律 $\pi_0$，系统将沿着物理真实边探索答案可能出现的区域（End Nodes）：
+```
+根据推理方法配置 method：
+
+[PPR 扩散法]
+1. 迭代传播: π_{k+1} = α·π_0 + (1-α)·π_k·P
+   (α为重启概率, P为基于 composite_importance 归一化的转移矩阵)
+2. 获取终点: 经过百次左右迭代扩散，取收敛后分数最高的前 K 个节点作为可能的终点（End Nodes）。
+适用场景: 连接性查询，探索面广，如 "X 和 Y 有什么关系？"
+
+[GNN 方法]
+不进行概率游走传播，直接取阶段二中具有 RGAT 视觉打分特征的节点作为终点。
+适用场景: 偏向局部图结构的严格因果匹配推理。
 ```
 
-**适用场景**: 因果推理，如 "为什么 X 会影响 Y？"
+#### 阶段四：路径搜索与置信度打分
+寻找连接起终点的通路、进行排名，并反馈大模型作答：
+```
+1. 广度优先搜索 (BFS): 在 NetworkX 图内搜索 Start_Nodes -> End_Nodes，严格限定跳数 (max_path_length)
+2. 路径评分排序:
+   [若为 Direct 模式] 路径评分 = Π(经过各边的静态 composite_importance 权重)
+   [若为 Hybrid 模式] 路径评分 = Π(动态 Attention(节点h_i, 节点h_j, 边关系, 查询q))
+3. LLM 组装: 截取 Top 排名的关联通路，送入 Qwen 通过 Prompt 进行可解释性的逻辑回复
+```
 
 ### 图约束机制
 

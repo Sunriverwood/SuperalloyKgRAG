@@ -1,0 +1,280 @@
+word,count,keep
+"γ' phase",715,Y
+"M₂₃C₆",630,Y
+"Nickel-based superalloy",405,Y
+"Inconel 718",365,Y
+"M₆C",304,Y
+"Aluminum",275,Y
+"TEM",263,Y
+"MC carbides",252,Y
+"Heat treatment",239,Y
+"Grain size",220,Y
+"γ phase",220,Y
+"Chromium",184,Y
+"Grain boundaries",157,Y
+"Carbon",154,Y
+"Molybdenum",153,Y
+"Fracture",149,Y
+"Numerical simulation",147,Y
+"XRD",141,Y
+"Dislocations",140,Y
+"Titanium",136,Y
+"Iron",134,Y
+"Microhardness",133,Y
+"Tungsten",122,Y
+"Tensile strength",119,Y
+"SEM",118,Y
+"Thermal exposure",118,Y
+"Casting",114,Y
+"Nickel",105,Y
+"Silicon",105,Y
+"Yield Strength",104,Y
+"Al₂O₃",97,Y
+"δ phase",95,Y
+"Magnesium",94,Y
+"Sulfur",93,Y
+"Matrix",92,N
+"Creep",91,Y
+"Precipitates",90,Y
+"Oxidation",88,Y
+"Boron",86,Y
+"Alloying elements",78,Y
+"Hydrogen",77,Y
+"Surface roughness",77,N
+"Corrosion",76,Y
+"Cobalt",75,Y
+"Ni₃Al",70,Y
+"MD simulations",69,Y
+"Residual stress",68,Y
+"EBSD",67,Y
+"Nitrogen",67,Y
+"plastic deformation",64,N
+"Fatigue",62,Y
+"α phase",62,N
+"DFT",61,Y
+"Dynamic recrystallization",58,Y
+"Additive manufacturing",55,Y
+"Elongation",54,N
+"Oxygen",54,Y
+"Zirconium",52,Y
+"Manganese",51,Y
+"defects",47,N
+"Stacking faults",44,Y
+"Waspaloy",43,Y
+"National Natural Science Foundation of China",40,N
+"martensite",38,N
+"Porosity",36,N
+"room temperature",36,N
+"Calcium",35,Y
+"Laves phase",35,N
+"Annealing temperature",34,N
+"Young's modulus",34,N
+"NiO",33,N
+"TiO₂",33,N
+"β phase",33,N
+"CaO",32,N
+"MgO",32,N
+"Turbine blades",32,N
+"Vanadium",32,Y
+"Cr₂O₃",31,N
+"Grain Structure",31,N
+"Time to rupture",30,N
+"Viscosity",29,N
+"magnetic field",29,N
+"microstructure evolution",29,N
+"SiO₂",28,Y
+"Flow stress",27,N
+"Thermal Conductivity",27,N
+"Tantalum",26,Y
+"ceramics",26,N
+"σ phase",25,N
+"Voids",24,N
+"gas turbines",24,N
+"Inconel 625",23,Y
+"Substrate",23,N
+"Table 1",23,N
+"point defects",23,N
+"Alloy C",22,N
+"Ni atoms",22,N
+"casting defects",22,N
+"electrical resistivity",22,N
+"microstructural evolution",22,N
+"H₂O",21,N
+"Inconel 600",21,Y
+"Shell",21,N
+"Table 2",21,N
+"electrical conductivity",21,N
+"Aerospace industry",20,N
+"Aging Time",20,N
+"Anisotropy",20,N
+"Crucible",20,N
+"Lattice distortion",20,N
+"NbC",20,N
+"Strain rate",20,N
+"Supplementary material",20,N
+"Y₂O₃",20,N
+"cooling rate",20,N
+"lattice parameters",20,N
+"Alloy B",19,N
+"Germanium",19,N
+"HCl",19,N
+"HT₁",19,N
+"MEA-AT-700",19,N
+"Mg alloys",19,N
+"Ti-6Al-4V",19,N
+"Vacancies",19,N
+"Alloy 3",18,N
+"Al₂O₃ layer",18,N
+"Applied Stress",18,N
+"Cu atoms",18,N
+"Ductility",18,N
+"Laser power",18,N
+"Mold",18,N
+"Oxide film",18,N
+"Region B",18,N
+"ZnO",18,N
+"Grain interior",17,N
+"Graphite",17,N
+"HT₂",17,N
+"Inclusions",17,N
+"Ni₃Ti",17,Y
+"Pores",17,N
+"Silver (Ag)",17,N
+"ZrO₂",17,N
+"microstructures",17,N
+"microtwins",17,N
+"polymers",17,N
+"turbine disks",17,N
+"Alloy D",16,N
+"CMAS",16,N
+"Density",16,N
+"Diamond",16,N
+"Elastic Modulus",16,N
+"Ferrite",16,N
+"Frequency",16,N
+"Friction coefficient",16,N
+"Oxide layer",16,N
+"Plasticity",16,N
+"Pressure",16,N
+"QMMF",16,N
+"Stage III",16,N
+"Twin boundaries",16,N
+"holding time",16,N
+"Alloy E",15,N
+"Base metal",15,N
+"CMSX-4",15,Y
+"Cu particles",15,N
+"Cutting speed",15,N
+"MEA-AT-900",15,N
+"M₃B₂",15,N
+"Pure Ni",15,N
+"Steel",15,N
+"Tensile tests",15,N
+"TiC",15,N
+"o phase",15,N
+"oxides",15,N
+"titanium alloys",15,N
+"twins",15,N
+"Aging Temperature",14,N
+"AlN",14,N
+"Alloy A",14,N
+"Au atoms",14,N
+"Austenitic stainless steels",14,N
+"A合金",14,N
+"CO₂",14,N
+"Dendritic structure",14,N
+"Die",14,N
+"Fe₂O₃",14,N
+"HT₃",14,N
+"MS shell",14,N
+"Metals",14,N
+"Microstructural features",14,N
+"N合金",14,N
+"Turbine Disk",14,N
+"Turbine blade",14,N
+"Twinning",14,N
+"Wear resistance",14,N
+"alloy matrix",14,N
+"martensitic transformation",14,N
+"physical properties",14,N
+"Aluminum alloys",13,N
+"BCC phase",13,N
+"B₁₂P₂",13,N
+"CNG sample",13,N
+"China",13,N
+"Crystal orientation",13,N
+"Fe₂-NT",13,N
+"K₄₁₆₉",13,N
+"MnO₂",13,N
+"NaCl",13,N
+"OR 1",13,N
+"RFA",13,N
+"Sample 1",13,N
+"Solution Temperature",13,N
+"Specimen",13,N
+"Tensile test",13,N
+"Ti atoms",13,N
+"United States",13,N
+"V₃O₇",13,N
+"Workpiece",13,N
+"Zinc (Zn)",13,N
+"cobalt alloys",13,N
+"core",13,N
+"single crystals",13,N
+"solution treatment temperature",13,N
+"wall thickness",13,N
+"μ phase",13,N
+"Alloy 1",12,N
+"Alloy 2",12,N
+"Alloy 5",12,N
+"Allvac",12,N
+"Aluminium alloys",12,N
+"BTM",12,N
+"Cellular structure",12,N
+"D合金",12,N
+"Fe₀-MT",12,N
+"Fe₃O₄",12,N
+"Iridium",12,N
+"MM-509",12,N
+"Sample 2",12,N
+"SiC",12,N
+"Tin (Sn)",12,N
+"Zinc sulfide",12,N
+"conductivity",12,N
+"deformation",12,N
+"deformation twinning",12,N
+"glass",12,N
+"polycrystalline materials",12,N
+"Aircraft engines",11,N
+"Argon",11,N
+"Energy",11,N
+"GeTe",11,N
+"HT alloy",11,N
+"MatSAM",11,N
+"Mo nanoparticles",11,N
+"M₃B₂ borides",11,N
+"Particle size",11,N
+"Reduction of Area",11,N
+"Refractory metals",11,N
+"TCP phase",11,N
+"TiN",11,N
+"aerospace applications",11,N
+"as-cast microstructure",11,N
+"cooling rates",11,N
+"eutectoid structure",11,N
+"metal",11,N
+"nanostructured materials",11,N
+"stainless steel",11,N
+"surface morphology",11,N
+"vacuum",11,N
+"vacuum furnace",11,N
+"铅 (Pb)",11,N
+"锡 (Sn)",11,N
+"mechanical performance",10,N
+"segregation",10,N
+"Activation energy",0,N
+"Diffusion",0,N
+"Electric field",0,N
+"Lead (Pb)",0,N
+"Liquid phase",0,N
+"Process parameters",0,N

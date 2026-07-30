@@ -377,6 +377,79 @@ class MultidimensionalEvaluator:
             "judge_failures": 0
         }
 
+    @staticmethod
+    def _calculate_normalized_rank_score(rank_position: int, group_size: int, total_methods: int) -> float:
+        """
+        将排序位置映射为固定 0~1 分数，避免参评方法越多分差越大。
+
+        规则：
+        - 第一名恒为 1.0，最后一名恒为 0.0
+        - 中间名次按相对位置线性插值
+        - 并列时取该并列区间对应分数的平均值
+        """
+        if total_methods <= 1:
+            return 1.0
+
+        position_scores = [
+            1.0 - ((rank_position + offset) / (total_methods - 1))
+            for offset in range(group_size)
+        ]
+        return sum(position_scores) / len(position_scores)
+
+    def _build_dimension_scores(
+            self,
+            valid_ranking: List[str],
+            method_names: List[str],
+            ties: Optional[List[List[str]]] = None
+    ) -> Dict[str, float]:
+        """
+        根据排序和并列信息生成归一化分数。
+
+        这样在一次评测中即便同时比较 20 种方法，后续只抽取其中任意几个方法对比，
+        也不会因为总参评方法数不同而出现分差被线性放大的问题。
+        """
+        total_methods = len(method_names)
+        if total_methods == 0:
+            return {}
+
+        ties = ties or []
+        scores: Dict[str, float] = {}
+
+        tie_groups: Dict[str, Optional[Tuple[str, ...]]] = {m: None for m in method_names}
+        for tie_group in ties:
+            normalized_group = tuple(m for m in tie_group if m in valid_ranking)
+            if len(normalized_group) < 2:
+                continue
+            for method in normalized_group:
+                tie_groups[method] = normalized_group
+
+        rank_position = 0
+        processed = set()
+        for method in valid_ranking:
+            if method in processed:
+                continue
+
+            tie_group = tie_groups.get(method)
+            if tie_group is not None:
+                group_members = [m for m in tie_group if m in valid_ranking and m not in processed]
+                group_size = len(group_members)
+                score = self._calculate_normalized_rank_score(rank_position, group_size, total_methods)
+                for member in group_members:
+                    scores[member] = score
+                    processed.add(member)
+                rank_position += group_size
+            else:
+                scores[method] = self._calculate_normalized_rank_score(rank_position, 1, total_methods)
+                processed.add(method)
+                rank_position += 1
+
+        lowest_score = 1.0 if total_methods <= 1 else 0.0
+        for method in method_names:
+            if method not in scores:
+                scores[method] = lowest_score
+
+        return scores
+
     def _needs_proxy(self, model_name: str) -> bool:
         """判断模型是否需要代理"""
         model_lower = model_name.lower()
@@ -532,7 +605,7 @@ class MultidimensionalEvaluator:
         解析评判 LLM 的响应
 
         Returns:
-            {dimension: {"ranking": [method1, method2, ...], "scores": {method: score}}}
+            {dimension: {"ranking": [method1, method2, ...], "scores": {method: normalized_score}}}
         """
         result = {}
 
@@ -549,44 +622,7 @@ class MultidimensionalEvaluator:
 
                         # 验证方法名
                         valid_ranking = [m for m in ranking if m in method_names]
-
-                        # 计算分数：排名第1得N分，排名第N得1分
-                        n = len(method_names)
-                        scores = {}
-
-                        # 处理并列情况
-                        tie_groups: Dict[str, Optional[Tuple]] = {m: None for m in method_names}
-                        for tie_group in ties:
-                            for m in tie_group:
-                                if m in tie_groups:
-                                    tie_groups[m] = tuple(tie_group)
-
-                        # 分配分数
-                        rank_position = 0
-                        processed = set()
-                        for method in valid_ranking:
-                            if method in processed:
-                                continue
-
-                            tie_group = tie_groups.get(method)
-                            if tie_group is not None:
-                                # 并列的方法得相同分数（取平均）
-                                group_size = len([m for m in tie_group if m in valid_ranking])
-                                avg_score = sum(n - rank_position - i for i in range(group_size)) / group_size
-                                for m in tie_group:
-                                    if m in method_names:
-                                        scores[m] = avg_score
-                                        processed.add(m)
-                                rank_position += group_size
-                            else:
-                                scores[method] = n - rank_position
-                                processed.add(method)
-                                rank_position += 1
-
-                        # 未出现在排名中的方法得最低分
-                        for m in method_names:
-                            if m not in scores:
-                                scores[m] = 1
+                        scores = self._build_dimension_scores(valid_ranking, method_names, ties)
 
                         result[dim] = {
                             "ranking": valid_ranking,
@@ -609,12 +645,7 @@ class MultidimensionalEvaluator:
                 # 提取方法名
                 methods_found = re.findall(r'["\']([^"\']+)["\']', ranking_str)
                 valid_ranking = [m for m in methods_found if m in method_names]
-
-                n = len(method_names)
-                scores = {m: n - i for i, m in enumerate(valid_ranking)}
-                for m in method_names:
-                    if m not in scores:
-                        scores[m] = 1
+                scores = self._build_dimension_scores(valid_ranking, method_names, ties=[])
 
                 result[dim] = {
                     "ranking": valid_ranking,
@@ -802,6 +833,7 @@ class MultidimensionalEvaluator:
             "generated_at": datetime.now().isoformat(),
             "total_questions": len(results),
             "enabled_methods": self.enabled_methods,
+            "score_scale": "normalized_rank_score_0_to_1",
             "dimension_scores": {},
             "overall_ranking": {},
             "by_difficulty": {},

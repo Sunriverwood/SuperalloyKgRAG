@@ -36,6 +36,7 @@
 | 文档 | 内容描述 |
 |------|---------|
 | [REASONING_GUIDE.md](REASONING_GUIDE.md) | **图推理系统指南** - 架构、自监督训练、PPR/GNN 推理流程、使用方法 |
+| [REASONING_PATH_CONSTRAINTS.md](REASONING_PATH_CONSTRAINTS.md) | **推理路径约束说明** - 如何硬性限制推理不走虚假路径，以及代码证据与边界条件 |
 
 ### 📊 评测系统
 
@@ -106,5 +107,6 @@
 
 | 日期 | 更新内容 |
 |------|---------|
+| 2026-04-23 | 新增 [REASONING_PATH_CONSTRAINTS.md](REASONING_PATH_CONSTRAINTS.md)，说明推理路径的硬约束、代码证据与能力边界 |
 | 2026-03-24 | 全量更新 `README.md` 与 `docs/` 文档说明，统一维护范围与状态标记（忽略 `draw/`、`visualizations/`） |
 | 2026-01-14 | 整理文档结构，删除过时的修复/调试文档，保留13个核心文档 |
