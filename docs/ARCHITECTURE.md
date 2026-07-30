@@ -109,24 +109,31 @@ SuperalloyKgRAG/
 │   ├── graph_reasoning_utils.py # 图推理工具函数
 │   └── local_context.py         # 局部上下文构建
 │
-├── data/                         # 数据目录
-│   ├── original_data/           # 原始数据输入目录
-│   │   ├── books/               # 默认OCR输入目录 (vlm_parser.input_dir)
-│   │   └── full_text/           # 默认论文解析输入目录 (paper_parser.input_dir)
-│   ├── processed_jsons/         # OCR解析后的JSON
-│   ├── chunks/                  # 文本分块结果
-│   ├── graphs/                  # 知识图谱
-│   │   ├── extracted/           # 提取的原始图
-│   │   └── final_graph.json     # 最终合并图
-│   ├── embeddings/              # 向量数据库
-│   │   └── enriched.db/         # 默认LanceDB向量库 (embedding.output_db_path)
-│   ├── reports/                 # 社区报告
-│   ├── reasoning/               # 推理模型
-│   │   └── develop.pt           # 默认训练产物 (reasoning.output.model_path)
-│   └── cache/                   # 缓存数据
+├── data/                         # 数据目录（详见 DATA_LAYOUT.md）
+│   ├── original_data/           # 原始语料 books/ / full_text/ / abstract/
+│   ├── processed_jsons/         # OCR/论文解析 JSON
+│   ├── chunks/                  # text/abstract/table/image units
+│   ├── graphs/                  # 主图 + extracted/enriched/ + 消融子目录
+│   │   ├── final_graph.json     # 默认最终图
+│   │   ├── text_only/           # 消融：纯文本图谱
+│   │   └── no_entities_merge/   # 消融：无实体合并
+│   ├── embeddings/              # LanceDB（enriched / text_only / no_merge 等）
+│   ├── reports/                 # 社区报告、rescore、analysis
+│   ├── answers/                 # 评测答案（按实验子目录组织）
+│   │   └── multidimensional_evaluation/
+│   │       ├── old-baseline/
+│   │       ├── new-baseline/
+│   │       └── ablation_*/
+│   ├── evaluation_sets/         # L12 / L3 / L4 / hard
+│   ├── reasoning/               # develop.pt 及消融权重
+│   └── cache/                   # 批请求缓存
 │
+├── history/                      # 历史实验归档（非主流程）
+├── research_paper/               # 组会材料
 └── docs/                         # 文档
 ```
+
+数据路径与实验子目录约定见 [DATA_LAYOUT.md](DATA_LAYOUT.md)。
 
 ## 🔄 核心流程说明
 

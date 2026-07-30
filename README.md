@@ -199,30 +199,29 @@ python core/query_qwen/reasoning_query_qwen.py --query "Re 元素对单晶高温
 
 ### 评估数据准备
 
-评估问题集存放在 `data/evaluation_sets/` 目录下，当前评测流程主要覆盖 L1-L4：
+评估问题集存放在 `data/evaluation_sets/`：
 
-- **L1**: 基础事实查询
-- **L2**: 单跳关系推理
-- **L3**: 多跳关系推理
-- **L4**: 复杂综合问题
+- **L12.json**: L1（事实）+ L2（简单推理）
+- **L3.json / L4.json**: 综合分析与设计/发现
+- **hard.json**: 教材深推理子集
+
+完整数据布局见 [docs/DATA_LAYOUT.md](docs/DATA_LAYOUT.md)。
 
 ### 运行评估
 
 ```bash
-# 评估所有题目
-python evaluation/auto_evaluator.py
-
-# 评估指定难度
+# 单方法自动评测
 python evaluation/auto_evaluator.py --difficulty L3
 
-# 评估指定题目ID
-python evaluation/auto_evaluator.py --ids 1,2,3,4,5
+# 多维对比（写入命名实验目录，推荐）
+python -m evaluation.multidimensional_evaluator --run-dir new-baseline
 
-# 指定并发数（加速评估）
-python evaluation/auto_evaluator.py --difficulty L4 --concurrency 3
+# 消融实验（自动写入 ablation_<name>/）
+python -m evaluation.multidimensional_evaluator --ablation text_only --methods local,reasoning
 
-# 指定查询模式（可选）
-python evaluation/auto_evaluator.py --difficulty L3 --mode reasoning
+# 对已有答案重打分 / 分层分析
+python -m evaluation.rescore --answers_dir new-baseline
+python -m evaluation.rescore_level_analysis --dir new-baseline
 ```
 
 ### 评估指标
@@ -234,7 +233,8 @@ python evaluation/auto_evaluator.py --difficulty L3 --mode reasoning
 - **推理路径质量**: 推理链条的合理性和可解释性
 - **召回率**: 检索到的相关实体/文档的覆盖率
 
-评估结果将保存在 `data/answers/` 目录，包含详细的问答记录和打分明细。
+多维评测答案按实验子目录保存在  
+`data/answers/multidimensional_evaluation/<run_dir>/`（如 `old-baseline`、`new-baseline`、`ablation_*`）。
 
 ------
 
@@ -356,22 +356,22 @@ Neo4j 是一款图数据库，支持 Cypher 查询语言，适合进行交互式
 
 ### evaluation/ (评估系统)
 
-- **`auto_evaluator.py`**: **[评估入口]** 评估系统的命令行主程序，支持批量测试和并发执行。
-- **`multidimensional_evaluator.py`**: 多维度评测器，支持与基线方法进行对比分析。
-- **`scoring.py`**: 评分逻辑模块，实现多维度的答案质量评估。
-- **`distribution_of_questions.py`**: 问题分布分析工具，用于统计评估集的难度分布。
+- **`multidimensional_evaluator.py`**: **[多维/消融入口]** 支持 `--run-dir`、`--ablation`，答案写入实验子目录。
+- **`auto_evaluator.py`**: 单方法自动评测入口。
+- **`rescore.py` / `rescore_level_analysis.py`**: 对已有 answers 重打分与按难度导出 Excel。
+- **`scoring.py`**: 分级评分逻辑。
+- **`distribution_of_questions.py`**: 评测集难度分布统计。
 
-### data/ (数据存储 - 自动生成)
+### data/ (数据存储 - 本地生成，gitignore)
 
-- `original_data/books/`: 默认书籍类 PDF 输入目录（由 `vlm_parser.input_dir` 控制）。
-- `original_data/full_text/`: 默认论文全文输入目录（由 `paper_parser.input_dir` 控制）。
-- `processed_jsons/`: OCR 解析后的中间 JSON 文件。
-- `chunks/`: 文本切片文件 (`text_units.jsonl`)。
-- `graphs/`: 构建完成的知识图谱 (`final_graph.json`)。
-- `embeddings/`: LanceDB 向量数据库文件。
-- `reasoning/`: 存放训练好的模型权重（默认 `develop.pt`）和推理结果。
-- `evaluation_sets/`: 评估问题集（当前自动评测主流程覆盖 L1-L4）。
-- `answers/`: 评估系统生成的答案和评分结果。
+- `original_data/`: 书籍 / 论文全文 / 摘要语料。
+- `processed_jsons/`、`chunks/`、`graphs/`、`embeddings/`、`cache/`：索引流水线产物（含 `text_only`、`no_entities_merge` 消融变体）。
+- `reasoning/`：主权重 `develop.pt` 及消融权重。
+- `evaluation_sets/`：`L12.json`、`L3.json`、`L4.json`、`hard.json`。
+- `answers/multidimensional_evaluation/<run_dir>/`：按实验组织的评测答案。
+- `reports/`：社区报告、`rescore/`、`analysis/`。
+
+另见顶层 `history/`（历史归档）、`research_paper/`（汇报材料）。细节：[docs/DATA_LAYOUT.md](docs/DATA_LAYOUT.md)。
 
 ------
 
@@ -380,6 +380,8 @@ Neo4j 是一款图数据库，支持 Cypher 查询语言，适合进行交互式
 本项目提供了完善的技术文档，位于 `docs/` 目录：
 
 - **[ARCHITECTURE.md](docs/ARCHITECTURE.md)**: 系统架构详细说明（推荐首先阅读）
+- **[DATA_LAYOUT.md](docs/DATA_LAYOUT.md)**: 数据与实验目录布局
+- **[EVALUATION_GUIDE.md](docs/EVALUATION_GUIDE.md)**: 评测与消融实验指南
 - **[RUN_INDEXING_GUIDE.md](docs/RUN_INDEXING_GUIDE.md)**: 索引流水线详细使用指南
 - **[REASONING_GUIDE.md](docs/REASONING_GUIDE.md)**: 图推理系统完整指南
 - **[IMPORT_TO_GEPHI.md](docs/IMPORT_TO_GEPHI.md)**: Gephi 可视化详细教程

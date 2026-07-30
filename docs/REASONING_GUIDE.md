@@ -424,8 +424,12 @@ utils/
 └── graph_reasoning_utils.py # 工具函数
 
 data/reasoning/
-└── develop.pt              # 默认训练好的模型（自动生成）
+├── develop.pt              # 默认主模型权重
+├── text_only.pt            # 消融：纯文本图谱对应权重
+└── no_entities_merge.pt    # 消融：无实体合并对应权重
 ```
+
+消融路径由 `config/settings.yaml` 的 `ablation:` 段切换；数据布局见 [DATA_LAYOUT.md](DATA_LAYOUT.md)。
 
 ## 🔗 相关文档
 

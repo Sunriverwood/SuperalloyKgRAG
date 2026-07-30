@@ -1106,7 +1106,13 @@ async def main():
         "--ablation",
         type=str,
         default=None,
-        help="消融实验名称，如 text_only"
+        help="消融实验名称，如 text_only（输出自动写入 ablation_<name>/）"
+    )
+    parser.add_argument(
+        "--run-dir",
+        type=str,
+        default=None,
+        help="实验输出子目录名，如 new-baseline、old-baseline（与 --ablation 互斥优先 ablation）"
     )
 
     args = parser.parse_args()
@@ -1128,8 +1134,17 @@ async def main():
             base_dir = multi_eval.get(dir_key, f"data/{dir_key.replace('_output_dir', '')}")
             multi_eval[dir_key] = f"{base_dir}/ablation_{ablation_name}"
         logging.info(f"📂 消融实验输出目录: {multi_eval['reports_output_dir']}")
+    elif args.run_dir:
+        # 命名实验目录隔离（如 new-baseline / old-baseline）
+        run_dir = args.run_dir.strip().strip("/\\")
+        multi_eval = config.setdefault("multidimensional_evaluation", {})
+        for dir_key in ["answers_output_dir", "reports_output_dir"]:
+            base_dir = multi_eval.get(dir_key, f"data/{dir_key.replace('_output_dir', '')}")
+            multi_eval[dir_key] = f"{base_dir}/{run_dir}"
+        logging.info(f"📂 实验输出目录: {multi_eval['reports_output_dir']}")
 
-    setup_logging(config, log_name=f"multidimensional_evaluation{'_' + ablation_name if ablation_name else ''}")
+    log_suffix = f"_{ablation_name}" if ablation_name else (f"_{args.run_dir}" if args.run_dir else "")
+    setup_logging(config, log_name=f"multidimensional_evaluation{log_suffix}")
 
     # 解析方法列表：命令行 --methods 优先，否则使用消融配置中的 enabled_methods
     enabled_methods = None

@@ -15,15 +15,21 @@
 """
 重新评分模块 - 利用 multidimensional_evaluator 已有答案，使用 auto_evaluator 的评分体系重新评分
 
+答案按实验分子目录存放于:
+    data/answers/multidimensional_evaluation/<run_dir>/
+例如: old-baseline / new-baseline / ablation_text_only / ...
+
 用法:
-    # 对所有方法重新评分
-    python -m evaluation.rescore
+    # 对指定实验子目录重新评分（推荐）
+    python -m evaluation.rescore --answers_dir new-baseline
+    python -m evaluation.rescore --answers_dir old-baseline
+    python -m evaluation.rescore --answers_dir ablation_text_only
 
     # 只对指定方法重新评分
-    python -m evaluation.rescore --methods "basic_rag,global,local,reasoning,router"
+    python -m evaluation.rescore --answers_dir new-baseline --methods "basic_rag,global,local,reasoning,router"
 
     # 指定答案目录时间戳
-    python -m evaluation.rescore --timestamp 20260314_133442
+    python -m evaluation.rescore --answers_dir old-baseline --timestamp 20260314_133442
 """
 
 import argparse
@@ -164,6 +170,13 @@ def rescore(
         answer_files = list(answers_dir.glob("*_answers_*.jsonl"))
         if not answer_files:
             logging.error(f"在 {answers_dir} 中未找到答案文件")
+            if answers_dir_path is None and base_answers_dir.exists():
+                subdirs = sorted(p.name for p in base_answers_dir.iterdir() if p.is_dir())
+                if subdirs:
+                    logging.error(
+                        "当前答案按实验子目录组织。请指定 --answers_dir，可选: "
+                        + ", ".join(subdirs)
+                    )
             return
         # 提取最新时间戳
         timestamps = set()
@@ -334,7 +347,7 @@ if __name__ == "__main__":
     parser.add_argument("--settings", type=str, default="settings.yaml",
                         help="配置文件名")
     parser.add_argument("--answers_dir", type=str, default=None,
-                        help="指定答案所在的子目录名称，例如：ablation_text_only")
+                        help="实验子目录名，如: new-baseline, old-baseline, ablation_text_only")
     args = parser.parse_args()
 
     config = load_config(args.settings)

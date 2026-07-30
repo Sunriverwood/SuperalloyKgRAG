@@ -382,6 +382,10 @@ baseline:
       base_url: "https://llmapi.paratera.com/v1"
 
 # 多维度评测配置
+# 答案按实验子目录组织：--run-dir <name> 或 --ablation <name>
+# 例: data/answers/multidimensional_evaluation/new-baseline/
+#     data/answers/multidimensional_evaluation/ablation_text_only/
+# 详见 docs/DATA_LAYOUT.md
 multidimensional_evaluation:
   # 启用的评测方法（留空表示全部启用）
   # Baseline 模型: qwen3-max, kimi-k2-thinking, deepseek-v3.2, glm-4.6, MiniMax-M2, ERNIE-4.5-Turbo-128K
@@ -391,7 +395,7 @@ multidimensional_evaluation:
   # 评判 Prompt 路径
   judge_prompt_path: "config/prompts/multidimensional_judge.md"
 
-  # 输出目录配置
+  # 输出根目录（实际写入时再拼 run_dir / ablation_*）
   answers_output_dir: "data/answers/multidimensional_evaluation"
   reports_output_dir: "data/reports/multidimensional_evaluation"
 
@@ -410,8 +414,10 @@ multidimensional_evaluation:
   # 评判模型（复用 evaluation.llm 配置）
   # 使用 qwen3-max 作为评分器
 
-# 消融实验配置
-# 使用方式: python evaluation/multidimensional_evaluator.py --ablation <name> [--methods ...]
+# 消融实验配置（切换图谱/向量库/权重路径；输出自动写入 ablation_<name>/）
+# 使用方式:
+#   python -m evaluation.multidimensional_evaluator --ablation text_only --methods local,reasoning
+#   python -m evaluation.rescore --answers_dir ablation_text_only
 ablation:
   # --- 实验 1: basic_rag 纯文本 vs 多模态 ---
   basic_rag_text:

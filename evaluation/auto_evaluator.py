@@ -16,10 +16,13 @@
 自动评测主模块 - 加载题目、调用查询模块、保存结果
 
 功能：
-1. 从 data/evaluation_sets/*.json 加载评测题目
+1. 从 data/evaluation_sets/ 加载评测题目（L12.json / L3.json / L4.json / hard.json）
 2. 异步调用 GraphRouter 获取回答
 3. 使用分级评分器评估回答质量
-4. 将结果保存到 data/answers/
+4. 将结果保存到 data/answers/（由 settings.yaml evaluation.answers_output_dir 控制）
+
+多维对比与消融实验请使用 evaluation/multidimensional_evaluator.py，
+答案按实验子目录写入 data/answers/multidimensional_evaluation/<run_dir>/。
 """
 
 import asyncio

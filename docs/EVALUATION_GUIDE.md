@@ -1,8 +1,8 @@
 # 评测系统使用指南 (Evaluation System Guide)
 
-> 更新时间：2026-03-24（与当前主流程入口对齐）
+> 更新时间：2026-07-30（对齐实验子目录数据布局）
 > 
-> 说明：本轮文档整理不包含 `draw/` 与 `visualizations/` 目录。
+> 说明：答案与报告按 `old-baseline` / `new-baseline` / `ablation_*` 等子目录组织；完整布局见 [DATA_LAYOUT.md](DATA_LAYOUT.md)。
 
 ## 📋 目录
 
@@ -32,17 +32,27 @@ SuperalloyKgRAG 评测系统是一个多级别、多维度的自动化评测框�
 
 ```
 evaluation/
-├── auto_evaluator.py      # 主评测器（已合并 run_evaluation）
-├── scoring.py             # 分级评分器
-└── baseline.py            # 基线模型对比
+├── auto_evaluator.py              # 单方法自动评测
+├── multidimensional_evaluator.py  # 多维对比 / 消融主入口
+├── scoring.py                     # 分级评分器
+├── rescore.py                     # 对已有 answers 重打分
+├── rescore_level_analysis.py      # 按难度导出 Excel
+└── baseline.py                    # 基线模型对比配置辅助
 
 data/
-├── evaluation_sets/       # 评测题目集
-│   ├── L12.json          # L1/L2 级别题目
-│   ├── L3.json           # L3 级别题目
-│   └── L4.json           # L4 级别题目
-├── answers/              # 评测答案（JSONL 格式）
-└── reports/              # 评测报告（JSON 格式）
+├── evaluation_sets/               # 评测题目集
+│   ├── L12.json                   # L1/L2
+│   ├── L3.json / L4.json
+│   └── hard.json                  # 深推理子集
+├── answers/
+│   └── multidimensional_evaluation/
+│       ├── old-baseline/          # 完整答案 JSONL
+│       ├── new-baseline/
+│       └── ablation_*/            # 消融实验答案
+└── reports/
+    ├── multidimensional_evaluation/
+    ├── rescore/<run_dir>/         # 与 answers 子目录镜像
+    └── analysis/                  # 分层分析 Excel
 ```
 
 ---
@@ -496,6 +506,30 @@ result = factory.score(
 
 ---
 
+## 多维评测与实验目录
+
+主对比与消融使用 `multidimensional_evaluator`，输出写入命名子目录，避免互相覆盖：
+
+```bash
+# 命名实验（如 new-baseline）
+python -m evaluation.multidimensional_evaluator --run-dir new-baseline
+
+# 消融（自动写入 ablation_<name>/）
+python -m evaluation.multidimensional_evaluator --ablation text_only --methods local,reasoning
+
+# 对某实验子目录重打分
+python -m evaluation.rescore --answers_dir new-baseline
+python -m evaluation.rescore --answers_dir ablation_text_only
+
+# 分层得分分析
+python -m evaluation.rescore_level_analysis --dir new-baseline
+python -m evaluation.rescore_level_analysis --all
+```
+
+答案文件命名：`{method}_answers_{YYYYMMDD}_{HHMMSS}.jsonl`。
+
+---
+
 ## 评测报告
 
 ### 报告结构
@@ -504,7 +538,9 @@ result = factory.score(
 
 #### 1. 详细答案 (JSONL 格式)
 
-位置: `data/answers/evaluation_YYYYMMDD_HHMMSS.jsonl`
+位置（多维评测）: `data/answers/multidimensional_evaluation/<run_dir>/{method}_answers_YYYYMMDD_HHMMSS.jsonl`
+
+位置（旧版单测，仍可能出现）: `data/answers/evaluation_YYYYMMDD_HHMMSS.jsonl`
 
 每行一个 JSON 对象，包含完整的评测信息：
 
@@ -586,11 +622,12 @@ with open("data/reports/evaluation_report_20251223.json") as f:
 for difficulty, stats in report["by_difficulty"].items():
     print(f"{difficulty}: {stats['avg_score']:.3f}")
 
-# 找出低分题目
-with open("data/answers/evaluation_20251223.jsonl") as f:
+# 找出低分题目（示例：new-baseline 下某方法答案）
+with open("data/answers/multidimensional_evaluation/new-baseline/reasoning_answers_20260319_004254.jsonl") as f:
     for line in f:
         result = json.loads(line)
-        if result["overall_score"] < 0.6:
+        score = result.get("overall_score", (result.get("scores") or {}).get("overall_score"))
+        if score is not None and score < 0.6:
             print(f"Low score: {result['id']} - {result['question'][:50]}")
 ```
 

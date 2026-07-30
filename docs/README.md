@@ -1,8 +1,8 @@
 # 文档目录
 
-> 文档状态：已于 2026-03-24 完成一轮统一整理，命令与主流程入口对齐。
+> 文档状态：2026-07-30 对齐实验子目录数据布局（见 [DATA_LAYOUT.md](DATA_LAYOUT.md)）。
 > 
-> 维护范围：`README.md` 与 `docs/`；按项目要求不覆盖 `draw/` 与 `visualizations/` 目录。
+> 维护范围：`README.md` 与 `docs/`；`draw/` 脚本默认路径已随 answers 子目录布局更新。
 
 本目录包含 SuperalloyKgRAG 项目的所有技术文档，专注于系统架构和工作流程说明。
 
@@ -13,6 +13,7 @@
 | 文档 | 内容描述 |
 |------|---------|
 | [ARCHITECTURE.md](ARCHITECTURE.md) | **项目架构总览** - 系统架构图、目录结构、四种查询模式详细流程图（LOCAL/GLOBAL/REASONING/DRIFT） |
+| [DATA_LAYOUT.md](DATA_LAYOUT.md) | **数据目录布局** - `data/` / `history/` / 实验子目录约定与常用命令 |
 | [DEPENDENCIES.md](DEPENDENCIES.md) | **依赖说明** - 项目所需的所有依赖包及其用途 |
 
 ### 📥 数据处理流程
@@ -42,7 +43,7 @@
 
 | 文档 | 内容描述 |
 |------|---------|
-| [EVALUATION_GUIDE.md](EVALUATION_GUIDE.md) | **评测系统指南** - 多级评分机制（L1-L4）、使用方法、评测报告详解 |
+| [EVALUATION_GUIDE.md](EVALUATION_GUIDE.md) | **评测系统指南** - L1-L4/hard、多维对比、消融子目录、rescore 与报告 |
 
 ### 🛠️ 工具与集成
 
@@ -80,9 +81,10 @@
    ```
 
 5. **系统评测** 📊
-   - 参考 [EVALUATION_GUIDE.md](EVALUATION_GUIDE.md) 运行评测系统
+   - 参考 [EVALUATION_GUIDE.md](EVALUATION_GUIDE.md) 与 [DATA_LAYOUT.md](DATA_LAYOUT.md)
    ```bash
-   python evaluation/auto_evaluator.py --difficulty L3
+   python -m evaluation.multidimensional_evaluator --run-dir new-baseline
+   python -m evaluation.rescore --answers_dir new-baseline
    ```
 
 6. **高级功能** 🚀
@@ -107,6 +109,7 @@
 
 | 日期 | 更新内容 |
 |------|---------|
+| 2026-07-30 | 新增 [DATA_LAYOUT.md](DATA_LAYOUT.md)；评测文档与 `--run-dir` / answers 子目录约定对齐 |
 | 2026-04-23 | 新增 [REASONING_PATH_CONSTRAINTS.md](REASONING_PATH_CONSTRAINTS.md)，说明推理路径的硬约束、代码证据与能力边界 |
 | 2026-03-24 | 全量更新 `README.md` 与 `docs/` 文档说明，统一维护范围与状态标记（忽略 `draw/`、`visualizations/`） |
 | 2026-01-14 | 整理文档结构，删除过时的修复/调试文档，保留13个核心文档 |

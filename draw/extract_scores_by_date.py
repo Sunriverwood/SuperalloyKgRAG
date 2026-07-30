@@ -1,9 +1,12 @@
 """
-从 data/answers 目录下按日期筛选 JSONL 评估文件，
-提取每道题在不同模型/方法下的得分，输出为 CSV。
+从评测答案目录按日期筛选 JSONL，提取每道题在不同方法下的得分，输出 CSV。
+
+默认扫描 data/answers/multidimensional_evaluation/（含 old-baseline、new-baseline、
+ablation_* 等一级子目录中的 *_answers_*.jsonl）。
 
 用法示例：
-    python draw/extract_scores_by_date.py --date 20260126
+    python draw/extract_scores_by_date.py --date 20260319
+    python draw/extract_scores_by_date.py --date 20260319 --answers-dir data/answers/multidimensional_evaluation/new-baseline
     python draw/extract_scores_by_date.py --date 20260126 --output visualizations/scores_20260126.csv
 """
 import argparse
@@ -39,11 +42,17 @@ EVALUATION_METHOD_MAP: Dict[str, Dict[str, str]] = {
 def _extract_method_name(filepath: Path, date: str = "") -> str:
     """
     根据文件名推断模型/方法名称：
+    - {method}_answers_{date}_{time}.jsonl => {method}
     - baseline_{model}_{date}_{time}.jsonl => {model}
     - evaluation_{date}_{time}_{method}.jsonl => {method}
     - evaluation_{date}_{time}.jsonl => 从 EVALUATION_METHOD_MAP 查找，否则用时间戳
     """
     name = filepath.stem
+
+    # multidimensional_evaluation pattern: {method}_answers_{YYYYMMDD}_{HHMMSS}
+    answers_match = re.match(r"(.+)_answers_(\d{8})_(\d{6})$", name)
+    if answers_match:
+        return answers_match.group(1)
 
     # baseline pattern: baseline_{model}_{date}_{time}
     if name.startswith("baseline_"):
@@ -114,6 +123,58 @@ def _get_score(record: Dict[str, Any]) -> Optional[float]:
     return None
 
 
+def _iter_answer_files(answers_dir: Path) -> List[Path]:
+    """收集目录内及一级子目录中的评测 JSONL。"""
+    files: List[Path] = []
+    if not answers_dir.exists():
+        return files
+
+    patterns = ("*_answers_*.jsonl", "evaluation_*.jsonl", "baseline_*.jsonl", "*.jsonl")
+    seen = set()
+
+    def _add_from(directory: Path):
+        for pattern in patterns:
+            for fp in sorted(directory.glob(pattern)):
+                if fp.is_file() and fp.resolve() not in seen:
+                    seen.add(fp.resolve())
+                    files.append(fp)
+
+    _add_from(answers_dir)
+    for sub in sorted(p for p in answers_dir.iterdir() if p.is_dir()):
+        _add_from(sub)
+    return files
+
+
+def _ingest_file(
+    fp: Path,
+    date: str,
+    questions: Dict[int, Dict[str, Any]],
+    methods_set: Dict[str, int],
+    method_order: int,
+) -> int:
+    if not _file_matches_date(fp, date):
+        return method_order
+    method = _extract_method_name(fp, date)
+    if method not in methods_set:
+        methods_set[method] = method_order
+        method_order += 1
+    for rec in _load_jsonl(fp):
+        qid = rec.get("id")
+        if qid is None:
+            continue
+        qid = int(qid)
+        if qid not in questions:
+            questions[qid] = {
+                "difficulty": rec.get("difficulty", ""),
+                "type": rec.get("type", ""),
+                "domain": rec.get("domain", ""),
+            }
+        score = _get_score(rec)
+        if score is not None:
+            questions[qid][method] = score
+    return method_order
+
+
 def collect_scores(answers_dir: Path, date: str) -> Tuple[Dict[int, Dict[str, Any]], List[str]]:
     """
     收集指定日期的所有问题得分。
@@ -125,53 +186,16 @@ def collect_scores(answers_dir: Path, date: str) -> Tuple[Dict[int, Dict[str, An
     methods_set: Dict[str, int] = {}  # method -> order
     method_order = 0
 
-    # 1) baseline files
+    # 兼容旧布局: answers/baseline/*.jsonl
     baseline_dir = answers_dir / "baseline"
     if baseline_dir.exists():
         for fp in sorted(baseline_dir.glob("*.jsonl")):
-            if not _file_matches_date(fp, date):
-                continue
-            method = _extract_method_name(fp, date)
-            if method not in methods_set:
-                methods_set[method] = method_order
-                method_order += 1
-            for rec in _load_jsonl(fp):
-                qid = rec.get("id")
-                if qid is None:
-                    continue
-                qid = int(qid)
-                if qid not in questions:
-                    questions[qid] = {
-                        "difficulty": rec.get("difficulty", ""),
-                        "type": rec.get("type", ""),
-                        "domain": rec.get("domain", ""),
-                    }
-                score = _get_score(rec)
-                if score is not None:
-                    questions[qid][method] = score
+            method_order = _ingest_file(fp, date, questions, methods_set, method_order)
 
-    # 2) evaluation files (non-baseline)
-    for fp in sorted(answers_dir.glob("evaluation_*.jsonl")):
-        if not _file_matches_date(fp, date):
-            continue
-        method = _extract_method_name(fp, date)
-        if method not in methods_set:
-            methods_set[method] = method_order
-            method_order += 1
-        for rec in _load_jsonl(fp):
-            qid = rec.get("id")
-            if qid is None:
-                continue
-            qid = int(qid)
-            if qid not in questions:
-                questions[qid] = {
-                    "difficulty": rec.get("difficulty", ""),
-                    "type": rec.get("type", ""),
-                    "domain": rec.get("domain", ""),
-                }
-            score = _get_score(rec)
-            if score is not None:
-                questions[qid][method] = score
+    # 当前布局: multidimensional_evaluation/<run_dir>/*_answers_*.jsonl
+    # 以及旧的 evaluation_*.jsonl
+    for fp in _iter_answer_files(answers_dir):
+        method_order = _ingest_file(fp, date, questions, methods_set, method_order)
 
     methods = sorted(methods_set.keys(), key=lambda m: methods_set[m])
     return questions, methods
@@ -213,8 +237,8 @@ def main() -> None:
     parser.add_argument(
         "--answers-dir",
         type=Path,
-        default=Path("data/answers"),
-        help="Directory containing evaluation JSONL files.",
+        default=Path("data/answers/multidimensional_evaluation"),
+        help="评测答案根目录（默认含 old/new-baseline、ablation_* 子目录）。",
     )
     parser.add_argument(
         "--output",
